@@ -367,7 +367,7 @@ class HyprlandSettingsApp(Gtk.Window):
         self.tabs["Settings"] = settings_box  
 
         if self.tab_visibility.get("Settings", True):  
-            self.notebook.append_page(settings_box, Gtk.Label(label="⚙"))
+            self.notebook.append_page(settings_box, Gtk.Label(label="Settings"))
 
         self.populate_settings_tab()
 
