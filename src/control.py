@@ -6,7 +6,6 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-
 import gi
 import os
 import logging
@@ -20,8 +19,7 @@ import subprocess
 gi.require_version('Pango', '1.0')  
 from gi.repository import Gtk, Pango
 
-SETTINGS_FILE = "settings.json"  # File to save tab visibility
-
+SETTINGS_FILE = "settings.json"  
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)  
@@ -38,10 +36,8 @@ class HyprlandSettingsApp(Gtk.Window):
         self.set_default_size(1000, 700)
         self.set_resizable(False)
 
-        self.tabs = {}  # Store references to tabs
-        self.tab_visibility = self.load_settings()  # Load saved visibility states
-
-       
+        self.tabs = {}  
+        self.tab_visibility = self.load_settings()  
 
         self.main_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.add(self.main_container)
@@ -50,8 +46,6 @@ class HyprlandSettingsApp(Gtk.Window):
         self.notebook.set_scrollable(True)
         self.main_container.pack_start(self.notebook, True, True, 0)
 
-
-
         wifi_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         wifi_box.set_margin_top(10)
         wifi_box.set_margin_bottom(10)
@@ -59,9 +53,6 @@ class HyprlandSettingsApp(Gtk.Window):
         wifi_box.set_margin_end(10)
         wifi_box.set_hexpand(True)
         wifi_box.set_vexpand(True)
-
-
-        
 
         self.wifi_listbox = Gtk.ListBox()
         self.wifi_listbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
@@ -97,11 +88,9 @@ class HyprlandSettingsApp(Gtk.Window):
         scrolled_wifi = Gtk.ScrolledWindow()
         scrolled_wifi.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
 
-
         self.tabs["Wi-Fi"] = wifi_box
-        if self.tab_visibility.get("Wi-Fi", True):  # Default to visible
+        if self.tab_visibility.get("Wi-Fi", True):  
             self.notebook.append_page(wifi_box, Gtk.Label(label="Wi-Fi"))
-
 
         bluetooth_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         bluetooth_box.set_margin_top(10)
@@ -137,9 +126,8 @@ class HyprlandSettingsApp(Gtk.Window):
         scrolled_bt.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrolled_bt.add(bluetooth_box)
 
-        
         self.tabs["Bluetooth"] = scrolled_bt
-        if self.tab_visibility.get("Bluetooth", True):  # Default to visible
+        if self.tab_visibility.get("Bluetooth", True):  
             self.notebook.append_page(scrolled_bt, Gtk.Label(label="Bluetooth"))
 
         volume_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -167,7 +155,6 @@ class HyprlandSettingsApp(Gtk.Window):
         volume_label.set_xalign(0)
         mic_label.set_xalign(0)
         mainlabel.set_xalign(0)
-
 
         self.volume_button = Gtk.Button(label=f"Mute/Unmute Speaker")
         self.volume_button.connect("clicked", self.mute)
@@ -275,11 +262,10 @@ class HyprlandSettingsApp(Gtk.Window):
         scrolled_volume = Gtk.ScrolledWindow()
         scrolled_volume.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrolled_volume.add(volume_box)
-        
+
         self.tabs["Volume"] = scrolled_volume
-        if self.tab_visibility.get("Volume", True):  # Default to visible
+        if self.tab_visibility.get("Volume", True):  
             self.notebook.append_page(scrolled_volume, Gtk.Label(label="Volume"))
-        
 
         brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         brightness_box.set_margin_top(10)
@@ -340,11 +326,9 @@ class HyprlandSettingsApp(Gtk.Window):
 
         grid.attach(self.brightness_scale, 0, 1, 5, 1)  
 
-
         self.tabs["Brightness"] = brightness_box
-        if self.tab_visibility.get("Brightness", True):  # Default to visible
+        if self.tab_visibility.get("Brightness", True):  
             self.notebook.append_page(brightness_box, Gtk.Label(label="Brightness"))
-        
 
         app_volume_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         app_volume_box.set_margin_top(10)
@@ -368,13 +352,10 @@ class HyprlandSettingsApp(Gtk.Window):
         scrolled_app_volume.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrolled_app_volume.add(app_volume_box)
 
-
         self.tabs["Application Volume"] = scrolled_app_volume
-        if self.tab_visibility.get("Application Volume", True):  # Default to visible
+        if self.tab_visibility.get("Application Volume", True):  
             self.notebook.append_page(scrolled_app_volume, Gtk.Label(label="Application Volume"))
 
-
-        # Create a Settings tab
         settings_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         settings_box.set_margin_top(10)
         settings_box.set_margin_bottom(10)
@@ -383,45 +364,34 @@ class HyprlandSettingsApp(Gtk.Window):
         settings_box.set_hexpand(True)
         settings_box.set_vexpand(True)
 
-        # Store the reference
         self.tabs["Settings"] = settings_box  
 
-        if self.tab_visibility.get("Settings", True):  # Default to visible
+        if self.tab_visibility.get("Settings", True):  
             self.notebook.append_page(settings_box, Gtk.Label(label="⚙"))
 
-        # Populate settings tab (instead of a separate window)
         self.populate_settings_tab()
-        
 
-
-# Set the default tab *after* the UI fully loads
         GLib.idle_add(self.notebook.set_current_page, 0)
-
-
 
         self.update_button_labels()
 
-    
     def populate_settings_tab(self):
         """ Populate the Settings tab with toggle options for showing/hiding other tabs. """
         settings_box = self.tabs["Settings"]
 
-        # Remove any existing children
         for child in settings_box.get_children():
             settings_box.remove(child)
 
-        # Create checkboxes for each tab
         self.check_buttons = {}
         for tab_name in self.tabs.keys():
-            if tab_name != "Settings":  # Don't include Settings in the list
+            if tab_name != "Settings":  
                 check_button = Gtk.CheckButton(label=f"Show {tab_name}")
                 check_button.set_active(self.tab_visibility.get(tab_name, True))
                 check_button.connect("toggled", self.toggle_tab, tab_name)
                 settings_box.pack_start(check_button, False, False, 0)
-                self.check_buttons[tab_name] = check_button  # Store checkbox reference
+                self.check_buttons[tab_name] = check_button  
 
         settings_box.show_all()
-
 
     def toggle_tab(self, button, tab_name):
         """ Show or hide a tab based on checkbox state """
@@ -429,17 +399,17 @@ class HyprlandSettingsApp(Gtk.Window):
         page_num = self.notebook.page_num(tab_widget)
 
         if button.get_active():
-            if page_num == -1:  # If tab is hidden, re-add it
+            if page_num == -1:  
                 self.notebook.append_page(tab_widget, Gtk.Label(label=tab_name))
-                self.notebook.show_all()  # Ensure GTK updates
+                self.notebook.show_all()  
                 self.tab_visibility[tab_name] = True
         else:
-            if page_num != -1:  # If tab is visible, hide it
+            if page_num != -1:  
                 self.notebook.remove_page(page_num)
-                tab_widget.hide()  # Hide the widget properly
+                tab_widget.hide()  
                 self.tab_visibility[tab_name] = False
 
-        self.save_settings()  # Save updated settings
+        self.save_settings()  
 
     def save_settings(self):
         """ Save tab visibility states to a file """
@@ -449,7 +419,6 @@ class HyprlandSettingsApp(Gtk.Window):
         except Exception as e:
             print(f"Error saving settings: {e}")
 
-
     def load_settings(self):
         """ Load tab visibility states from a file """
         if os.path.exists(SETTINGS_FILE):
@@ -457,11 +426,8 @@ class HyprlandSettingsApp(Gtk.Window):
                 with open(SETTINGS_FILE, "r") as f:
                     return json.load(f)
             except json.JSONDecodeError:
-                return {}  # Return empty dict if file is corrupted
-        return {}  # Default to all visible if file doesn't exist
-
-
-
+                return {}  
+        return {}  
 
     def apply_css(self, widget):
 
@@ -971,14 +937,12 @@ class HyprlandSettingsApp(Gtk.Window):
             print(f"Error refreshing application volume list in real-time: {e}")
 
         return True  
-    
 
 if __name__ == "__main__":
     win = HyprlandSettingsApp()
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
     Gtk.main()
-
 
 # Hey there!
 # 
