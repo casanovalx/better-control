@@ -80,11 +80,3 @@ Probably will work on the stuff below
 | **Window Managers**   | Hyprland (tested), Sway, i3, Openbox, Fluxbox, etc.                             |
 | **Display Protocol**     | Wayland (recommended), X11 (partial functionality)                               |
 
-# For WM users ✨
-make it so that `control` runs as a floating window to make it look cool if u want
-
-hyprwm example
-```
-windowrulev2 = float, class:control
-windowrulev2 = opacity 0.5 0.5,class:control
-```
