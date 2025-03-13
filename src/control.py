@@ -167,61 +167,61 @@ class HyprlandSettingsApp(Gtk.Window):
         self.volume_mic.set_valign(Gtk.Align.START)  
 
         self.volume_zero = Gtk.Button(label="0%")
-        self.volume_zero.set_size_request(60, 45)  
+        self.volume_zero.set_size_request(60, 35)  
         self.volume_zero.set_vexpand(False)  
         self.volume_zero.set_valign(Gtk.Align.START)  
         self.volume_zero.connect("clicked", self.vzero)
 
         self.volume_tfive = Gtk.Button(label="25%")
-        self.volume_tfive.set_size_request(60, 45)  
+        self.volume_tfive.set_size_request(60, 35)  
         self.volume_tfive.set_vexpand(False)  
         self.volume_tfive.set_valign(Gtk.Align.START)  
         self.volume_tfive.connect("clicked", self.vtfive)
 
         self.volume_fifty = Gtk.Button(label="50%")
-        self.volume_fifty.set_size_request(60, 45)  
+        self.volume_fifty.set_size_request(60, 35)  
         self.volume_fifty.set_vexpand(False)  
         self.volume_fifty.set_valign(Gtk.Align.START)  
         self.volume_fifty.connect("clicked", self.vfifty)
 
         self.volume_sfive = Gtk.Button(label="75%")
-        self.volume_sfive.set_size_request(60, 45)  
+        self.volume_sfive.set_size_request(60, 35)  
         self.volume_sfive.set_vexpand(False)  
         self.volume_sfive.set_valign(Gtk.Align.START)  
         self.volume_sfive.connect("clicked", self.vsfive)
 
         self.volume_hund = Gtk.Button(label="100%")
-        self.volume_hund.set_size_request(60, 45)  
+        self.volume_hund.set_size_request(60, 35)  
         self.volume_hund.set_vexpand(False)  
         self.volume_hund.set_valign(Gtk.Align.START)  
         self.volume_hund.connect("clicked", self.vhund)
 
         self.mic_zero = Gtk.Button(label="0%")
-        self.mic_zero.set_size_request(60, 45)  
+        self.mic_zero.set_size_request(60, 35)  
         self.mic_zero.set_vexpand(False)  
         self.mic_zero.set_valign(Gtk.Align.START)  
         self.mic_zero.connect("clicked", self.mzero)
 
         self.mic_tfive = Gtk.Button(label="25%")
-        self.mic_tfive.set_size_request(60, 45)  
+        self.mic_tfive.set_size_request(60, 35)  
         self.mic_tfive.set_vexpand(False)  
         self.mic_tfive.set_valign(Gtk.Align.START)  
         self.mic_tfive.connect("clicked", self.mtfive)
 
         self.mic_fifty = Gtk.Button(label="50%")
-        self.mic_fifty.set_size_request(60, 45)  
+        self.mic_fifty.set_size_request(60, 35)  
         self.mic_fifty.set_vexpand(False)  
         self.mic_fifty.set_valign(Gtk.Align.START)  
         self.mic_fifty.connect("clicked", self.mfifty)
 
         self.mic_sfive = Gtk.Button(label="75%")
-        self.mic_sfive.set_size_request(60, 45)  
+        self.mic_sfive.set_size_request(60, 35)  
         self.mic_sfive.set_vexpand(False)  
         self.mic_sfive.set_valign(Gtk.Align.START)  
         self.mic_sfive.connect("clicked", self.msfive)
 
         self.mic_hund = Gtk.Button(label="100%")
-        self.mic_hund.set_size_request(60, 45)  
+        self.mic_hund.set_size_request(60, 35)  
         self.mic_hund.set_vexpand(False)  
         self.mic_hund.set_valign(Gtk.Align.START)  
         self.mic_hund.connect("clicked", self.mhund)
@@ -433,7 +433,7 @@ class HyprlandSettingsApp(Gtk.Window):
 
         css = """
         label {
-            font-size: 20px; /* Change this value to your desired font size */
+            font-size: 18px; 
         }
         """
 
