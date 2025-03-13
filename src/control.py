@@ -146,11 +146,6 @@ class HyprlandSettingsApp(Gtk.Window):
         mic_label.set_xalign(0)
         mainlabel.set_xalign(0)
 
-        refresh_app_volume_button = Gtk.Button(label="Refresh Applications")
-
-        volume_box.pack_start(refresh_app_volume_button, False, False, 0)
-
-        GLib.timeout_add_seconds(1, self.refresh_app_volume_realtime) 
 
         self.volume_button = Gtk.Button(label=f"Mute/Unmute Speaker")
         self.volume_button.connect("clicked", self.mute)
