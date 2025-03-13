@@ -332,6 +332,8 @@ class HyprlandSettingsApp(Gtk.Window):
         refresh_app_volume_button.connect("clicked", self.refresh_app_volume)
         app_volume_box.pack_start(refresh_app_volume_button, False, False, 0)
 
+        GLib.timeout_add_seconds(1, self.refresh_app_volume_realtime) 
+
         scrolled_app_volume = Gtk.ScrolledWindow()
         scrolled_app_volume.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrolled_app_volume.add(app_volume_box)
