@@ -64,7 +64,7 @@ sudo rm -rf ~/better-control
 ```
 
 # Compatability 📄
-I have only tested this on Arch Linux with Hyprland so testers are welcome to test it out and share their review in discussions/issues. This should work on all distros (if u tested it pls leave a comment for any issues)
+I have only tested this on Arch Linux with Hyprland & Gnome so testers are welcome to test it out and share their review in discussions/issues. This should work on all distros (if u tested it pls leave a comment for any issues)
 
 Probably will work on the stuff below 
 | **Category**         | **Requirements**                                                                 |
