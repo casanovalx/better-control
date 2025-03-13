@@ -7,7 +7,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
-
 import gi
 import os
 import logging
@@ -17,11 +16,11 @@ from pydbus import SystemBus
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gio, GLib, Gdk  
 import subprocess
-gi.require_version('Pango', '1.0')  # Specify Pango version
+gi.require_version('Pango', '1.0')  
 from gi.repository import Gtk, Pango
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)  # Ensure it logs INFO level
+logger.setLevel(logging.DEBUG)  
 handler = logging.StreamHandler()
 formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
 handler.setFormatter(formatter)
@@ -29,24 +28,19 @@ logger.addHandler(handler)
 
 logger.info("Better Control is running.")
 
-
-
 class HyprlandSettingsApp(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Control Center")
         self.set_default_size(1000, 700)
         self.set_resizable(False)
 
-        # Main container
         self.main_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.add(self.main_container)
 
-        # Notebook for tabs
         notebook = Gtk.Notebook()
         notebook.set_scrollable(True)
         self.main_container.pack_start(notebook, True, True, 0)
 
-        # Wi-Fi Tab
         wifi_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         wifi_box.set_margin_top(10)
         wifi_box.set_margin_bottom(10)
@@ -91,7 +85,6 @@ class HyprlandSettingsApp(Gtk.Window):
         scrolled_wifi.add(wifi_box)
         notebook.append_page(scrolled_wifi, Gtk.Label(label="Wi-Fi"))
 
-        # Bluetooth Tab
         bluetooth_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         bluetooth_box.set_margin_top(10)
         bluetooth_box.set_margin_bottom(10)
@@ -127,7 +120,6 @@ class HyprlandSettingsApp(Gtk.Window):
         scrolled_bt.add(bluetooth_box)
         notebook.append_page(scrolled_bt, Gtk.Label(label="Bluetooth"))
 
-        # Volume Tab
         volume_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         volume_box.set_margin_top(10)
         volume_box.set_margin_bottom(10)
@@ -155,80 +147,79 @@ class HyprlandSettingsApp(Gtk.Window):
         mainlabel.set_xalign(0)
 
         refresh_app_volume_button = Gtk.Button(label="Refresh Applications")
-        #refresh_app_volume_button.connect("clicked", self.refresh_app_volume)
+
         volume_box.pack_start(refresh_app_volume_button, False, False, 0)
 
         GLib.timeout_add_seconds(1, self.refresh_app_volume_realtime) 
 
         self.volume_button = Gtk.Button(label=f"Mute/Unmute Speaker")
         self.volume_button.connect("clicked", self.mute)
-        self.volume_button.set_vexpand(False)  # Prevent vertical expansion
-        self.volume_button.set_valign(Gtk.Align.START)  # Align to the top
+        self.volume_button.set_vexpand(False)  
+        self.volume_button.set_valign(Gtk.Align.START)  
 
         self.volume_mic = Gtk.Button(label=f"Mute/Unmute Mic")
         self.volume_mic.connect("clicked", self.micmute)
-        self.volume_mic.set_vexpand(False)  # Prevent vertical expansion
-        self.volume_mic.set_valign(Gtk.Align.START)  # Align to the top
-        # Volume Buttons
+        self.volume_mic.set_vexpand(False)  
+        self.volume_mic.set_valign(Gtk.Align.START)  
+
         self.volume_zero = Gtk.Button(label="0%")
-        self.volume_zero.set_size_request(60, 45)  # Fixed button size
-        self.volume_zero.set_vexpand(False)  # Prevent vertical expansion
-        self.volume_zero.set_valign(Gtk.Align.START)  # Align to the top
+        self.volume_zero.set_size_request(60, 45)  
+        self.volume_zero.set_vexpand(False)  
+        self.volume_zero.set_valign(Gtk.Align.START)  
         self.volume_zero.connect("clicked", self.vzero)
 
         self.volume_tfive = Gtk.Button(label="25%")
-        self.volume_tfive.set_size_request(60, 45)  # Fixed button size
-        self.volume_tfive.set_vexpand(False)  # Prevent vertical expansion
-        self.volume_tfive.set_valign(Gtk.Align.START)  # Align to the top
+        self.volume_tfive.set_size_request(60, 45)  
+        self.volume_tfive.set_vexpand(False)  
+        self.volume_tfive.set_valign(Gtk.Align.START)  
         self.volume_tfive.connect("clicked", self.vtfive)
 
         self.volume_fifty = Gtk.Button(label="50%")
-        self.volume_fifty.set_size_request(60, 45)  # Fixed button size
-        self.volume_fifty.set_vexpand(False)  # Prevent vertical expansion
-        self.volume_fifty.set_valign(Gtk.Align.START)  # Align to the top
+        self.volume_fifty.set_size_request(60, 45)  
+        self.volume_fifty.set_vexpand(False)  
+        self.volume_fifty.set_valign(Gtk.Align.START)  
         self.volume_fifty.connect("clicked", self.vfifty)
 
         self.volume_sfive = Gtk.Button(label="75%")
-        self.volume_sfive.set_size_request(60, 45)  # Fixed button size
-        self.volume_sfive.set_vexpand(False)  # Prevent vertical expansion
-        self.volume_sfive.set_valign(Gtk.Align.START)  # Align to the top
+        self.volume_sfive.set_size_request(60, 45)  
+        self.volume_sfive.set_vexpand(False)  
+        self.volume_sfive.set_valign(Gtk.Align.START)  
         self.volume_sfive.connect("clicked", self.vsfive)
 
         self.volume_hund = Gtk.Button(label="100%")
-        self.volume_hund.set_size_request(60, 45)  # Fixed button size
-        self.volume_hund.set_vexpand(False)  # Prevent vertical expansion
-        self.volume_hund.set_valign(Gtk.Align.START)  # Align to the top
+        self.volume_hund.set_size_request(60, 45)  
+        self.volume_hund.set_vexpand(False)  
+        self.volume_hund.set_valign(Gtk.Align.START)  
         self.volume_hund.connect("clicked", self.vhund)
 
-        # Microphone Buttons
         self.mic_zero = Gtk.Button(label="0%")
-        self.mic_zero.set_size_request(60, 45)  # Fixed button size
-        self.mic_zero.set_vexpand(False)  # Prevent vertical expansion
-        self.mic_zero.set_valign(Gtk.Align.START)  # Align to the top
+        self.mic_zero.set_size_request(60, 45)  
+        self.mic_zero.set_vexpand(False)  
+        self.mic_zero.set_valign(Gtk.Align.START)  
         self.mic_zero.connect("clicked", self.mzero)
 
         self.mic_tfive = Gtk.Button(label="25%")
-        self.mic_tfive.set_size_request(60, 45)  # Fixed button size
-        self.mic_tfive.set_vexpand(False)  # Prevent vertical expansion
-        self.mic_tfive.set_valign(Gtk.Align.START)  # Align to the top
+        self.mic_tfive.set_size_request(60, 45)  
+        self.mic_tfive.set_vexpand(False)  
+        self.mic_tfive.set_valign(Gtk.Align.START)  
         self.mic_tfive.connect("clicked", self.mtfive)
 
         self.mic_fifty = Gtk.Button(label="50%")
-        self.mic_fifty.set_size_request(60, 45)  # Fixed button size
-        self.mic_fifty.set_vexpand(False)  # Prevent vertical expansion
-        self.mic_fifty.set_valign(Gtk.Align.START)  # Align to the top
+        self.mic_fifty.set_size_request(60, 45)  
+        self.mic_fifty.set_vexpand(False)  
+        self.mic_fifty.set_valign(Gtk.Align.START)  
         self.mic_fifty.connect("clicked", self.mfifty)
 
         self.mic_sfive = Gtk.Button(label="75%")
-        self.mic_sfive.set_size_request(60, 45)  # Fixed button size
-        self.mic_sfive.set_vexpand(False)  # Prevent vertical expansion
-        self.mic_sfive.set_valign(Gtk.Align.START)  # Align to the top
+        self.mic_sfive.set_size_request(60, 45)  
+        self.mic_sfive.set_vexpand(False)  
+        self.mic_sfive.set_valign(Gtk.Align.START)  
         self.mic_sfive.connect("clicked", self.msfive)
 
         self.mic_hund = Gtk.Button(label="100%")
-        self.mic_hund.set_size_request(60, 45)  # Fixed button size
-        self.mic_hund.set_vexpand(False)  # Prevent vertical expansion
-        self.mic_hund.set_valign(Gtk.Align.START)  # Align to the top
+        self.mic_hund.set_size_request(60, 45)  
+        self.mic_hund.set_vexpand(False)  
+        self.mic_hund.set_valign(Gtk.Align.START)  
         self.mic_hund.connect("clicked", self.mhund)
 
         self.volume_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
@@ -269,7 +260,6 @@ class HyprlandSettingsApp(Gtk.Window):
         scrolled_volume.add(volume_box)
         notebook.append_page(scrolled_volume, Gtk.Label(label="Volume"))
 
-        # Brightness Tab
         brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         brightness_box.set_margin_top(10)
         brightness_box.set_margin_bottom(10)
@@ -279,13 +269,12 @@ class HyprlandSettingsApp(Gtk.Window):
         brightness_box.set_vexpand(True)
 
         grid = Gtk.Grid()
-        grid.set_column_homogeneous(True)  # Make columns evenly spaced
-        grid.set_row_homogeneous(False)    # Rows can have different heights
+        grid.set_column_homogeneous(True)  
+        grid.set_row_homogeneous(False)    
         grid.set_column_spacing(10)
         grid.set_row_spacing(10)
         brightness_box.pack_start(grid, True, True, 0)
 
-        # Brightness Buttons
         self.brightness_zero = Gtk.Button(label="0%")
         self.brightness_zero.set_size_request(80, 30)
         self.brightness_zero.connect("clicked", self.zero)
@@ -316,26 +305,22 @@ class HyprlandSettingsApp(Gtk.Window):
         self.brightness_hund.set_vexpand(False)
         self.brightness_hund.set_valign(Gtk.Align.START)
 
-        # Attach buttons to the grid
-        grid.attach(self.brightness_zero, 0, 0, 1, 1)   # Column 0, Row 0
-        grid.attach(self.brightness_tfive, 1, 0, 1, 1)  # Column 1, Row 0
-        grid.attach(self.brightness_fifty, 2, 0, 1, 1)  # Column 2, Row 0
-        grid.attach(self.brightness_sfive, 3, 0, 1, 1)  # Column 3, Row 0
-        grid.attach(self.brightness_hund, 4, 0, 1, 1)   # Column 4, Row 0
+        grid.attach(self.brightness_zero, 0, 0, 1, 1)   
+        grid.attach(self.brightness_tfive, 1, 0, 1, 1)  
+        grid.attach(self.brightness_fifty, 2, 0, 1, 1)  
+        grid.attach(self.brightness_sfive, 3, 0, 1, 1)  
+        grid.attach(self.brightness_hund, 4, 0, 1, 1)   
 
-        # Brightness Slider
         self.brightness_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
         self.brightness_scale.set_hexpand(True)
         self.brightness_scale.set_value(self.get_current_brightness())
         self.brightness_scale.set_value_pos(Gtk.PositionType.BOTTOM)
         self.brightness_scale.connect("value-changed", self.set_brightness)
 
-        # Attach the slider below the buttons
-        grid.attach(self.brightness_scale, 0, 1, 5, 1)  # Column 0, Row 1, spans 5 columns
+        grid.attach(self.brightness_scale, 0, 1, 5, 1)  
 
         notebook.append_page(brightness_box, Gtk.Label(label="Brightness"))
 
-        #Application Volume Tab
         app_volume_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         app_volume_box.set_margin_top(10)
         app_volume_box.set_margin_bottom(10)
@@ -359,21 +344,17 @@ class HyprlandSettingsApp(Gtk.Window):
 
         self.update_button_labels()
 
-    
-
     def apply_css(self, widget):
-    # Define the CSS style
+
         css = """
         label {
             font-size: 20px; /* Change this value to your desired font size */
         }
         """
 
-        # Load the CSS
         css_provider = Gtk.CssProvider()
         css_provider.load_from_data(css.encode())
 
-        # Apply the CSS to the widget
         context = widget.get_style_context()
         context.add_provider(
             css_provider,
@@ -402,7 +383,6 @@ class HyprlandSettingsApp(Gtk.Window):
         subprocess.run(["systemctl", "stop", "bluetooth"])
         print("Bluetooth disabled.")
 
-
     def refresh_bluetooth(self, button):
         """ Refreshes the list of Bluetooth devices (paired + nearby) """
         self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
@@ -415,12 +395,10 @@ class HyprlandSettingsApp(Gtk.Window):
             self.show_error("Bluetooth is disabled. Enable it first.")
             return
 
-        # Scan for devices
         subprocess.run(["bluetoothctl", "scan", "on"], capture_output=True, text=True)
         time.sleep(5)
         subprocess.run(["bluetoothctl", "scan", "off"], capture_output=True, text=True)
 
-        # Get paired + detected devices
         output = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True).stdout.strip()
         devices = output.split("\n")
 
@@ -435,13 +413,12 @@ class HyprlandSettingsApp(Gtk.Window):
             mac_address = parts[1]
             device_name = " ".join(parts[2:]) if len(parts) > 2 else mac_address
 
-            # Try to check if the device is connected
             try:
                 status_output = subprocess.getoutput(f"bluetoothctl info {mac_address}")
                 is_connected = "Connected: yes" in status_output
             except Exception as e:
                 print(f"Error checking status for {mac_address}: {e}")
-                is_connected = False  # Default to not connected if check fails
+                is_connected = False  
 
             row = Gtk.ListBoxRow()
             box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -464,8 +441,6 @@ class HyprlandSettingsApp(Gtk.Window):
 
         self.bt_listbox.show_all()
 
-
-
     def show_error(self, message):
         """ Displays an error message in a popup """
         dialog = Gtk.MessageDialog(
@@ -483,23 +458,19 @@ class HyprlandSettingsApp(Gtk.Window):
         try:
             subprocess.run(["bluetoothctl", "pair", mac_address], capture_output=True, text=True)
             subprocess.run(["bluetoothctl", "connect", mac_address], capture_output=True, text=True)
-            
-            # ✅ Refresh the UI after connecting
+
             self.refresh_bluetooth(None)  
         except Exception as e:
             self.show_error(f"Error connecting to {mac_address}: {e}")
-
 
     def disconnect_bluetooth_device(self, button, mac_address):
         """ Disconnects from a selected Bluetooth device """
         try:
             subprocess.run(["bluetoothctl", "disconnect", mac_address], capture_output=True, text=True)
-            
-            # ✅ Refresh the UI after disconnecting
+
             self.refresh_bluetooth(None)  
         except Exception as e:
             self.show_error(f"Error disconnecting from {mac_address}: {e}")
-
 
     def forget_bluetooth_device(self, button, mac_address):
         """ Removes a Bluetooth device from known devices """
@@ -741,42 +712,39 @@ class HyprlandSettingsApp(Gtk.Window):
 
     def refresh_app_volume(self, button=None):
         """Refresh the list of applications playing audio and create sliders for them."""
-        # Clear the existing list
+
         self.app_volume_listbox.foreach(lambda row: self.app_volume_listbox.remove(row))
 
-        # Get the list of currently playing audio streams
         try:
             output = subprocess.getoutput("pactl list sink-inputs")
-            print("Raw output from pactl list sink-inputs:")  # Debugging
-            print(output)  # Debugging
+            print("Raw output from pactl list sink-inputs:")  
+            print(output)  
 
-            sink_inputs = output.split("Sink Input #")[1:]  # Split by sink inputs
-            print(f"Found {len(sink_inputs)} sink inputs")  # Debugging
+            sink_inputs = output.split("Sink Input #")[1:]  
+            print(f"Found {len(sink_inputs)} sink inputs")  
 
             for sink_input in sink_inputs:
                 lines = sink_input.split("\n")
-                sink_input_id = lines[0].strip()  # Get the sink input ID
-                print(f"Processing sink input {sink_input_id}")  # Debugging
+                sink_input_id = lines[0].strip()  
+                print(f"Processing sink input {sink_input_id}")  
 
                 app_name = "Unknown Application"
                 media_name = "Unknown Media"
-                volume_percent = 50  # Default volume if not found
+                volume_percent = 50  
 
-                # Extract application name, media name, and volume
                 for line in lines:
                     if "application.name" in line:
                         app_name = line.split("=")[1].strip().strip('"')
                     if "media.name" in line:
                         media_name = line.split("=")[1].strip().strip('"')
                     if "Volume:" in line:
-                        # Extract volume percentage from the line
+
                         volume_parts = line.split("/")
                         if len(volume_parts) >= 2:
                             volume_percent = int(volume_parts[1].strip().strip("%"))
 
-                print(f"Found application: {app_name} - {media_name} (Volume: {volume_percent}%)")  # Debugging
+                print(f"Found application: {app_name} - {media_name} (Volume: {volume_percent}%)")  
 
-                # Create a row for each application
                 row = Gtk.ListBoxRow()
                 box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
                 box.set_margin_start(10)
@@ -784,16 +752,14 @@ class HyprlandSettingsApp(Gtk.Window):
                 box.set_margin_top(5)
                 box.set_margin_bottom(5)
 
-                # Create a label for the application and media name
                 label = Gtk.Label(label=f"{app_name} - {media_name}")
                 label.set_xalign(0)
                 box.pack_start(label, True, True, 0)
 
-                # Create a slider for volume control
                 scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
                 scale.set_hexpand(True)
-                scale.set_value(volume_percent)  # Set initial volume
-                scale.connect("value-changed", self.set_app_volume, app_name, media_name)  # Pass app_name and media_name
+                scale.set_value(volume_percent)  
+                scale.connect("value-changed", self.set_app_volume, app_name, media_name)  
                 box.pack_start(scale, True, True, 0)
 
                 row.add(box)
@@ -811,34 +777,31 @@ class HyprlandSettingsApp(Gtk.Window):
             if "No such entity" in output or "No valid command specified" in output:
                 raise ValueError(f"Sink input {sink_input_id} no longer exists or is invalid.")
 
-            # Extract the volume percentage
             volume_parts = output.split("/")
-            if len(volume_parts) < 2:  # Ensure the output has the expected format
+            if len(volume_parts) < 2:  
                 raise ValueError(f"Unexpected output format for sink input {sink_input_id}: {output}")
 
             volume = int(volume_parts[1].strip().strip("%"))
             return volume
         except ValueError as e:
-            # Re-raise the exception to skip this sink input
+
             raise e
         except Exception as e:
             print(f"Error getting volume for sink input {sink_input_id}: {e}")
-            return 50  # Default volume
+            return 50  
 
     def set_app_volume(self, scale, app_name, media_name):
         """Set the volume of an application by its name and media name."""
         try:
             new_volume = int(scale.get_value())
 
-            # Refresh the list of sink inputs
             output = subprocess.getoutput("pactl list sink-inputs")
-            sink_inputs = output.split("Sink Input #")[1:]  # Split by sink inputs
+            sink_inputs = output.split("Sink Input #")[1:]  
 
             for sink_input in sink_inputs:
                 lines = sink_input.split("\n")
-                sink_input_id = lines[0].strip()  # Get the sink input ID
+                sink_input_id = lines[0].strip()  
 
-                # Check if this sink input belongs to the target application and media
                 current_app_name = None
                 current_media_name = None
                 for line in lines:
@@ -848,7 +811,7 @@ class HyprlandSettingsApp(Gtk.Window):
                         current_media_name = line.split("=")[1].strip().strip('"')
 
                 if current_app_name == app_name and current_media_name == media_name:
-                    # Set the volume for this sink input
+
                     result = subprocess.run(
                         ["pactl", "set-sink-input-volume", sink_input_id, f"{new_volume}%"],
                         capture_output=True,
@@ -858,7 +821,7 @@ class HyprlandSettingsApp(Gtk.Window):
                         print(f"Failed to set volume for sink input {sink_input_id}: {result.stderr}")
                     else:
                         print(f"Volume set to {new_volume}% for {app_name} - {media_name} (sink input {sink_input_id})")
-                    return  # Exit after setting the volume
+                    return  
 
             print(f"Failed to find sink input for application: {app_name} - {media_name}")
 
@@ -868,31 +831,27 @@ class HyprlandSettingsApp(Gtk.Window):
     def refresh_app_volume_realtime(self):
         """Refresh the list of applications playing audio in real-time."""
         try:
-            # Get the current list of sink inputs
-            output = subprocess.getoutput("pactl list sink-inputs")
-            sink_inputs = output.split("Sink Input #")[1:]  # Split by sink inputs
 
-            # Check if the list of sink inputs has changed
+            output = subprocess.getoutput("pactl list sink-inputs")
+            sink_inputs = output.split("Sink Input #")[1:]  
+
             current_sink_inputs = []
             for sink_input in sink_inputs:
                 lines = sink_input.split("\n")
-                sink_input_id = lines[0].strip()  # Get the sink input ID
+                sink_input_id = lines[0].strip()  
                 current_sink_inputs.append(sink_input_id)
 
-            # Compare with the previous list of sink inputs
             if hasattr(self, "previous_sink_inputs") and self.previous_sink_inputs == current_sink_inputs:
-                return True  # No changes, skip UI update
+                return True  
 
-            # Update the previous list of sink inputs
             self.previous_sink_inputs = current_sink_inputs
 
-            # Refresh the UI
             self.refresh_app_volume(None)
 
         except Exception as e:
             print(f"Error refreshing application volume list in real-time: {e}")
 
-        return True  # Continue the timeout
+        return True  
 
 if __name__ == "__main__":
     win = HyprlandSettingsApp()
