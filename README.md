@@ -6,7 +6,7 @@ Whats new :
 - fixed some scaling bugs
 - fixed Bluetooth bug where it showed both disconnect and connect
 
-<img src="https://github.com/user-attachments/assets/ee494ae9-7b85-4ebb-89cf-3a843c6ec74f" width="500" />
+<img src="https://github.com/user-attachments/assets/5f9fe1eb-6bff-428a-95d2-5d97f8d4e209" width="500" />
 
 This project is still under development , contriubutions such as ideas and feature requests towards project and testers are welcome.
 
