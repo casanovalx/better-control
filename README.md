@@ -1,6 +1,11 @@
 # Better-Control 🛠️ 
 A gtk themed control panel for linux 🐧
 
+Whats new :
+- independently change volume of apps
+- fixed some scaling bugs
+- fixed Bluetooth bug where it showed both disconnect and connect
+
 <img src="https://github.com/user-attachments/assets/791074ba-466a-4f5d-80f4-1d1c71d795d1" width="500" />
 
 This project is still under development , contriubutions such as ideas and feature requests towards project and testers are welcome.
