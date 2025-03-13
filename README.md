@@ -75,7 +75,7 @@ Probably will work on the stuff below
 | **Category**         | **Requirements**                                                                 |
 |-----------------------|----------------------------------------------------------------------------------|
 | **Operating System**  | Linux                                                                            |
-| **Distributions**     | Arch based,Fedora Based,Debian Based,NixOS,Void,Alpine                                                            |
+| **Distributions**     | Arch based,Fedora Based,Debian Based,Void,Alpine                                                            |
 | **Desktop Environments** | GNOME (tested), XFCE, KDE Plasma (tested with GTK support), LXDE/LXQT, etc.                  |
 | **Window Managers**   | Hyprland (tested), Sway, i3, Openbox, Fluxbox, etc.                             |
 | **Display Protocol**     | Wayland (recommended), X11 (partial functionality)                               |
