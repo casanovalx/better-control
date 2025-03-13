@@ -69,14 +69,14 @@ sudo rm -rf ~/better-control
 ```
 
 # Compatability 📄
-I have only tested this on Arch Linux with Hyprland & Gnome so testers are welcome to test it out and share their review in discussions/issues. This should work on all distros (if u tested it pls leave a comment for any issues)
+I have only tested this on Arch Linux with Hyprland,Gnome & KDE Plasma so testers are welcome to test it out and share their review in discussions/issues. This should work on all distros (if u tested it pls leave a comment for any issues)
 
 Probably will work on the stuff below 
 | **Category**         | **Requirements**                                                                 |
 |-----------------------|----------------------------------------------------------------------------------|
 | **Operating System**  | Linux                                                                            |
 | **Distributions**     | Arch based,Fedora Based,Debian Based,NixOS,Void,Alpine                                                            |
-| **Desktop Environments** | GNOME (tested), XFCE, KDE Plasma (with GTK support), LXDE/LXQT, etc.                  |
+| **Desktop Environments** | GNOME (tested), XFCE, KDE Plasma (tested with GTK support), LXDE/LXQT, etc.                  |
 | **Window Managers**   | Hyprland (tested), Sway, i3, Openbox, Fluxbox, etc.                             |
 | **Display Protocol**     | Wayland (recommended), X11 (partial functionality)                               |
 
