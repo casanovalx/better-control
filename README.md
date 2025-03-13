@@ -2,9 +2,7 @@
 A gtk themed control panel for linux 🐧
 
 Whats new :
-- independently change volume of apps
-- fixed some scaling bugs
-- fixed Bluetooth bug where it showed both disconnect and connect
+- Added option to hide unused tabs
 
 <img src="https://github.com/user-attachments/assets/5f9fe1eb-6bff-428a-95d2-5d97f8d4e209" width="500" />
 
