@@ -1,11 +1,14 @@
 # Copyright (C) 2025 quantumvoid0 (https://github.com/quantumvoid0)
-# This program is licensed under the terms of the GNU General Public License v3.
-# See LICENSE for the full license text (https://github.com/quantumvoid0/better-control/LICENSE).
+#
+# This program is licensed under the terms of the GNU General Public License v3 + Attribution.
+# See the full license text in the LICENSE file or at:
+# https://github.com/quantumvoid0/better-control/blob/main/LICENSE
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+
 import gi
 import os
 import logging
