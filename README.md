@@ -2,10 +2,7 @@
 A gtk themed control panel for linux 🐧
 
 Whats new :
-- Added option to hide unused tabs
-- Fixed size issues
-- Fixed some bugs
-- Added changing volume by app
+- Added option to switch sources
 
 <img src="https://github.com/user-attachments/assets/80142f7f-1cd2-4ece-bc3b-6edcefffe309" width="500" />
 

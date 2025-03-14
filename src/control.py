@@ -169,6 +169,17 @@ class HyprlandSettingsApp(Gtk.Window):
         self.volume_mic.set_vexpand(False)  
         self.volume_mic.set_valign(Gtk.Align.START)  
 
+        self.sink_dropdown = Gtk.ComboBoxText()
+        self.sink_dropdown.connect("changed", self.on_sink_selected)
+        self.sink_dropdown.set_size_request(200, 40)  
+        self.sink_dropdown.set_vexpand(False)  
+        self.sink_dropdown.set_valign(Gtk.Align.CENTER)  
+        grid.attach(self.sink_dropdown, 0, 6, 5, 1)  
+
+        self.update_sink_list()
+
+        GLib.timeout_add_seconds(3, self.update_sink_list_repeated)  
+
         self.volume_zero = Gtk.Button(label="0%")
         self.volume_zero.set_size_request(60, 35)  
         self.volume_zero.set_vexpand(False)  
@@ -242,25 +253,29 @@ class HyprlandSettingsApp(Gtk.Window):
         self.mic_scale.connect("value-changed", self.set_mic_volume)
         self.mic_scale.set_value_pos(Gtk.PositionType.LEFT)
 
+        self.volume_scale.set_margin_top(50)
+        self.mic_scale.set_margin_top(50)
+        self.sink_dropdown.set_margin_top(50)
+
         grid.attach(self.volume_zero, 0, 2, 1, 1)
         grid.attach(self.volume_tfive, 1, 2, 1, 1)        
         grid.attach(self.volume_fifty, 2, 2, 1, 1)
         grid.attach(self.volume_sfive, 3, 2, 1, 1)
         grid.attach(self.volume_hund, 4, 2, 1, 1)
 
-        grid.attach(self.mic_zero, 0, 6, 1, 1)
-        grid.attach(self.mic_tfive, 1, 6, 1, 1)        
-        grid.attach(self.mic_fifty, 2, 6, 1, 1)
-        grid.attach(self.mic_sfive, 3, 6, 1, 1)
-        grid.attach(self.mic_hund, 4, 6, 1, 1)
+        grid.attach(self.mic_zero, 0, 4, 1, 1)
+        grid.attach(self.mic_tfive, 1, 4, 1, 1)        
+        grid.attach(self.mic_fifty, 2, 4, 1, 1)
+        grid.attach(self.mic_sfive, 3, 4, 1, 1)
+        grid.attach(self.mic_hund, 4, 4, 1, 1)
 
-        grid.attach(self.volume_mic, 0, 10, 1, 1)
-        grid.attach(self.volume_button, 1, 10, 1, 1)
+        grid.attach(self.volume_mic, 0, 6, 1, 1)
+        grid.attach(self.volume_button, 1, 6, 1, 1)
         grid.attach(volume_label, 0, 1, 5, 1)  
-        grid.attach(mic_label, 0, 5, 5, 1)  
-        grid.attach(self.volume_scale, 0, 3, 5, 1) 
-        grid.attach(self.mic_scale,0,7,5,1)
-        grid.attach(mainlabel,0,9,5,1)
+        grid.attach(mic_label, 0, 3, 5, 1)  
+        grid.attach(self.volume_scale, 0, 2, 5, 1) 
+        grid.attach(self.mic_scale,0,4,5,1)
+        grid.attach(mainlabel,0,5,5,1)
 
         scrolled_volume = Gtk.ScrolledWindow()
         scrolled_volume.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
@@ -377,6 +392,76 @@ class HyprlandSettingsApp(Gtk.Window):
         GLib.idle_add(self.notebook.set_current_page, 0)
 
         self.update_button_labels()
+
+    def switch_audio_sink(self, button):
+        """Cycle through available audio sinks."""
+        try:
+            output = subprocess.getoutput("pactl list short sinks")
+            sinks = output.split("\n")
+            if not sinks:
+                print("No available sinks found.")
+                return
+
+            current_sink = subprocess.getoutput("pactl get-default-sink").strip()
+            sink_list = [sink.split("\t")[1] for sink in sinks]
+
+            if current_sink in sink_list:
+                next_index = (sink_list.index(current_sink) + 1) % len(sink_list)
+                next_sink = sink_list[next_index]
+            else:
+                next_sink = sink_list[0]
+
+            subprocess.run(["pactl", "set-default-sink", next_sink])
+            print(f"Switched to sink: {next_sink}")
+
+        except Exception as e:
+            print(f"Error switching sinks: {e}")
+
+    def update_sink_list_repeated(self):
+        """Update the dropdown list with available sinks and keep refreshing."""
+        try:
+            output = subprocess.getoutput("pactl list short sinks")
+            sinks = output.split("\n")
+            self.sink_list = [sink.split("\t")[1] for sink in sinks if sink]
+
+            self.sink_dropdown.remove_all()
+            for sink in self.sink_list:
+                self.sink_dropdown.append_text(sink)
+
+            current_sink = subprocess.getoutput("pactl get-default-sink").strip()
+            if current_sink in self.sink_list:
+                self.sink_dropdown.set_active(self.sink_list.index(current_sink))
+
+        except Exception as e:
+            print(f"Error updating sink list: {e}")
+
+        return True  
+
+    def update_sink_list(self):
+        """Update the dropdown list with available sinks."""
+        try:
+            output = subprocess.getoutput("pactl list short sinks")
+            sinks = output.split("\n")
+            self.sink_list = [sink.split("\t")[1] for sink in sinks if sink]
+
+            self.sink_dropdown.remove_all()
+            for sink in self.sink_list:
+                self.sink_dropdown.append_text(sink)
+
+            current_sink = subprocess.getoutput("pactl get-default-sink").strip()
+            if current_sink in self.sink_list:
+                self.sink_dropdown.set_active(self.sink_list.index(current_sink))
+
+        except Exception as e:
+            print(f"Error updating sink list: {e}")
+
+    def on_sink_selected(self, combo):
+        """Change the default sink when a new one is selected."""
+        active_index = combo.get_active()
+        if active_index >= 0 and active_index < len(self.sink_list):
+            selected_sink = self.sink_list[active_index]
+            subprocess.run(["pactl", "set-default-sink", selected_sink])
+            print(f"Switched to sink: {selected_sink}")
 
     def populate_settings_tab(self):
         """ Populate the Settings tab with toggle options for showing/hiding other tabs. """
