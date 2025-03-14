@@ -369,6 +369,19 @@ that material) supplement the terms of this License with terms:
     author attributions in that material or in the Appropriate Legal
     Notices displayed by works containing it; or
 
+       b.1) Attribution Requirement
+    Any modified version of this software, whether distributed publicly or privately,  
+    must include visible credit to the original author(s) in at least one of the following places:  
+    - The README file or equivalent documentation.  
+    - The software’s "About" section (if applicable).  
+    - A visible mention in the command-line output (if applicable).  
+
+    The attribution must include the statement:  
+    "This software is based on Better Control, originally created by quantumvoid0."
+
+    Failure to comply with this attribution requirement will be considered a violation of this license.
+
+
     c) Prohibiting misrepresentation of the origin of that material, or
     requiring that modified versions of such material be marked in
     reasonable ways as different from the original version; or
