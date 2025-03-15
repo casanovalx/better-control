@@ -4,8 +4,6 @@ A gtk themed control panel for linux 🐧
 Whats new :
 - Added Battery Metrics
 
-<img src="https://github.com/user-attachments/assets/80142f7f-1cd2-4ece-bc3b-6edcefffe309" width="500" />
-
 This project is still under development , contriubutions such as ideas and feature requests towards project and testers are welcome.
 
 # How to Install? ✅ 
