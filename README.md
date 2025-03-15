@@ -2,7 +2,7 @@
 A gtk themed control panel for linux 🐧
 
 Whats new :
-- Added option to switch sources
+- Added Battery Metrics
 
 <img src="https://github.com/user-attachments/assets/80142f7f-1cd2-4ece-bc3b-6edcefffe309" width="500" />
 
@@ -18,6 +18,7 @@ before install make sure u have `git` and `base-devel` installed
 - BlueZ & BlueZ Utils (for Bluetooth support)
 - PipeWire Pulse (for audio control)
 - Brightnessctl (for screen brightness control)
+- Cpupower for battery controls
 - Python Libraries: python-gobject and python-pydbus and python3
 
 ### Arch Based
@@ -32,16 +33,16 @@ If you use `paru`then:
 ```paru -S better-control-git```
 
 ### Debian Based
-```sudo apt update && sudo apt install -y libgtk-4-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python```
+```sudo apt update && sudo apt install -y libgtk-3dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python linux-tools-common linux-tools-generic```
 
 ### Fedora Based
-```sudo dnf install -y gtk4 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python```
+```sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python kernel-tools```
 
 ### Void Linux
-```sudo xbps-install -S gtk4 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python```
+```sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python cpupower```
 
 ### Alpine Linux
-```sudo apk add gtk4 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus python```
+```sudo apk add gtk3 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus python cpufrequtils```
 
 
 ## After you get the dependencies 

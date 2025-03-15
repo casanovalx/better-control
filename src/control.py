@@ -22,16 +22,277 @@ import subprocess
 gi.require_version('Pango', '1.0')  
 from gi.repository import Gtk, Pango
 
-SETTINGS_FILE = "settings.json"  
+SETTINGS_FILE = "settings.json"
+
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        with open(SETTINGS_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_settings(settings):
+    with open(SETTINGS_FILE, "w") as f:
+        json.dump(settings, f)
+
+def show_error_dialog(parent, message):
+    def dialog():
+        dialog = Gtk.MessageDialog(
+            transient_for=parent,
+            flags=0,
+            message_type=Gtk.MessageType.ERROR,
+            buttons=Gtk.ButtonsType.OK,
+            text="Missing Dependency: cpupower",
+        )
+        dialog.format_secondary_text(message)
+        dialog.run()
+        dialog.destroy()
+    GLib.idle_add(dialog)
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)  
+logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
 formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 logger.info("Better Control is running.")
+
+class BatteryTab(Gtk.Box):
+    def __init__(self, parent):
+        Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.set_margin_top(10)
+        self.set_margin_bottom(10)
+        self.set_margin_start(10)
+        self.set_margin_end(10)
+        self.set_hexpand(True)
+        self.set_vexpand(True)
+
+        self.parent = parent
+
+        if not shutil.which("cpupower"):
+            error_message = (
+                "you need cpupower for battery controls, without it even if u change it, it wont work\n\n"
+
+                "cpupower is not installed! Please install it using:\n"
+                "- Debian/Ubuntu: sudo apt install linux-tools-common linux-tools-generic\n"
+                "- Arch Linux: sudo pacman -S cpupower\n"
+                "- Fedora: sudo dnf install kernel-tools\n\n"
+
+                "you can check online for other distros"
+                 )
+            logger.error(error_message)
+            self.show_error_dialog(error_message)
+            return  
+
+        self.battery_label = Gtk.Label()
+        self.battery_label.set_markup("<b>Battery Metrics</b>")
+        self.pack_start(self.battery_label, False, False, 0)
+
+        self.grid = Gtk.Grid()
+        self.grid.set_column_spacing(10)
+        self.grid.set_row_spacing(10)
+        self.pack_start(self.grid, False, False, 0)
+
+        self.labels = {}
+        self.value_labels = {}
+
+        battery_keys = ["Charge", "State", "Time Left", "Capacity", "Power", "Voltage", "Model"]
+        row = 0
+        for key in battery_keys:
+            self.labels[key] = Gtk.Label(xalign=0)
+            self.labels[key].set_markup(f"<b>{key}:</b> ")
+            self.grid.attach(self.labels[key], 0, row, 1, 1)
+
+            self.value_labels[key] = Gtk.Label(xalign=0)
+            self.grid.attach(self.value_labels[key], 1, row, 1, 1)
+            row += 1
+
+        self.refresh_battery_info()
+        GLib.timeout_add_seconds(10, self.refresh_battery_info)
+
+        self.power_mode_label = Gtk.Label(label="Select Power Mode:")
+        self.pack_start(self.power_mode_label, False, False, 10)
+
+        self.power_mode_dropdown = Gtk.ComboBoxText()
+        self.power_modes = {
+            "Power Saving": "powersave",
+            "Balanced": "ondemand",
+            "Performance": "performance"
+        }
+
+        for mode in self.power_modes.keys():
+            self.power_mode_dropdown.append_text(mode)
+
+        settings = load_settings()
+        saved_mode = settings.get("power_mode", "ondemand")
+
+        self.power_mode_dropdown = Gtk.ComboBoxText()
+        self.power_modes = {
+            "Power Saving": "powersave",
+            "Balanced": "ondemand",
+            "Performance": "performance"
+        }
+
+        for label in self.power_modes.keys():
+            self.power_mode_dropdown.append_text(label)
+
+        matching_label = next((label for label, value in self.power_modes.items() if value == saved_mode), "Balanced")
+        self.power_mode_dropdown.set_active(list(self.power_modes.keys()).index(matching_label))
+
+        if matching_label:
+            self.power_mode_dropdown.set_active(list(self.power_modes.keys()).index(matching_label))
+        else:
+            print(f"Warning: Unknown power mode '{saved_mode}', defaulting to Balanced")
+            self.power_mode_dropdown.set_active(list(self.power_modes.keys()).index("Balanced"))
+
+        self.pack_start(self.power_mode_dropdown, False, False, 10)
+
+        self.power_mode_dropdown.connect("changed", self.set_power_mode)
+        self.pack_start(self.power_mode_dropdown, False, False, 10)
+
+    def set_power_mode_from_string(self, mode_string):
+        """
+        Set the power mode based on the string passed.
+        :param mode_string: The power mode string (e.g., "powersave", "ondemand", "performance")
+        """
+        if mode_string in self.power_modes.values():
+
+            for key, value in self.power_modes.items():
+                if value == mode_string:
+                    self.power_mode_dropdown.set_active(list(self.power_modes.keys()).index(key))
+                    break
+        else:
+
+            self.power_mode_dropdown.set_active(list(self.power_modes.keys()).index("Balanced"))
+
+    def show_password_dialog(self):
+        """
+        Show a password entry dialog and return the entered password.
+        """
+        dialog = Gtk.MessageDialog(
+            transient_for=self.parent,
+            flags=0,
+            message_type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.OK_CANCEL,
+            text="Authentication Required",
+        )
+        dialog.format_secondary_text("Enter your password to change power mode:")
+
+        entry = Gtk.Entry()
+        entry.set_visibility(False)  
+        entry.set_invisible_char("*")
+        entry.set_activates_default(True)  
+
+        box = dialog.get_content_area()
+        box.pack_end(entry, False, False, 10)
+        entry.show()
+
+        dialog.set_default_response(Gtk.ResponseType.OK)
+        response = dialog.run()
+        password = entry.get_text() if response == Gtk.ResponseType.OK else None
+        dialog.destroy()
+
+        return password
+
+    def set_power_mode(self, widget):
+        """
+        Handle power mode change using a GUI password prompt.
+        """
+        selected_mode = widget.get_active_text()
+        if selected_mode in self.power_modes:
+            mode_value = self.power_modes[selected_mode]
+
+            password = self.show_password_dialog()
+            if not password:
+                return  
+
+            try:
+
+                command = f"echo {password} | sudo -S cpupower frequency-set -g {mode_value}"
+                result = subprocess.run(command, shell=True, capture_output=True, text=True)
+
+                if result.returncode != 0:
+                    error_message = f"Failed to set power mode: {result.stderr}"
+                    logger.error(error_message)
+                    self.show_error_dialog(error_message)
+                else:
+                    logger.info(f"Power mode changed to: {selected_mode} ({mode_value})")
+
+                    settings = load_settings()
+                    settings["power_mode"] = self.power_modes[selected_mode]  
+                    save_settings(settings)
+
+            except subprocess.CalledProcessError as e:
+                self.show_error_dialog(f"Failed to set power mode: {e}")
+
+            except FileNotFoundError:
+                self.show_error_dialog("cpupower is not installed or not found in PATH.")
+
+    def show_error_dialog(self, message):
+        """
+        Display an error message in a popup dialog.
+        :param message: The error message to display.
+        """
+        dialog = Gtk.MessageDialog(
+            transient_for=self.parent,
+            flags=0,
+            message_type=Gtk.MessageType.ERROR,
+            buttons=Gtk.ButtonsType.OK,
+            text="Error"
+        )
+        dialog.format_secondary_text(message)
+        dialog.run()
+        dialog.destroy()
+
+    def refresh_battery_info(self):
+        battery_devices = subprocess.getoutput("upower -e | grep 'BAT'").split("\n")
+
+        if not battery_devices:
+            logger.error("No battery devices found.")
+            return True  
+
+        for label in self.labels.values():
+            label.destroy()
+        for value_label in self.value_labels.values():
+            value_label.destroy()
+
+        self.labels = {}
+        self.value_labels = {}
+
+        row = 0
+        for battery in battery_devices:
+            battery_name = battery.split("/")[-1]  
+
+            title_label = Gtk.Label()
+            title_label.set_markup(f"<b>Battery: {battery_name}</b>")
+            self.grid.attach(title_label, 0, row, 2, 1)
+            row += 1
+
+            battery_info = {
+                "Charge": subprocess.getoutput(f"upower -i {battery} | grep percentage | awk '{{print $2}}'"),
+                "State": subprocess.getoutput(f"upower -i {battery} | grep state | awk '{{print $2}}'"),
+                "Time Left": subprocess.getoutput(f"upower -i {battery} | grep 'time to' | awk '{{print $3, $4}}'"),
+                "Capacity": subprocess.getoutput(f"upower -i {battery} | grep capacity | awk '{{print $2}}'"),
+                "Power": subprocess.getoutput(f"upower -i {battery} | grep 'energy-rate' | awk '{{print $2, $3}}'"),
+                "Voltage": subprocess.getoutput(f"upower -i {battery} | grep voltage | awk '{{print $2, $3}}'"),
+                "Model": subprocess.getoutput(f"upower -i {battery} | grep model | awk -F': ' '{{print $2}}'")
+            }
+
+            for key, value in battery_info.items():
+                label = Gtk.Label(xalign=0)
+                label.set_markup(f"<b>{key}:</b> ")
+                self.grid.attach(label, 0, row, 1, 1)
+                self.labels[key] = label
+
+                value_label = Gtk.Label(xalign=0)
+                value_label.set_text(value)
+                self.grid.attach(value_label, 1, row, 1, 1)
+                self.value_labels[key] = value_label
+
+                row += 1  
+
+        self.show_all()  
+        return True  
 
 class HyprlandSettingsApp(Gtk.Window):
     def __init__(self):
@@ -373,6 +634,13 @@ class HyprlandSettingsApp(Gtk.Window):
         self.tabs["Application Volume"] = scrolled_app_volume
         if self.tab_visibility.get("Application Volume", True):  
             self.notebook.append_page(scrolled_app_volume, Gtk.Label(label="Application Volume"))
+
+        self.battery_tab = BatteryTab(self)
+        self.tabs["Battery"] = self.battery_tab
+        if self.tab_visibility.get("Battery", True):  
+            self.notebook.append_page(self.battery_tab, Gtk.Label(label="Battery"))
+
+        GLib.idle_add(self.notebook.set_current_page, 0)
 
         settings_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         settings_box.set_margin_top(10)
