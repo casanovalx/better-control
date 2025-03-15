@@ -2,7 +2,7 @@
 A gtk themed control panel for linux 🐧
 
 Whats new :
-- Added Battery Metrics
+- Added Battery Metrics (preview)
 
 This project is still under development , contriubutions such as ideas and feature requests towards project and testers are welcome.
 
