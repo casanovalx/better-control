@@ -22,13 +22,7 @@ before install make sure u have `git` and `base-devel` installed
 ### Arch Based
 Arch users dont need to do all this installation processes, 
 
-If you use `yay` then:
-
-```yay -S better-control-git```
-
-If you use `paru`then:
-
-```paru -S better-control-git```
+the yay package is facing some issues , we are fixing it rn
 
 ### Debian Based
 ```sudo apt update && sudo apt install -y libgtk-3dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python linux-tools-common linux-tools-generic```
