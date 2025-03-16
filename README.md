@@ -11,7 +11,7 @@ before install make sure u have `git` and `base-devel` installed
 
 ## Dependencies
 
-- GTK 4 (for the UI)
+- GTK 3 (for the UI)
 - NetworkManager (for managing Wi-Fi & Ethernet)
 - BlueZ & BlueZ Utils (for Bluetooth support)
 - PipeWire Pulse (for audio control)
