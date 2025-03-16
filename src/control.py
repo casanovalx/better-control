@@ -24,6 +24,29 @@ from gi.repository import Gtk, Pango
 
 SETTINGS_FILE = "settings.json"
 
+def check_dependency(command, name, install_instructions):
+    if not shutil.which(command):
+        error_message = f"{name} is required but not installed!\n\nInstall it using:\n{install_instructions}"
+        logging.error(error_message)
+        return error_message
+    return None
+
+dependencies = [
+    ("cpupower", "CPU Power Management", "- Debian/Ubuntu: sudo apt install linux-tools-common linux-tools-generic\n- Arch Linux: sudo pacman -S cpupower\n- Fedora: sudo dnf install kernel-tools"),
+    ("nmcli", "Network Manager CLI", "- Install NetworkManager package for your distro"),
+    ("bluetoothctl", "Bluetooth Control", "- Debian/Ubuntu: sudo apt install bluez\n- Arch Linux: sudo pacman -S bluez bluez-utils\n- Fedora: sudo dnf install bluez"),
+    ("pactl", "PulseAudio Control", "- Install PulseAudio or PipeWire depending on your distro"),
+    ("brightnessctl", "Brightness Control", "- Debian/Ubuntu: sudo apt install brightnessctl\n- Arch Linux: sudo pacman -S brightnessctl\n- Fedora: sudo dnf install brightnessctl")
+]
+
+def check_all_dependencies(parent):
+    missing = [check_dependency(cmd, name, inst) for cmd, name, inst in dependencies]
+    missing = [msg for msg in missing if msg]
+    if missing:
+        show_error_dialog(parent, "\n\n".join(missing))
+        return False  
+    return True
+
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
         with open(SETTINGS_FILE, "r") as f:
@@ -33,20 +56,6 @@ def load_settings():
 def save_settings(settings):
     with open(SETTINGS_FILE, "w") as f:
         json.dump(settings, f)
-
-def show_error_dialog(parent, message):
-    def dialog():
-        dialog = Gtk.MessageDialog(
-            transient_for=parent,
-            flags=0,
-            message_type=Gtk.MessageType.ERROR,
-            buttons=Gtk.ButtonsType.OK,
-            text="Missing Dependency: cpupower",
-        )
-        dialog.format_secondary_text(message)
-        dialog.run()
-        dialog.destroy()
-    GLib.idle_add(dialog)
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -68,21 +77,6 @@ class BatteryTab(Gtk.Box):
         self.set_vexpand(True)
 
         self.parent = parent
-
-        if not shutil.which("cpupower"):
-            error_message = (
-                "you need cpupower for battery controls, without it even if u change it, it wont work\n\n"
-
-                "cpupower is not installed! Please install it using:\n"
-                "- Debian/Ubuntu: sudo apt install linux-tools-common linux-tools-generic\n"
-                "- Arch Linux: sudo pacman -S cpupower\n"
-                "- Fedora: sudo dnf install kernel-tools\n\n"
-
-                "you can check online for other distros"
-                 )
-            logger.error(error_message)
-            self.show_error_dialog(error_message)
-            return  
 
         self.battery_label = Gtk.Label()
         self.battery_label.set_markup("<b>Battery Metrics</b>")
@@ -195,9 +189,7 @@ class BatteryTab(Gtk.Box):
         return password
 
     def set_power_mode(self, widget):
-        """
-        Handle power mode change using a GUI password prompt.
-        """
+        """Handle power mode change using a GUI password prompt."""
         selected_mode = widget.get_active_text()
         if selected_mode in self.power_modes:
             mode_value = self.power_modes[selected_mode]
@@ -207,42 +199,25 @@ class BatteryTab(Gtk.Box):
                 return  
 
             try:
-
                 command = f"echo {password} | sudo -S cpupower frequency-set -g {mode_value}"
                 result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
                 if result.returncode != 0:
-                    error_message = f"Failed to set power mode: {result.stderr}"
-                    logger.error(error_message)
-                    self.show_error_dialog(error_message)
+                    error_message = "cpupower is missing. Please check our GitHub page to see all dependencies and install them."
+                    logging.error(error_message)
+                    self.parent.show_error_dialog(error_message)  
                 else:
-                    logger.info(f"Power mode changed to: {selected_mode} ({mode_value})")
+                    logging.info(f"Power mode changed to: {selected_mode} ({mode_value})")
 
                     settings = load_settings()
                     settings["power_mode"] = self.power_modes[selected_mode]  
                     save_settings(settings)
 
             except subprocess.CalledProcessError as e:
-                self.show_error_dialog(f"Failed to set power mode: {e}")
+                self.parent.show_error_dialog(f"Failed to set power mode: {e}")
 
             except FileNotFoundError:
-                self.show_error_dialog("cpupower is not installed or not found in PATH.")
-
-    def show_error_dialog(self, message):
-        """
-        Display an error message in a popup dialog.
-        :param message: The error message to display.
-        """
-        dialog = Gtk.MessageDialog(
-            transient_for=self.parent,
-            flags=0,
-            message_type=Gtk.MessageType.ERROR,
-            buttons=Gtk.ButtonsType.OK,
-            text="Error"
-        )
-        dialog.format_secondary_text(message)
-        dialog.run()
-        dialog.destroy()
+                self.parent.show_error_dialog("cpupower is not installed or not found in PATH.")
 
     def refresh_battery_info(self):
         battery_devices = subprocess.getoutput("upower -e | grep 'BAT'").split("\n")
@@ -302,13 +277,13 @@ class HyprlandSettingsApp(Gtk.Window):
 
         self.tabs = {}  
         self.tab_visibility = self.load_settings()  
-
         self.main_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.add(self.main_container)
 
         self.notebook = Gtk.Notebook()
         self.notebook.set_scrollable(True)
         self.main_container.pack_start(self.notebook, True, True, 0)
+        self.notebook.connect("switch-page", self.on_tab_switch)
 
         wifi_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         wifi_box.set_margin_top(10)
@@ -661,6 +636,19 @@ class HyprlandSettingsApp(Gtk.Window):
 
         self.update_button_labels()
 
+    def show_error_dialog(self, message):
+        """Display an error dialog instead of crashing."""
+        dialog = Gtk.MessageDialog(
+            transient_for=self,
+            flags=0,
+            message_type=Gtk.MessageType.ERROR,
+            buttons=Gtk.ButtonsType.OK,
+            text="Error: Missing Dependency"
+        )
+        dialog.format_secondary_text(message)
+        dialog.run()
+        dialog.destroy()
+
     def switch_audio_sink(self, button):
         """Cycle through available audio sinks."""
         try:
@@ -920,65 +908,110 @@ class HyprlandSettingsApp(Gtk.Window):
         except Exception as e:
             self.show_error(f"Error forgetting {mac_address}: {e}")
 
-    def mzero(self,button):
-        subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "0%"])
-        self.mic_scale.set_value(0)
+    def mzero(self, button):
+        if shutil.which("pactl"):
+            subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "0%"])
+            self.mic_scale.set_value(0)
+        else:
+            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
 
-    def mtfive(self,button):
-        subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "25%"])
-        self.mic_scale.set_value(25)
+    def mtfive(self, button):
+        if shutil.which("pactl"):
+            subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "25%"])
+            self.mic_scale.set_value(25)
+        else:
+            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
 
-    def mfifty(self,button):
-        subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "50%"])
-        self.mic_scale.set_value(50)
+    def mfifty(self, button):
+        if shutil.which("pactl"):
+            subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "50%"])
+            self.mic_scale.set_value(50)
+        else:
+            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
 
-    def msfive(self,button):
-       subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "75%"])    
-       self.mic_scale.set_value(75)
+    def msfive(self, button):
+        if shutil.which("pactl"):
+            subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "75%"])
+            self.mic_scale.set_value(75)
+        else:
+            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
 
-    def mhund(self,button):
-        subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "100%"])
-        self.mic_scale.set_value(100)
+    def mhund(self, button):
+        if shutil.which("pactl"):
+            subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "100%"])
+            self.mic_scale.set_value(100)
+        else:
+            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
 
-    def vzero(self,button):
-        subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "0%"])
-        self.volume_scale.set_value(0)
+    def vzero(self, button):
+        if shutil.which("pactl"):
+            subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "0%"])
+            self.volume_scale.set_value(0)
+        else:
+            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
 
-    def vtfive(self,button):
-        subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "25%"])
-        self.volume_scale.set_value(25)
+    def vtfive(self, button):
+        if shutil.which("pactl"):
+            subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "25%"])
+            self.volume_scale.set_value(25)
+        else:
+            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
 
-    def vfifty(self,button):
-        subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "50%"])
-        self.volume_scale.set_value(50)
+    def vfifty(self, button):
+        if shutil.which("pactl"):
+            subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "50%"])
+            self.volume_scale.set_value(50)
+        else:
+            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
 
-    def vsfive(self,button):
-       subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "75%"])    
-       self.volume_scale.set_value(75)
+    def vsfive(self, button):
+        if shutil.which("pactl"):
+            subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "75%"])
+            self.volume_scale.set_value(75)
+        else:
+            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
 
-    def vhund(self,button):
-        subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "100%"])
-        self.volume_scale.set_value(100)
+    def vhund(self, button):
+        if shutil.which("pactl"):
+            subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "100%"])
+            self.volume_scale.set_value(100)
+        else:
+            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
 
-    def zero(self,button):
-        subprocess.run(['brightnessctl', 's', '0'])
-        self.brightness_scale.set_value(0)
+    def zero(self, button):
+        if shutil.which("brightnessctl"):
+            subprocess.run(['brightnessctl', 's', '0'])
+            self.brightness_scale.set_value(0)
+        else:
+            self.show_error_dialog("brightnessctl is missing. please check our github page to see all dependencies and install them")
 
-    def tfive(self,button):
-        subprocess.run(['brightnessctl', 's', '25'])
-        self.brightness_scale.set_value(25)
+    def tfive(self, button):
+        if shutil.which("brightnessctl"):
+            subprocess.run(['brightnessctl', 's', '25'])
+            self.brightness_scale.set_value(25)
+        else:
+            self.show_error_dialog("brightnessctl is missing. please check our github page to see all dependencies and install them")
 
-    def fifty(self,button):
-        subprocess.run(['brightnessctl', 's', '50'])
-        self.brightness_scale.set_value(50)
+    def fifty(self, button):
+        if shutil.which("brightnessctl"):
+            subprocess.run(['brightnessctl', 's', '50'])
+            self.brightness_scale.set_value(50)
+        else:
+            self.show_error_dialog("brightnessctl is missing. please check our github page to see all dependencies and install them")
 
-    def sfive(self,button):
-        subprocess.run(['brightnessctl', 's', '75'])
-        self.brightness_scale.set_value(75)
+    def sfive(self, button):
+        if shutil.which("brightnessctl"):
+            subprocess.run(['brightnessctl', 's', '75'])
+            self.brightness_scale.set_value(75)
+        else:
+            self.show_error_dialog("brightnessctl is missing. please check our github page to see all dependencies and install them")
 
-    def hund(self,button):
-        subprocess.run(['brightnessctl', 's', '100'])
-        self.brightness_scale.set_value(100)
+    def hund(self, button):
+        if shutil.which("brightnessctl"):
+            subprocess.run(['brightnessctl', 's', '100'])
+            self.brightness_scale.set_value(100)
+        else:
+            self.show_error_dialog("brightnessctl is missing. please check our github page to see all dependencies and install them")
 
     def set_mic_volume(self, scale):
         new_volume = int(scale.get_value())
@@ -1082,9 +1115,18 @@ class HyprlandSettingsApp(Gtk.Window):
         subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{value}%"])
 
     def get_current_brightness(self):
+        if not shutil.which("brightnessctl"):
+            logging.error("brightnessctl is not installed.")
+            return 50  
+
         output = subprocess.getoutput("brightnessctl get")
         max_brightness = subprocess.getoutput("brightnessctl max")
-        return int((int(output) / int(max_brightness)) * 100)
+
+        try:
+            return int((int(output) / int(max_brightness)) * 100)
+        except ValueError:
+            logging.error(f"Unexpected output from brightnessctl: {output}, {max_brightness}")
+            return 50  
 
     def set_brightness(self, scale):
         value = int(scale.get_value())
@@ -1128,46 +1170,54 @@ class HyprlandSettingsApp(Gtk.Window):
             print(f"Error updating button labels: {e}")
 
     def mute(self, button):
-        """
-        Toggle mute/unmute for the speaker dynamically and update the button label.
-        """
-        try:
+        if shutil.which("pactl"):
             subprocess.run(["pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle"])
-            print("Speaker mute state toggled.")
-
             self.update_button_labels()
-        except Exception as e:
-            print(f"Error toggling speaker mute state: {e}")
+        else:
+            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
 
     def micmute(self, button):
-        """
-        Toggle mute/unmute for the microphone dynamically and update the button label.
-        """
-        try:
+        if shutil.which("pactl"):
             subprocess.run(["pactl", "set-source-mute", "@DEFAULT_SOURCE@", "toggle"])
-            print("Microphone mute state toggled.")
-
             self.update_button_labels()
-        except Exception as e:
-            print(f"Error toggling microphone mute state: {e}")
+        else:
+            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
+
+    def on_tab_switch(self, notebook, tab, page_num):
+        """Check dependencies when switching to a tab."""
+        tab_label = self.notebook.get_tab_label_text(tab)
+
+        if tab_label == "Bluetooth" and not shutil.which("bluetoothctl"):
+            self.show_error_dialog("bluetoothctl is missing. Please check our GitHub page to see all dependencies and install them.")
+
+        elif tab_label == "Wi-Fi" and not shutil.which("nmcli"):
+            self.show_error_dialog("NetworkManager (nmcli) is missing. Please check our GitHub page to see all dependencies and install them.")
+
+        elif tab_label == "Brightness" and not shutil.which("brightnessctl"):
+            self.show_error_dialog("brightnessctl is missing. Please check our GitHub page to see all dependencies and install them.")
+
+        elif tab_label in ["Volume", "Application Volume"] and not shutil.which("pactl"):
+            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
+
+        elif tab_label in ["Battery"] and not shutil.which("cpupower"):
+            self.show_error_dialog("cpupower is missing. Please check our GitHub page to see all dependencies and install them.")
 
     def refresh_app_volume(self, button=None):
         """Refresh the list of applications playing audio and create sliders for them."""
+
+        if not shutil.which("pactl"):
+            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
+            return  
 
         self.app_volume_listbox.foreach(lambda row: self.app_volume_listbox.remove(row))
 
         try:
             output = subprocess.getoutput("pactl list sink-inputs")
-            print("Raw output from pactl list sink-inputs:")  
-            print(output)  
-
             sink_inputs = output.split("Sink Input #")[1:]  
-            print(f"Found {len(sink_inputs)} sink inputs")  
 
             for sink_input in sink_inputs:
                 lines = sink_input.split("\n")
                 sink_input_id = lines[0].strip()  
-                print(f"Processing sink input {sink_input_id}")  
 
                 app_name = "Unknown Application"
                 media_name = "Unknown Media"
@@ -1179,12 +1229,9 @@ class HyprlandSettingsApp(Gtk.Window):
                     if "media.name" in line:
                         media_name = line.split("=")[1].strip().strip('"')
                     if "Volume:" in line:
-
                         volume_parts = line.split("/")
                         if len(volume_parts) >= 2:
                             volume_percent = int(volume_parts[1].strip().strip("%"))
-
-                print(f"Found application: {app_name} - {media_name} (Volume: {volume_percent}%)")  
 
                 row = Gtk.ListBoxRow()
                 box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)

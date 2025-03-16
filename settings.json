@@ -1,0 +1,6 @@
+{
+    "power_mode": "performance",
+    "Bluetooth": true,
+    "Brightness": true,
+    "Battery": true
+}

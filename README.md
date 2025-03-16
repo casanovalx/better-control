@@ -2,7 +2,7 @@
 A gtk themed control panel for linux 🐧
 
 Whats new :
-- Added Battery Metrics (preview)
+- Now you can remove any dependency you dont want and hide the tab if you dont wanna use it
 
 This project is still under development , contriubutions such as ideas and feature requests towards project and testers are welcome.
 
