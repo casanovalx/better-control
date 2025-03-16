@@ -19,6 +19,8 @@ before install make sure u have `git` and `base-devel` installed
 - Cpupower for battery controls
 - Python Libraries: python-gobject and python-pydbus and python3
 
+#### if you dont want to use a feature in better-control , u can safely remove the dependency u dont wanna use and hide the tab
+
 ### Arch Based
 Arch users dont need to do all this installation processes, 
 
