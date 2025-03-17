@@ -1,4 +1,6 @@
-# Copyright (C) 2025 quantumvoid0 (https://github.com/quantumvoid0)
+#!/usr/bin/env python3
+
+# Copyright (C) 2025 quantumvoid0 (https://github.com/quantumvoid0)#!/usr/bin/env python3
 #
 # This program is licensed under the terms of the GNU General Public License v3 + Attribution.
 # See the full license text in the LICENSE file or at:
@@ -1349,11 +1351,15 @@ if __name__ == "__main__":
 
 # Hey there!
 # 
-# First of all, thank you for checking out this project. I truly hope
+# First of all, thank you for checking out this project. We truly hope
 # that Better Control is useful to you and that it helps you in your
 # work or personal projects. If you have any suggestions,
-# issues, or want to collaborate, don't hesitate to reach out.
+# issues, or want to collaborate, don't hesitate to reach out. - quantumvoid0 and FelipeFMA
 #
-# Stay awesome! - reach out to me on
-# "quantumvoid._" <-- discord
-# "quantumvoid_" <-- reddit
+# Stay awesome! - reach out to us on
+# "quantumvoid._"         <-- discord
+# "quantumvoid_"          <-- reddit
+# "nekrooo_"              <-- discord
+# "BasedPenguinsEnjoyer"  <-- reddit
+
+
