@@ -19,10 +19,11 @@ import time
 import json
 from pydbus import SystemBus
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gio, GLib, Gdk  
+from gi.repository import Gtk, Gio, GLib, Gdk
 import subprocess
-gi.require_version('Pango', '1.0')  
+gi.require_version('Pango', '1.0')
 from gi.repository import Gtk, Pango
+import threading
 
 SETTINGS_FILE = "settings.json"
 
@@ -1038,6 +1039,24 @@ class HyprlandSettingsApp(Gtk.Window):
             self.wifi_listbox.add(row)
         self.wifi_listbox.show_all()
 
+    def _refresh_wifi_thread(self):
+        networks = subprocess.getoutput("nmcli dev wifi").split("\n")[1:]
+        GLib.idle_add(self._update_wifi_list, networks)
+
+    def _update_wifi_list(self, networks):
+        self.wifi_listbox.foreach(lambda row: self.wifi_listbox.remove(row))
+        for network in networks:
+            row = Gtk.ListBoxRow()
+            label = Gtk.Label(label=network)
+            row.add(label)
+            label.set_xalign(0)
+            self.wifi_listbox.add(row)
+        self.wifi_listbox.show_all()
+
+    def refresh_wifi(self, button):
+        thread = threading.Thread(target=self._refresh_wifi_thread)
+        thread.start()
+
     def connect_wifi(self, button):
         selected_row = self.wifi_listbox.get_selected_row()
         if not selected_row:
@@ -1361,5 +1380,3 @@ if __name__ == "__main__":
 # "quantumvoid_"          <-- reddit
 # "nekrooo_"              <-- discord
 # "BasedPenguinsEnjoyer"  <-- reddit
-
-
