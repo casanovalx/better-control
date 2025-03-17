@@ -1133,35 +1133,39 @@ class HyprlandSettingsApp(Gtk.Window):
         ssid = selected_row.get_child().get_text().split()[1]
         print(f"Selected SSID: {ssid}")
 
-        if "secured" in selected_row.get_child().get_text().lower():
-            print("Network is secured. Using password from input field...")
-            password = self.password_entry.get_text()
-            if not password:
-                print("No password entered.")
-                return
+        def connect_thread():
+            if "secured" in selected_row.get_child().get_text().lower():
+                print("Network is secured. Using password from input field...")
+                password = self.password_entry.get_text()
+                if not password:
+                    print("No password entered.")
+                    return
 
-            try:
-                result = subprocess.run(
-                    ["nmcli", "dev", "wifi", "connect", ssid, "password", password],
-                    check=True,
-                    capture_output=True,
-                    text=True
-                )
-                print(f"Successfully connected: {result.stdout}")
-            except subprocess.CalledProcessError as e:
-                print(f"Failed to connect: {e.stderr}")
-        else:
-            print("Network is unsecured. Attempting to connect...")
-            try:
-                result = subprocess.run(
-                    ["nmcli", "dev", "wifi", "connect", ssid],
-                    check=True,
-                    capture_output=True,
-                    text=True
-                )
-                print(f"Successfully connected: {result.stdout}")
-            except subprocess.CalledProcessError as e:
-                print(f"Failed to connect: {e.stderr}")
+                try:
+                    result = subprocess.run(
+                        ["nmcli", "dev", "wifi", "connect", ssid, "password", password],
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
+                    print(f"Successfully connected: {result.stdout}")
+                except subprocess.CalledProcessError as e:
+                    print(f"Failed to connect: {e.stderr}")
+            else:
+                print("Network is unsecured. Attempting to connect...")
+                try:
+                    result = subprocess.run(
+                        ["nmcli", "dev", "wifi", "connect", ssid],
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
+                    print(f"Successfully connected: {result.stdout}")
+                except subprocess.CalledProcessError as e:
+                    print(f"Failed to connect: {e.stderr}")
+
+        thread = threading.Thread(target=connect_thread)
+        thread.start()
 
     def forget_wifi(self, button):
         selected_row = self.wifi_listbox.get_selected_row()
