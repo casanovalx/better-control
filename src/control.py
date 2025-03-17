@@ -273,8 +273,9 @@ class BatteryTab(Gtk.Box):
 class HyprlandSettingsApp(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Control Center")
+        self.set_type_hint(Gdk.WindowTypeHint.DIALOG)
         self.set_default_size(1000, 700)
-        self.set_resizable(False)
+        self.set_resizable(True)
 
         self.tabs = {}  
         self.tab_visibility = self.load_settings()  
