@@ -719,8 +719,10 @@ class HyprlandSettingsApp(Gtk.Window):
         active_index = combo.get_active()
         if active_index >= 0 and active_index < len(self.sink_list):
             selected_sink = self.sink_list[active_index]
-            subprocess.run(["pactl", "set-default-sink", selected_sink])
-            print(f"Switched to sink: {selected_sink}")
+            current_sink = subprocess.getoutput("pactl get-default-sink").strip()
+            if selected_sink != current_sink:
+                subprocess.run(["pactl", "set-default-sink", selected_sink])
+                print(f"Switched to sink: {selected_sink}")
 
     def populate_settings_tab(self):
         """ Populate the Settings tab with toggle options for showing/hiding other tabs. """

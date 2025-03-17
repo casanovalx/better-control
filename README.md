@@ -2,7 +2,8 @@
 A gtk themed control panel for linux 🐧
 
 Whats new :
-- Now you can remove any dependency you dont want and hide the tab if you dont wanna use it
+- Asynchronous functions to make the program more responsive
+- Fixed a bug that made swiches to sink every 3 seconds
 
 This project is still under development , contriubutions such as ideas and feature requests towards project and testers are welcome.
 
