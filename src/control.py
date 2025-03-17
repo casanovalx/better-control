@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2025 quantumvoid0 (https://github.com/quantumvoid0)#!/usr/bin/env python3
+# Copyright (C) 2025 quantumvoid0 and  FelipeFMA 
 #
 # This program is licensed under the terms of the GNU General Public License v3 + Attribution.
 # See the full license text in the LICENSE file or at:
