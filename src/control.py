@@ -270,12 +270,15 @@ class BatteryTab(Gtk.Box):
         self.show_all()  
         return True  
 
-class HyprlandSettingsApp(Gtk.Window):
+class bettercontrol(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Control Center")
         self.set_type_hint(Gdk.WindowTypeHint.DIALOG)
         self.set_default_size(1000, 700)
         self.set_resizable(True)
+
+        if "hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
+            subprocess.run(["hyprctl", "keyword", "windowrulev2", "float,class:^(control)$"])
 
         self.tabs = {}  
         self.tab_visibility = self.load_settings()  
@@ -1440,7 +1443,7 @@ class HyprlandSettingsApp(Gtk.Window):
         return True  
 
 if __name__ == "__main__":
-    win = HyprlandSettingsApp()
+    win = bettercontrol()
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
     Gtk.main()
