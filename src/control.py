@@ -873,6 +873,73 @@ class HyprlandSettingsApp(Gtk.Window):
 
         self.bt_listbox.show_all()
 
+    def _refresh_bluetooth_thread(self):
+        """ Refreshes the list of Bluetooth devices (paired + nearby) in a separate thread """
+        subprocess.run(["bluetoothctl", "scan", "on"], capture_output=True, text=True)
+        time.sleep(5)
+        subprocess.run(["bluetoothctl", "scan", "off"], capture_output=True, text=True)
+
+        output = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True).stdout.strip()
+        devices = output.split("\n")
+
+        GLib.idle_add(self._update_bluetooth_list, devices)
+
+    def _update_bluetooth_list(self, devices):
+        """ Updates the Bluetooth listbox with the provided devices """
+        self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
+
+        if not devices or devices == [""]:
+            self.show_error("No Bluetooth devices found.")
+            return
+
+        for device in devices:
+            parts = device.split(" ")
+            if len(parts) < 2:
+                continue
+            mac_address = parts[1]
+            device_name = " ".join(parts[2:]) if len(parts) > 2 else mac_address
+
+            try:
+                status_output = subprocess.getoutput(f"bluetoothctl info {mac_address}")
+                is_connected = "Connected: yes" in status_output
+            except Exception as e:
+                print(f"Error checking status for {mac_address}: {e}")
+                is_connected = False
+
+            row = Gtk.ListBoxRow()
+            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+
+            label = Gtk.Label(label=device_name, xalign=0)
+            box.pack_start(label, True, True, 0)
+
+            if not is_connected:
+                connect_button = Gtk.Button(label="Connect")
+                connect_button.connect("clicked", self.connect_bluetooth_device, mac_address)
+                box.pack_start(connect_button, False, False, 0)
+
+            if is_connected:
+                disconnect_button = Gtk.Button(label="Disconnect")
+                disconnect_button.connect("clicked", self.disconnect_bluetooth_device, mac_address)
+                box.pack_start(disconnect_button, False, False, 0)
+
+            row.add(box)
+            self.bt_listbox.add(row)
+
+        self.bt_listbox.show_all()
+
+    def refresh_bluetooth(self, button):
+        """ Refreshes the list of Bluetooth devices (paired + nearby) """
+        bt_status = subprocess.run(
+            ["systemctl", "is-active", "bluetooth"], capture_output=True, text=True
+        ).stdout.strip()
+
+        if bt_status != "active":
+            self.show_error("Bluetooth is disabled. Enable it first.")
+            return
+
+        thread = threading.Thread(target=self._refresh_bluetooth_thread)
+        thread.start()
+
     def show_error(self, message):
         """ Displays an error message in a popup """
         dialog = Gtk.MessageDialog(
