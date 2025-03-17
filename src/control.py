@@ -145,7 +145,6 @@ class BatteryTab(Gtk.Box):
         self.pack_start(self.power_mode_dropdown, False, False, 10)
 
         self.power_mode_dropdown.connect("changed", self.set_power_mode)
-        self.pack_start(self.power_mode_dropdown, False, False, 10)
 
     def set_power_mode_from_string(self, mode_string):
         """
@@ -227,12 +226,11 @@ class BatteryTab(Gtk.Box):
 
         if not battery_devices:
             logger.error("No battery devices found.")
-            return True  
+            return True
 
-        for label in self.labels.values():
-            label.destroy()
-        for value_label in self.value_labels.values():
-            value_label.destroy()
+        # Clear existing widgets only once
+        for child in self.grid.get_children():
+            self.grid.remove(child)
 
         self.labels = {}
         self.value_labels = {}

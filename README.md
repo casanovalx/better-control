@@ -3,7 +3,7 @@ A gtk themed control panel for linux 🐧
 
 Whats new :
 - Asynchronous functions to make the program more responsive
-- Fixed a bug that made swiches to sink every 3 seconds
+- Bug fixes
 
 This project is still under development , contriubutions such as ideas and feature requests towards project and testers are welcome.
 
