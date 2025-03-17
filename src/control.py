@@ -1290,6 +1290,11 @@ class HyprlandSettingsApp(Gtk.Window):
         elif tab_label in ["Battery"] and not shutil.which("cpupower"):
             self.show_error_dialog("cpupower is missing. Please check our GitHub page to see all dependencies and install them.")
 
+        if tab_label == "Wi-Fi":
+            self.refresh_wifi(None)
+        elif tab_label == "Bluetooth":
+            self.refresh_bluetooth(None)
+
     def refresh_app_volume(self, button=None):
         """Refresh the list of applications playing audio and create sliders for them."""
 
