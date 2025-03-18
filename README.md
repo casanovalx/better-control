@@ -4,9 +4,8 @@ A gtk themed control panel for linux 🐧
 <img src="https://github.com/user-attachments/assets/501cf1e4-f8aa-4e6d-9bef-b5b6803d68ba" width="500">
 
 Whats new :
-- Asynchronous functions to make the program more responsive
-- The window now floats by default on hyprland
-- Bug fixes
+- Added Blue Light Filter 
+- Added Network Speed Display
 
 This project is still under development , contriubutions such as ideas and feature requests towards project and testers are welcome.
 
@@ -20,8 +19,9 @@ before install make sure u have `git` and `base-devel` installed
 - BlueZ & BlueZ Utils (for Bluetooth support)
 - PipeWire Pulse (for audio control)
 - Brightnessctl (for screen brightness control)
-- Cpupower for battery controls
-- Python Libraries: python-gobject and python-pydbus and python3
+- Cpupower (for battery controls)
+- Gammastep (for blue light filter)
+- Python Libraries: python-gobject and python-pydbus and python3 and psutil
 
 #### if you dont want to use a feature in better-control , u can safely remove the dependency u dont wanna use and hide the tab
 
@@ -33,16 +33,16 @@ to install : `yay -S better-control-git`
 to uninstall : `yay -Rns better-control-git`
 
 ### Debian Based
-```sudo apt update && sudo apt install -y libgtk-3dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python linux-tools-common linux-tools-generic```
+```sudo apt update && sudo apt install -y libgtk-3dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python linux-tools-common linux-tools-generic python3-psutil gammastep```
 
 ### Fedora Based
-```sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python kernel-tools```
+```sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python kernel-tools python3-psutil gammastep```
 
 ### Void Linux
-```sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python cpupower```
+```sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python cpupower python3-psutil gammastep```
 
 ### Alpine Linux
-```sudo apk add gtk3 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus python cpufrequtils```
+```sudo apk add gtk3 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus python cpufrequtils py3-psutil gammastep```
 
 
 ## After you get the dependencies 
