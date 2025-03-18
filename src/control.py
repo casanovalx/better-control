@@ -11,8 +11,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU General Public License for more details.
 
+
 import gi
 import os
+import psutil
 import logging
 import shutil
 import time
@@ -228,7 +230,6 @@ class BatteryTab(Gtk.Box):
             logger.error("No battery devices found.")
             return True
 
-        # Clear existing widgets only once
         for child in self.grid.get_children():
             self.grid.remove(child)
 
@@ -328,6 +329,14 @@ class bettercontrol(Gtk.Window):
         self.password_entry.set_visibility(False)  
         self.password_entry.set_placeholder_text("Enter Wi-Fi password")
         wifi_box.pack_start(self.password_entry, False, False, 0)
+
+        self.download_label = Gtk.Label(label="Download: 0 Mbps")
+        self.upload_label = Gtk.Label(label="Upload: 0 Mbps | ")
+
+        wifi_button_box.pack_start(self.upload_label, False, False, 0)
+        wifi_button_box.pack_start(self.download_label, False, False, 0)
+
+        GLib.timeout_add_seconds(1, self.update_network_speed)  
 
         scrolled_wifi = Gtk.ScrolledWindow()
         scrolled_wifi.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
@@ -541,6 +550,9 @@ class bettercontrol(Gtk.Window):
         grid.set_row_spacing(10)
         brightness_box.pack_start(grid, True, True, 0)
 
+        self.brightness_label = Gtk.Label(label="Brightness")
+        grid.attach(self.brightness_label, 0,0,5,1)
+
         self.brightness_zero = Gtk.Button(label="0%")
         self.brightness_zero.set_size_request(80, 30)
         self.brightness_zero.connect("clicked", self.zero)
@@ -571,11 +583,11 @@ class bettercontrol(Gtk.Window):
         self.brightness_hund.set_vexpand(False)
         self.brightness_hund.set_valign(Gtk.Align.START)
 
-        grid.attach(self.brightness_zero, 0, 0, 1, 1)   
-        grid.attach(self.brightness_tfive, 1, 0, 1, 1)  
-        grid.attach(self.brightness_fifty, 2, 0, 1, 1)  
-        grid.attach(self.brightness_sfive, 3, 0, 1, 1)  
-        grid.attach(self.brightness_hund, 4, 0, 1, 1)   
+        grid.attach(self.brightness_zero, 0, 1, 1, 1)   
+        grid.attach(self.brightness_tfive, 1, 1, 1, 1)  
+        grid.attach(self.brightness_fifty, 2, 1, 1, 1)  
+        grid.attach(self.brightness_sfive, 3, 1, 1, 1)  
+        grid.attach(self.brightness_hund, 4, 1, 1, 1)   
 
         self.brightness_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
         self.brightness_scale.set_hexpand(True)
@@ -583,11 +595,61 @@ class bettercontrol(Gtk.Window):
         self.brightness_scale.set_value_pos(Gtk.PositionType.BOTTOM)
         self.brightness_scale.connect("value-changed", self.set_brightness)
 
-        grid.attach(self.brightness_scale, 0, 1, 5, 1)  
+        grid.attach(self.brightness_scale, 0, 2, 5, 1)  
 
-        self.tabs["Brightness"] = brightness_box
-        if self.tab_visibility.get("Brightness", True):  
-            self.notebook.append_page(brightness_box, Gtk.Label(label="Brightness"))
+        self.blue_light_label = Gtk.Label(label="Blue Light Filter")
+
+        self.blue_zero = Gtk.Button(label="0%")
+        self.blue_zero.set_size_request(80, 30)
+        self.blue_zero.connect("clicked", self.bzero)
+        self.blue_zero.set_vexpand(False)
+        self.blue_zero.set_valign(Gtk.Align.START)
+
+        self.blue_tfive = Gtk.Button(label="25%")
+        self.blue_tfive.set_size_request(80, 30)
+        self.blue_tfive.connect("clicked", self.btfive)
+        self.blue_tfive.set_vexpand(False)
+        self.blue_tfive.set_valign(Gtk.Align.START)
+
+        self.blue_fifty = Gtk.Button(label="50%")
+        self.blue_fifty.set_size_request(80, 30)
+        self.blue_fifty.connect("clicked", self.bfifty)
+        self.blue_fifty.set_vexpand(False)
+        self.blue_fifty.set_valign(Gtk.Align.START)
+
+        self.blue_sfive = Gtk.Button(label="75%")
+        self.blue_sfive.set_size_request(80, 30)
+        self.blue_sfive.connect("clicked", self.bsfive)
+        self.blue_sfive.set_vexpand(False)
+        self.blue_sfive.set_valign(Gtk.Align.START)
+
+        self.blue_hund = Gtk.Button(label="100%")
+        self.blue_hund.set_size_request(80, 30)
+        self.blue_hund.connect("clicked", self.bhund)
+        self.blue_hund.set_vexpand(False)
+        self.blue_hund.set_valign(Gtk.Align.START)
+
+        self.blue_light_slider = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 2500, 6500, 100)
+        self.blue_light_slider.set_value(6500)  
+        self.blue_light_slider.set_value_pos(Gtk.PositionType.BOTTOM)
+        self.blue_light_slider.connect("value-changed", self.set_bluelight_filter)
+
+        settings = load_settings()
+        saved_gamma = settings.get("gamma", 6500)
+        self.blue_light_slider.set_value(saved_gamma)
+        self.blue_light_slider.connect("value-changed", self.set_bluelight_filter)
+
+        grid.attach(self.blue_light_label,0,3,5,1)
+        grid.attach(self.blue_zero, 0, 4, 1, 1)   
+        grid.attach(self.blue_tfive, 1, 4, 1, 1)  
+        grid.attach(self.blue_fifty, 2, 4, 1, 1)  
+        grid.attach(self.blue_sfive, 3, 4, 1, 1)  
+        grid.attach(self.blue_hund, 4, 4, 1, 1)   
+        grid.attach(self.blue_light_slider, 0, 5, 5, 1)  
+
+        self.tabs["Display"] = brightness_box
+        if self.tab_visibility.get("Display", True):  
+            self.notebook.append_page(brightness_box, Gtk.Label(label="Display"))
 
         app_volume_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         app_volume_box.set_margin_top(10)
@@ -640,6 +702,75 @@ class bettercontrol(Gtk.Window):
         GLib.idle_add(self.notebook.set_current_page, 0)
 
         self.update_button_labels()
+
+    def bzero(self, button):
+        if shutil.which("gammastep"):
+            self.blue_light_slider.set_value(2500)
+        else:
+            self.show_error_dialog("gammastep is missing. please check our github page to see all dependencies and install them")
+
+    def btfive(self, button):
+        if shutil.which("gammastep"):
+            self.blue_light_slider.set_value(3500)
+        else:
+            self.show_error_dialog("gammastep is missing. please check our github page to see all dependencies and install them")
+
+    def bfifty(self, button):
+        if shutil.which("gammastep"):
+            self.blue_light_slider.set_value(4500)
+        else:
+            self.show_error_dialog("gammastep is missing. please check our github page to see all dependencies and install them")
+
+    def bsfive(self, button):
+        if shutil.which("gammastep"):
+            self.blue_light_slider.set_value(5500)
+        else:
+            self.show_error_dialog("gammastep is missing. please check our github page to see all dependencies and install them")
+
+    def bhund(self, button):
+        if shutil.which("gammastep"):
+            self.blue_light_slider.set_value(6500)
+        else:
+            self.show_error_dialog("gammastep is missing. please check our github page to see all dependencies and install them")
+
+    def set_bluelight_filter(self, scale):
+        self.temperature = int(scale.get_value())
+
+        settings = load_settings()
+        settings["gamma"] = self.temperature
+        save_settings(settings)
+
+        subprocess.run(["pkill", "-f", "gammastep"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.Popen(["gammastep", "-O", str(self.temperature)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def update_network_speed(self):
+        """Measure and update the network speed."""
+        try:
+            net_io = psutil.net_io_counters()
+            bytes_sent = net_io.bytes_sent
+            bytes_recv = net_io.bytes_recv
+
+            if not hasattr(self, 'prev_bytes_sent'):
+                self.prev_bytes_sent = bytes_sent
+                self.prev_bytes_recv = bytes_recv
+                return True
+
+            upload_speed_kb = (bytes_sent - self.prev_bytes_sent) / 1024  
+            download_speed_kb = (bytes_recv - self.prev_bytes_recv) / 1024  
+
+            upload_speed_mbps = (upload_speed_kb * 8) / 1024  
+            download_speed_mbps = (download_speed_kb * 8) / 1024  
+
+            self.prev_bytes_sent = bytes_sent
+            self.prev_bytes_recv = bytes_recv
+
+            self.download_label.set_text(f"Download: {download_speed_mbps:.2f} Mbps")
+            self.upload_label.set_text(f"Upload: {upload_speed_mbps:.2f} Mbps | ")
+
+        except Exception as e:
+            print(f"Error updating network speed: {e}")
+
+        return True  
 
     def show_error_dialog(self, message):
         """Display an error dialog instead of crashing."""
