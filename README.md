@@ -5,8 +5,10 @@ A gtk themed control panel for linux 🐧
 
 Whats new :
 - Wifi tab overhaul
-- Added Blue Light Filter 
 - Added Network Speed Display
+- Added Blue Light Filter 
+- Removed duplicated code
+- Fixed bugs
 
 This project is still under development , contriubutions such as ideas and feature requests towards project and testers are welcome.
 

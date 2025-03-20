@@ -959,35 +959,72 @@ class bettercontrol(Gtk.Window):
 
         self.update_button_labels()
 
+    def apply_css(self, widget):
+        css = """
+        label {
+            font-size: 18px; 
+        }
+        """
+
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_data(css.encode())
+
+        context = widget.get_style_context()
+        context.add_provider(
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+    # Helper methods to reduce code duplication
+    def set_blue_light(self, value):
+        """Set blue light filter to a specific value"""
+        if shutil.which("gammastep"):
+            self.blue_light_slider.set_value(value)
+        else:
+            self.show_error_dialog("gammastep is missing. please check our github page to see all dependencies and install them")
+    
+    def set_mic_level(self, value):
+        """Set microphone volume to a specific level"""
+        if shutil.which("pactl"):
+            subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", f"{value}%"])
+            self.mic_scale.set_value(value)
+        else:
+            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
+    
+    def set_volume_level(self, value):
+        """Set speaker volume to a specific level"""
+        if shutil.which("pactl"):
+            subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{value}%"])
+            self.volume_scale.set_value(value)
+        else:
+            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
+    
+    def set_brightness_level(self, value):
+        """Set brightness to a specific level"""
+        if shutil.which("brightnessctl"):
+            max_brightness = int(subprocess.getoutput("brightnessctl max"))
+            # Convert percentage to actual brightness value
+            actual_value = int((value / 100) * max_brightness)
+            subprocess.run(['brightnessctl', 's', f'{actual_value}'])
+            self.brightness_scale.set_value(value)
+        else:
+            self.show_error_dialog("brightnessctl is missing. please check our github page to see all dependencies and install them")
+    
+    # Blue light filter button handlers
     def bzero(self, button):
-        if shutil.which("gammastep"):
-            self.blue_light_slider.set_value(2500)
-        else:
-            self.show_error_dialog("gammastep is missing. please check our github page to see all dependencies and install them")
-
+        self.set_blue_light(2500)
+        
     def btfive(self, button):
-        if shutil.which("gammastep"):
-            self.blue_light_slider.set_value(3500)
-        else:
-            self.show_error_dialog("gammastep is missing. please check our github page to see all dependencies and install them")
-
+        self.set_blue_light(3500)
+        
     def bfifty(self, button):
-        if shutil.which("gammastep"):
-            self.blue_light_slider.set_value(4500)
-        else:
-            self.show_error_dialog("gammastep is missing. please check our github page to see all dependencies and install them")
-
+        self.set_blue_light(4500)
+        
     def bsfive(self, button):
-        if shutil.which("gammastep"):
-            self.blue_light_slider.set_value(5500)
-        else:
-            self.show_error_dialog("gammastep is missing. please check our github page to see all dependencies and install them")
-
+        self.set_blue_light(5500)
+        
     def bhund(self, button):
-        if shutil.which("gammastep"):
-            self.blue_light_slider.set_value(6500)
-        else:
-            self.show_error_dialog("gammastep is missing. please check our github page to see all dependencies and install them")
+        self.set_blue_light(6500)
 
     def set_bluelight_filter(self, scale):
         self.temperature = int(scale.get_value())
@@ -1167,23 +1204,6 @@ class bettercontrol(Gtk.Window):
                 return {}  
         return {}  
 
-    def apply_css(self, widget):
-
-        css = """
-        label {
-            font-size: 18px; 
-        }
-        """
-
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(css.encode())
-
-        context = widget.get_style_context()
-        context.add_provider(
-            css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
-
     def enable_bluetooth(self, button):
         if not shutil.which("bluetoothctl"):
             self.show_error("BlueZ is not installed. Install it with:\n\nsudo pacman -S bluez bluez-utils")
@@ -1218,12 +1238,25 @@ class bettercontrol(Gtk.Window):
             self.show_error("Bluetooth is disabled. Enable it first.")
             return
 
+        # Start a thread to handle the scanning and updating
+        thread = threading.Thread(target=self._refresh_bluetooth_thread)
+        thread.daemon = True
+        thread.start()
+            
+    def _refresh_bluetooth_thread(self):
+        """ Refreshes the list of Bluetooth devices (paired + nearby) in a separate thread """
         subprocess.run(["bluetoothctl", "scan", "on"], capture_output=True, text=True)
         time.sleep(5)
         subprocess.run(["bluetoothctl", "scan", "off"], capture_output=True, text=True)
 
         output = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True).stdout.strip()
         devices = output.split("\n")
+
+        GLib.idle_add(self._update_bluetooth_list, devices)
+
+    def _update_bluetooth_list(self, devices):
+        """ Updates the Bluetooth listbox with the provided devices """
+        self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
 
         if not devices or devices == [""]:
             self.show_error("No Bluetooth devices found.")
@@ -1263,73 +1296,6 @@ class bettercontrol(Gtk.Window):
             self.bt_listbox.add(row)
 
         self.bt_listbox.show_all()
-
-    def _refresh_bluetooth_thread(self):
-        """ Refreshes the list of Bluetooth devices (paired + nearby) in a separate thread """
-        subprocess.run(["bluetoothctl", "scan", "on"], capture_output=True, text=True)
-        time.sleep(5)
-        subprocess.run(["bluetoothctl", "scan", "off"], capture_output=True, text=True)
-
-        output = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True).stdout.strip()
-        devices = output.split("\n")
-
-        GLib.idle_add(self._update_bluetooth_list, devices)
-
-    def _update_bluetooth_list(self, devices):
-        """ Updates the Bluetooth listbox with the provided devices """
-        self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
-
-        if not devices or devices == [""]:
-            self.show_error("No Bluetooth devices found.")
-            return
-
-        for device in devices:
-            parts = device.split(" ")
-            if len(parts) < 2:
-                continue
-            mac_address = parts[1]
-            device_name = " ".join(parts[2:]) if len(parts) > 2 else mac_address
-
-            try:
-                status_output = subprocess.getoutput(f"bluetoothctl info {mac_address}")
-                is_connected = "Connected: yes" in status_output
-            except Exception as e:
-                print(f"Error checking status for {mac_address}: {e}")
-                is_connected = False
-
-            row = Gtk.ListBoxRow()
-            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-
-            label = Gtk.Label(label=device_name, xalign=0)
-            box.pack_start(label, True, True, 0)
-
-            if not is_connected:
-                connect_button = Gtk.Button(label="Connect")
-                connect_button.connect("clicked", self.connect_bluetooth_device, mac_address)
-                box.pack_start(connect_button, False, False, 0)
-
-            if is_connected:
-                disconnect_button = Gtk.Button(label="Disconnect")
-                disconnect_button.connect("clicked", self.disconnect_bluetooth_device, mac_address)
-                box.pack_start(disconnect_button, False, False, 0)
-
-            row.add(box)
-            self.bt_listbox.add(row)
-
-        self.bt_listbox.show_all()
-
-    def refresh_bluetooth(self, button):
-        """ Refreshes the list of Bluetooth devices (paired + nearby) """
-        bt_status = subprocess.run(
-            ["systemctl", "is-active", "bluetooth"], capture_output=True, text=True
-        ).stdout.strip()
-
-        if bt_status != "active":
-            self.show_error("Bluetooth is disabled. Enable it first.")
-            return
-
-        thread = threading.Thread(target=self._refresh_bluetooth_thread)
-        thread.start()
 
     def show_error(self, message):
         """ Displays an error message in a popup """
@@ -1371,113 +1337,53 @@ class bettercontrol(Gtk.Window):
             self.show_error(f"Error forgetting {mac_address}: {e}")
 
     def mzero(self, button):
-        if shutil.which("pactl"):
-            subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "0%"])
-            self.mic_scale.set_value(0)
-        else:
-            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
+        self.set_mic_level(0)
 
     def mtfive(self, button):
-        if shutil.which("pactl"):
-            subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "25%"])
-            self.mic_scale.set_value(25)
-        else:
-            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
+        self.set_mic_level(25)
 
     def mfifty(self, button):
-        if shutil.which("pactl"):
-            subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "50%"])
-            self.mic_scale.set_value(50)
-        else:
-            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
+        self.set_mic_level(50)
 
     def msfive(self, button):
-        if shutil.which("pactl"):
-            subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "75%"])
-            self.mic_scale.set_value(75)
-        else:
-            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
+        self.set_mic_level(75)
 
     def mhund(self, button):
-        if shutil.which("pactl"):
-            subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", "100%"])
-            self.mic_scale.set_value(100)
-        else:
-            self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
+        self.set_mic_level(100)
 
     def vzero(self, button):
-        if shutil.which("pactl"):
-            subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "0%"])
-            self.volume_scale.set_value(0)
-        else:
-            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
+        self.set_volume_level(0)
 
     def vtfive(self, button):
-        if shutil.which("pactl"):
-            subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "25%"])
-            self.volume_scale.set_value(25)
-        else:
-            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
+        self.set_volume_level(25)
 
     def vfifty(self, button):
-        if shutil.which("pactl"):
-            subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "50%"])
-            self.volume_scale.set_value(50)
-        else:
-            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
+        self.set_volume_level(50)
 
     def vsfive(self, button):
-        if shutil.which("pactl"):
-            subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "75%"])
-            self.volume_scale.set_value(75)
-        else:
-            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
+        self.set_volume_level(75)
 
     def vhund(self, button):
-        if shutil.which("pactl"):
-            subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", "100%"])
-            self.volume_scale.set_value(100)
-        else:
-            self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
+        self.set_volume_level(100)
 
     def zero(self, button):
-        if shutil.which("brightnessctl"):
-            subprocess.run(['brightnessctl', 's', '0'])
-            self.brightness_scale.set_value(0)
-        else:
-            self.show_error_dialog("brightnessctl is missing. please check our github page to see all dependencies and install them")
+        self.set_brightness_level(0)
 
     def tfive(self, button):
-        if shutil.which("brightnessctl"):
-            subprocess.run(['brightnessctl', 's', '25'])
-            self.brightness_scale.set_value(25)
-        else:
-            self.show_error_dialog("brightnessctl is missing. please check our github page to see all dependencies and install them")
+        self.set_brightness_level(25)
 
     def fifty(self, button):
-        if shutil.which("brightnessctl"):
-            subprocess.run(['brightnessctl', 's', '50'])
-            self.brightness_scale.set_value(50)
-        else:
-            self.show_error_dialog("brightnessctl is missing. please check our github page to see all dependencies and install them")
+        self.set_brightness_level(50)
 
     def sfive(self, button):
-        if shutil.which("brightnessctl"):
-            subprocess.run(['brightnessctl', 's', '75'])
-            self.brightness_scale.set_value(75)
-        else:
-            self.show_error_dialog("brightnessctl is missing. please check our github page to see all dependencies and install them")
+        self.set_brightness_level(75)
 
     def hund(self, button):
-        if shutil.which("brightnessctl"):
-            subprocess.run(['brightnessctl', 's', '100'])
-            self.brightness_scale.set_value(100)
-        else:
-            self.show_error_dialog("brightnessctl is missing. please check our github page to see all dependencies and install them")
+        self.set_brightness_level(100)
 
     def set_mic_volume(self, scale):
         new_volume = int(scale.get_value())
-        subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", f"{new_volume}%"])
+        self.set_mic_level(new_volume)
 
     def get_current_mic_volume(self):
         try:
@@ -1700,7 +1606,7 @@ class bettercontrol(Gtk.Window):
 
     def set_volume(self, scale):
         value = int(scale.get_value())
-        subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{value}%"])
+        self.set_volume_level(value)
 
     def get_current_brightness(self):
         if not shutil.which("brightnessctl"):
@@ -1718,7 +1624,7 @@ class bettercontrol(Gtk.Window):
 
     def set_brightness(self, scale):
         value = int(scale.get_value())
-        subprocess.run(["brightnessctl", "set", f"{value}%"])
+        self.set_brightness_level(value)
 
     def is_muted(self, audio_type="sink"):
         """
@@ -1771,21 +1677,6 @@ class bettercontrol(Gtk.Window):
         else:
             self.show_error_dialog("pactl is missing. please check our github page to see all dependencies and install them")
 
-    def on_wifi_switch_toggled(self, switch, gparam):
-        active = switch.get_active()
-        if active:
-            try:
-                subprocess.run(["nmcli", "radio", "wifi", "on"], check=True)
-                self.refresh_wifi(None)
-            except subprocess.CalledProcessError as e:
-                print(f"Failed to enable Wi-Fi: {e}")
-        else:
-            try:
-                subprocess.run(["nmcli", "radio", "wifi", "off"], check=True)
-                self.wifi_listbox.foreach(lambda row: self.wifi_listbox.remove(row))
-            except subprocess.CalledProcessError as e:
-                print(f"Failed to disable Wi-Fi: {e}")
-    
     def on_network_row_activated(self, listbox, row):
         """Handle activation of a network row by connecting to it."""
         if row:
