@@ -353,7 +353,7 @@ class BatteryTab(Gtk.Box):
         Show a password entry dialog and return the entered password.
         """
         dialog = Gtk.MessageDialog(
-            transient_for=self,
+            transient_for=self.parent,
             flags=0,
             message_type=Gtk.MessageType.QUESTION,
             buttons=Gtk.ButtonsType.OK_CANCEL,
@@ -414,7 +414,14 @@ class BatteryTab(Gtk.Box):
         for child in self.content_box.get_children():
             self.content_box.remove(child)
         
-        # Counter for batteries found
+        # Create a grid to hold the batteries in a 2x2 layout
+        batteries_grid = Gtk.Grid()
+        batteries_grid.set_column_spacing(20)
+        batteries_grid.set_row_spacing(20)
+        batteries_grid.set_halign(Gtk.Align.CENTER)
+        self.content_box.pack_start(batteries_grid, False, False, 0)
+        
+        # Counter for batteries found and position tracking
         batteries_found = 0
         
         # First check if we can get battery info from /sys/class/power_supply
@@ -429,16 +436,15 @@ class BatteryTab(Gtk.Box):
             batteries_found += 1
             battery_num = os.path.basename(path).replace("BAT", "")
             
+            # Calculate grid position (2x2 layout)
+            grid_x = (batteries_found - 1) % 2
+            grid_y = (batteries_found - 1) // 2
+            
             # Create a grid for this battery
             battery_grid = Gtk.Grid()
             battery_grid.set_column_spacing(15)
             battery_grid.set_row_spacing(10)
             battery_grid.set_margin_bottom(15)
-            
-            # Add separator if not the first battery
-            if batteries_found > 1:
-                separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-                self.content_box.pack_start(separator, False, False, 10)
             
             # Add battery title
             title = f"Battery {battery_num}"
@@ -579,8 +585,8 @@ class BatteryTab(Gtk.Box):
                 battery_grid.attach(value_label, 1, row, 1, 1)
                 row += 1
             
-            # Add this battery grid to the content box
-            self.content_box.pack_start(battery_grid, False, False, 0)
+            # Add this battery grid to the main batteries grid in a 2x2 layout
+            batteries_grid.attach(battery_grid, grid_x, grid_y, 1, 1)
         
         # If no battery files were found, try using psutil
         if not batteries_found:
@@ -631,8 +637,8 @@ class BatteryTab(Gtk.Box):
                         battery_grid.attach(value_label, 1, row, 1, 1)
                         row += 1
                     
-                    # Add to content box
-                    self.content_box.pack_start(battery_grid, False, False, 0)
+                    # Add to batteries grid
+                    batteries_grid.attach(battery_grid, 0, 0, 1, 1)
             except Exception as e:
                 logging.error(f"Failed to get battery info via psutil: {e}")
         
@@ -661,7 +667,7 @@ class bettercontrol(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Control Center")
         self.set_type_hint(Gdk.WindowTypeHint.DIALOG)
-        self.set_default_size(1000, 700)
+        self.set_default_size(900, 600)
         self.set_resizable(True)
 
         if "hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
