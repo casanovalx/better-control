@@ -27,7 +27,8 @@ before install make sure u have `git` and `base-devel` installed
 #### if you dont want to use a feature in better-control , u can safely remove the dependency u dont wanna use and hide the tab
 
 ### Arch Based
-```sudo pacman -S bluez bluez-utils brightnessctl cpupower gammastep gtk3 networkmanager pipewire-pulse python python-gobject python-psutil python-pydbus git```
+Arch users can just install the AUR package.
+```yay -S better-control-git```
 
 ### Debian Based
 ```sudo apt update && sudo apt install -y libgtk-3dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python linux-tools-common linux-tools-generic python3-psutil gammastep```
