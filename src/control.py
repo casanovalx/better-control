@@ -1093,6 +1093,32 @@ class bettercontrol(Gtk.Window):
         mic_section.pack_start(mic_buttons, False, False, 0)
         controls_box.pack_start(mic_section, False, False, 0)
         
+        # Application volume section
+        app_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        app_section.set_margin_top(15)
+        
+        app_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        
+        app_label = Gtk.Label(label="Application Volume")
+        app_label.set_xalign(0)
+        app_header.pack_start(app_label, True, True, 0)
+        
+        refresh_app_volume_button = Gtk.Button(label="Refresh Applications")
+        refresh_app_volume_button.connect("clicked", self.refresh_app_volume)
+        app_header.pack_end(refresh_app_volume_button, False, False, 0)
+        
+        app_section.pack_start(app_header, False, False, 0)
+        
+        # Application volume list
+        self.app_volume_listbox = Gtk.ListBox()
+        self.app_volume_listbox.set_selection_mode(Gtk.SelectionMode.NONE)
+        app_section.pack_start(self.app_volume_listbox, True, True, 0)
+        
+        controls_box.pack_start(app_section, False, False, 0)
+        
+        # Initialize app volume list and set up auto-refresh
+        GLib.timeout_add_seconds(1, self.refresh_app_volume_realtime)
+        
         scroll_window.add(controls_box)
         volume_box.pack_start(scroll_window, True, True, 0)
         
@@ -1231,32 +1257,6 @@ class bettercontrol(Gtk.Window):
         self.tabs["Display"] = scrolled_display
         if self.tab_visibility.get("Display", True):
             self.notebook.append_page(scrolled_display, Gtk.Label(label="Display"))
-
-        app_volume_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        app_volume_box.set_margin_top(10)
-        app_volume_box.set_margin_bottom(10)
-        app_volume_box.set_margin_start(10)
-        app_volume_box.set_margin_end(10)
-        app_volume_box.set_hexpand(True)
-        app_volume_box.set_vexpand(True)
-
-        self.app_volume_listbox = Gtk.ListBox()
-        self.app_volume_listbox.set_selection_mode(Gtk.SelectionMode.NONE)
-        app_volume_box.pack_start(self.app_volume_listbox, True, True, 0)
-
-        refresh_app_volume_button = Gtk.Button(label="Refresh Applications")
-        refresh_app_volume_button.connect("clicked", self.refresh_app_volume)
-        app_volume_box.pack_start(refresh_app_volume_button, False, False, 0)
-
-        GLib.timeout_add_seconds(1, self.refresh_app_volume_realtime) 
-
-        scrolled_app_volume = Gtk.ScrolledWindow()
-        scrolled_app_volume.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        scrolled_app_volume.add(app_volume_box)
-
-        self.tabs["Application Volume"] = scrolled_app_volume
-        if self.tab_visibility.get("Application Volume", True):  
-            self.notebook.append_page(scrolled_app_volume, Gtk.Label(label="Application Volume"))
 
         self.battery_tab = BatteryTab(self)
         self.tabs["Battery"] = self.battery_tab

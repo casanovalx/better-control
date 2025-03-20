@@ -5,6 +5,7 @@ A gtk themed control panel for linux 🐧
 
 Whats new :
 - Wifi, Display, Bluetooth, Volume, Battery and Settings tabs got a new UI
+- Removed Application Volume tab, you can manage all volume related things on the Volume tab
 - Changed the path of the configuration file to the user config dir
 - Made it possible to change tabs order on the settings
 - Fixed many bugs and removed unecessary code
