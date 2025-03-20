@@ -705,156 +705,171 @@ class bettercontrol(Gtk.Window):
         if self.tab_visibility.get("Bluetooth", True):
             self.notebook.append_page(scrolled_bt, Gtk.Label(label="Bluetooth"))
 
+        # Updated Volume tab with new UI matching Bluetooth and WiFi tabs
         volume_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        volume_box.set_margin_top(10)
-        volume_box.set_margin_bottom(10)
-        volume_box.set_margin_start(10)
-        volume_box.set_margin_end(10)
+        volume_box.set_margin_top(15)
+        volume_box.set_margin_bottom(15)
+        volume_box.set_margin_start(15)
+        volume_box.set_margin_end(15)
         volume_box.set_hexpand(True)
         volume_box.set_vexpand(True)
-
-        grid = Gtk.Grid()
-        grid.set_column_homogeneous(True)
-        grid.set_row_homogeneous(True)
-        grid.set_column_spacing(10)
-        grid.set_row_spacing(10)
-        volume_box.pack_start(grid, True, True, 0)
-
-        mainlabel = Gtk.Label(label="Quick Controls")
-        self.apply_css(mainlabel)
-
-        volume_label = Gtk.Label(label="Speaker Volume")
-        self.apply_css(volume_label)
-        mic_label = Gtk.Label(label="Microphone Volume")  
-        self.apply_css(mic_label)
-        volume_label.set_xalign(0)
-        mic_label.set_xalign(0)
-        mainlabel.set_xalign(0)
-
-        self.volume_button = Gtk.Button(label=f"Mute/Unmute Speaker")
+        
+        # Header with Volume title and status
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        header_box.set_margin_bottom(10)
+        
+        volume_icon = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic", Gtk.IconSize.DIALOG)
+        header_box.pack_start(volume_icon, False, False, 0)
+        
+        volume_title = Gtk.Label(label="Volume Control")
+        volume_title.get_style_context().add_class("wifi-header")
+        header_box.pack_start(volume_title, False, False, 0)
+        
+        # Mute button in header
+        self.volume_button = Gtk.Button(label="Mute/Unmute")
+        self.volume_button.set_valign(Gtk.Align.CENTER)
         self.volume_button.connect("clicked", self.mute)
-        self.volume_button.set_vexpand(False)  
-        self.volume_button.set_valign(Gtk.Align.START)  
-
-        self.volume_mic = Gtk.Button(label=f"Mute/Unmute Mic")
-        self.volume_mic.connect("clicked", self.micmute)
-        self.volume_mic.set_vexpand(False)  
-        self.volume_mic.set_valign(Gtk.Align.START)  
-
+        header_box.pack_end(self.volume_button, False, False, 0)
+        
+        volume_box.pack_start(header_box, False, False, 0)
+        
+        # Status area with output device selection
+        status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        status_box.set_margin_bottom(10)
+        
+        output_label = Gtk.Label(label="Output Device:")
+        status_box.pack_start(output_label, False, False, 0)
+        
         self.sink_dropdown = Gtk.ComboBoxText()
         self.sink_dropdown.connect("changed", self.on_sink_selected)
-        self.sink_dropdown.set_size_request(200, 40)  
-        self.sink_dropdown.set_vexpand(False)  
-        self.sink_dropdown.set_valign(Gtk.Align.CENTER)  
-        grid.attach(self.sink_dropdown, 0, 6, 5, 1)  
-
+        self.sink_dropdown.set_size_request(200, 30)
+        status_box.pack_start(self.sink_dropdown, True, True, 0)
+        
+        # Refresh button
+        refresh_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        refresh_button = Gtk.Button()
+        refresh_button.set_tooltip_text("Refresh Audio Devices")
+        refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        refresh_button.add(refresh_icon)
+        refresh_button.connect("clicked", self.update_sink_list)
+        refresh_box.pack_end(refresh_button, False, False, 0)
+        
+        status_box.pack_end(refresh_box, False, False, 0)
+        
+        volume_box.pack_start(status_box, False, False, 0)
+        
+        # Initialize the sink list
         self.update_sink_list()
-
-        GLib.timeout_add_seconds(3, self.update_sink_list_repeated)  
-
-        self.volume_zero = Gtk.Button(label="0%")
-        self.volume_zero.set_size_request(60, 35)  
-        self.volume_zero.set_vexpand(False)  
-        self.volume_zero.set_valign(Gtk.Align.START)  
-        self.volume_zero.connect("clicked", self.vzero)
-
-        self.volume_tfive = Gtk.Button(label="25%")
-        self.volume_tfive.set_size_request(60, 35)  
-        self.volume_tfive.set_vexpand(False)  
-        self.volume_tfive.set_valign(Gtk.Align.START)  
-        self.volume_tfive.connect("clicked", self.vtfive)
-
-        self.volume_fifty = Gtk.Button(label="50%")
-        self.volume_fifty.set_size_request(60, 35)  
-        self.volume_fifty.set_vexpand(False)  
-        self.volume_fifty.set_valign(Gtk.Align.START)  
-        self.volume_fifty.connect("clicked", self.vfifty)
-
-        self.volume_sfive = Gtk.Button(label="75%")
-        self.volume_sfive.set_size_request(60, 35)  
-        self.volume_sfive.set_vexpand(False)  
-        self.volume_sfive.set_valign(Gtk.Align.START)  
-        self.volume_sfive.connect("clicked", self.vsfive)
-
-        self.volume_hund = Gtk.Button(label="100%")
-        self.volume_hund.set_size_request(60, 35)  
-        self.volume_hund.set_vexpand(False)  
-        self.volume_hund.set_valign(Gtk.Align.START)  
-        self.volume_hund.connect("clicked", self.vhund)
-
-        self.mic_zero = Gtk.Button(label="0%")
-        self.mic_zero.set_size_request(60, 35)  
-        self.mic_zero.set_vexpand(False)  
-        self.mic_zero.set_valign(Gtk.Align.START)  
-        self.mic_zero.connect("clicked", self.mzero)
-
-        self.mic_tfive = Gtk.Button(label="25%")
-        self.mic_tfive.set_size_request(60, 35)  
-        self.mic_tfive.set_vexpand(False)  
-        self.mic_tfive.set_valign(Gtk.Align.START)  
-        self.mic_tfive.connect("clicked", self.mtfive)
-
-        self.mic_fifty = Gtk.Button(label="50%")
-        self.mic_fifty.set_size_request(60, 35)  
-        self.mic_fifty.set_vexpand(False)  
-        self.mic_fifty.set_valign(Gtk.Align.START)  
-        self.mic_fifty.connect("clicked", self.mfifty)
-
-        self.mic_sfive = Gtk.Button(label="75%")
-        self.mic_sfive.set_size_request(60, 35)  
-        self.mic_sfive.set_vexpand(False)  
-        self.mic_sfive.set_valign(Gtk.Align.START)  
-        self.mic_sfive.connect("clicked", self.msfive)
-
-        self.mic_hund = Gtk.Button(label="100%")
-        self.mic_hund.set_size_request(60, 35)  
-        self.mic_hund.set_vexpand(False)  
-        self.mic_hund.set_valign(Gtk.Align.START)  
-        self.mic_hund.connect("clicked", self.mhund)
-
+        GLib.timeout_add_seconds(3, self.update_sink_list_repeated)
+        
+        # Volume controls in scrollable area
+        scroll_window = Gtk.ScrolledWindow()
+        scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll_window.set_vexpand(True)
+        
+        controls_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+        controls_box.set_margin_top(10)
+        
+        # Speaker volume section
+        speaker_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        
+        volume_label = Gtk.Label(label="Speaker Volume")
+        volume_label.set_xalign(0)
+        speaker_section.pack_start(volume_label, False, False, 0)
+        
+        # Volume slider
         self.volume_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
-        self.volume_scale.set_hexpand(True)  
+        self.volume_scale.set_hexpand(True)
         self.volume_scale.set_value(self.get_current_volume())
-        self.volume_scale.set_value_pos(Gtk.PositionType.LEFT)  
+        self.volume_scale.set_value_pos(Gtk.PositionType.RIGHT)
         self.volume_scale.connect("value-changed", self.set_volume)
-
+        speaker_section.pack_start(self.volume_scale, False, False, 0)
+        
+        # Quick volume buttons
+        volume_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        
+        self.volume_zero = Gtk.Button(label="0%")
+        self.volume_zero.connect("clicked", self.vzero)
+        volume_buttons.pack_start(self.volume_zero, True, True, 0)
+        
+        self.volume_tfive = Gtk.Button(label="25%")
+        self.volume_tfive.connect("clicked", self.vtfive)
+        volume_buttons.pack_start(self.volume_tfive, True, True, 0)
+        
+        self.volume_fifty = Gtk.Button(label="50%")
+        self.volume_fifty.connect("clicked", self.vfifty)
+        volume_buttons.pack_start(self.volume_fifty, True, True, 0)
+        
+        self.volume_sfive = Gtk.Button(label="75%")
+        self.volume_sfive.connect("clicked", self.vsfive)
+        volume_buttons.pack_start(self.volume_sfive, True, True, 0)
+        
+        self.volume_hund = Gtk.Button(label="100%")
+        self.volume_hund.connect("clicked", self.vhund)
+        volume_buttons.pack_start(self.volume_hund, True, True, 0)
+        
+        speaker_section.pack_start(volume_buttons, False, False, 0)
+        controls_box.pack_start(speaker_section, False, False, 0)
+        
+        # Mic volume section
+        mic_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        mic_section.set_margin_top(15)
+        
+        mic_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        
+        mic_label = Gtk.Label(label="Microphone Volume")
+        mic_label.set_xalign(0)
+        mic_header.pack_start(mic_label, True, True, 0)
+        
+        self.volume_mic = Gtk.Button(label="Mute/Unmute Mic")
+        self.volume_mic.connect("clicked", self.micmute)
+        mic_header.pack_end(self.volume_mic, False, False, 0)
+        
+        mic_section.pack_start(mic_header, False, False, 0)
+        
+        # Mic slider
         self.mic_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
-        self.mic_scale.set_hexpand(True)  
-        self.mic_scale.set_value_pos(Gtk.PositionType.BOTTOM)  
+        self.mic_scale.set_hexpand(True)
+        self.mic_scale.set_value_pos(Gtk.PositionType.RIGHT)
         self.mic_scale.set_value(self.get_current_mic_volume())
         self.mic_scale.connect("value-changed", self.set_mic_volume)
-        self.mic_scale.set_value_pos(Gtk.PositionType.LEFT)
-
-        self.volume_scale.set_margin_top(50)
-        self.mic_scale.set_margin_top(50)
-        self.sink_dropdown.set_margin_top(50)
-
-        grid.attach(self.volume_zero, 0, 2, 1, 1)
-        grid.attach(self.volume_tfive, 1, 2, 1, 1)        
-        grid.attach(self.volume_fifty, 2, 2, 1, 1)
-        grid.attach(self.volume_sfive, 3, 2, 1, 1)
-        grid.attach(self.volume_hund, 4, 2, 1, 1)
-
-        grid.attach(self.mic_zero, 0, 4, 1, 1)
-        grid.attach(self.mic_tfive, 1, 4, 1, 1)        
-        grid.attach(self.mic_fifty, 2, 4, 1, 1)
-        grid.attach(self.mic_sfive, 3, 4, 1, 1)
-        grid.attach(self.mic_hund, 4, 4, 1, 1)
-
-        grid.attach(self.volume_mic, 0, 6, 1, 1)
-        grid.attach(self.volume_button, 1, 6, 1, 1)
-        grid.attach(volume_label, 0, 1, 5, 1)  
-        grid.attach(mic_label, 0, 3, 5, 1)  
-        grid.attach(self.volume_scale, 0, 2, 5, 1) 
-        grid.attach(self.mic_scale,0,4,5,1)
-        grid.attach(mainlabel,0,5,5,1)
-
+        mic_section.pack_start(self.mic_scale, False, False, 0)
+        
+        # Quick mic buttons
+        mic_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        
+        self.mic_zero = Gtk.Button(label="0%")
+        self.mic_zero.connect("clicked", self.mzero)
+        mic_buttons.pack_start(self.mic_zero, True, True, 0)
+        
+        self.mic_tfive = Gtk.Button(label="25%")
+        self.mic_tfive.connect("clicked", self.mtfive)
+        mic_buttons.pack_start(self.mic_tfive, True, True, 0)
+        
+        self.mic_fifty = Gtk.Button(label="50%")
+        self.mic_fifty.connect("clicked", self.mfifty)
+        mic_buttons.pack_start(self.mic_fifty, True, True, 0)
+        
+        self.mic_sfive = Gtk.Button(label="75%")
+        self.mic_sfive.connect("clicked", self.msfive)
+        mic_buttons.pack_start(self.mic_sfive, True, True, 0)
+        
+        self.mic_hund = Gtk.Button(label="100%")
+        self.mic_hund.connect("clicked", self.mhund)
+        mic_buttons.pack_start(self.mic_hund, True, True, 0)
+        
+        mic_section.pack_start(mic_buttons, False, False, 0)
+        controls_box.pack_start(mic_section, False, False, 0)
+        
+        scroll_window.add(controls_box)
+        volume_box.pack_start(scroll_window, True, True, 0)
+        
         scrolled_volume = Gtk.ScrolledWindow()
         scrolled_volume.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrolled_volume.add(volume_box)
 
         self.tabs["Volume"] = scrolled_volume
-        if self.tab_visibility.get("Volume", True):  
+        if self.tab_visibility.get("Volume", True):
             self.notebook.append_page(scrolled_volume, Gtk.Label(label="Volume"))
 
         brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
