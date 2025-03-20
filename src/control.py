@@ -601,42 +601,108 @@ class bettercontrol(Gtk.Window):
             # Add signal for tab change to refresh WiFi when tab is selected
             self.notebook.connect("switch-page", self.on_tab_switched)
         
+        # Replace the old bluetooth_box implementation
         bluetooth_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        bluetooth_box.set_margin_top(10)
-        bluetooth_box.set_margin_bottom(10)
-        bluetooth_box.set_margin_start(10)
-        bluetooth_box.set_margin_end(10)
+        bluetooth_box.set_margin_top(15)
+        bluetooth_box.set_margin_bottom(15)
+        bluetooth_box.set_margin_start(15)
+        bluetooth_box.set_margin_end(15)
         bluetooth_box.set_hexpand(True)
         bluetooth_box.set_vexpand(True)
-
+        
+        # Header with Bluetooth title and status
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        header_box.set_margin_bottom(10)
+        
+        bt_icon = Gtk.Image.new_from_icon_name("bluetooth-symbolic", Gtk.IconSize.DIALOG)
+        header_box.pack_start(bt_icon, False, False, 0)
+        
+        bt_label = Gtk.Label(label="Bluetooth Devices")
+        bt_label.get_style_context().add_class("wifi-header")
+        header_box.pack_start(bt_label, False, False, 0)
+        
+        # Add an initialization flag for Bluetooth
+        self._bt_initialized = False
+        
+        # Set up the Bluetooth switch
+        self.bt_status_switch = Gtk.Switch()
+        self.bt_status_switch.set_valign(Gtk.Align.CENTER)
+        
+        # Set initial state based on bluetooth service status
+        bt_status = subprocess.run(["systemctl", "is-active", "bluetooth"], 
+                                  capture_output=True, text=True).stdout.strip()
+        self.bt_status_switch.set_active(bt_status == "active")
+        
+        # Connect the signal handler
+        self.bt_status_switch.connect("notify::active", self.on_bluetooth_switch_toggled)
+        
+        header_box.pack_end(self.bt_status_switch, False, False, 0)
+        
+        bt_status_label = Gtk.Label(label="Enable Bluetooth")
+        bt_status_label.set_valign(Gtk.Align.CENTER)
+        header_box.pack_end(bt_status_label, False, False, 5)
+        
+        bluetooth_box.pack_start(header_box, False, False, 0)
+        
+        # Status and refresh area
+        status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        status_box.set_margin_bottom(10)
+        
+        self.bt_status_label = Gtk.Label(label="Bluetooth is ready")
+        status_box.pack_start(self.bt_status_label, False, False, 0)
+        
+        # Add right-aligned refresh button
+        refresh_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        refresh_button = Gtk.Button()
+        refresh_button.set_tooltip_text("Scan for Devices")
+        refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        refresh_button.add(refresh_icon)
+        refresh_button.connect("clicked", self.refresh_bluetooth)
+        refresh_box.pack_end(refresh_button, False, False, 0)
+        
+        status_box.pack_end(refresh_box, True, True, 0)
+        
+        bluetooth_box.pack_start(status_box, False, False, 0)
+        
+        # Device list with scrolling
+        scroll_window = Gtk.ScrolledWindow()
+        scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll_window.set_vexpand(True)
+        
         self.bt_listbox = Gtk.ListBox()
         self.bt_listbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        bluetooth_box.pack_start(self.bt_listbox, True, True, 0)
-
-        bluetooth_button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        bluetooth_button_box.set_hexpand(True)
-        bluetooth_button_box.set_vexpand(False)
-
-        enable_bt_button = Gtk.Button(label="Enable Bluetooth")
-        enable_bt_button.connect("clicked", self.enable_bluetooth)
-        bluetooth_button_box.pack_start(enable_bt_button, False, False, 0)
-
-        disable_bt_button = Gtk.Button(label="Disable Bluetooth")
-        disable_bt_button.connect("clicked", self.disable_bluetooth)
-        bluetooth_button_box.pack_start(disable_bt_button, False, False, 0)
-
-        refresh_bt_button = Gtk.Button(label="Refresh Devices")
-        refresh_bt_button.connect("clicked", self.refresh_bluetooth)
-        bluetooth_button_box.pack_start(refresh_bt_button, False, False, 0)
-
-        bluetooth_box.pack_start(bluetooth_button_box, False, False, 0)
-
+        self.bt_listbox.set_activate_on_single_click(False)
+        self.bt_listbox.connect("row-activated", self.on_device_row_activated)
+        
+        scroll_window.add(self.bt_listbox)
+        bluetooth_box.pack_start(scroll_window, True, True, 0)
+        
+        # Action buttons
+        action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        action_box.set_margin_top(10)
+        
+        connect_button = Gtk.Button(label="Connect")
+        connect_button.get_style_context().add_class("wifi-action-button")
+        connect_button.connect("clicked", self.connect_bluetooth_device_selected)
+        action_box.pack_start(connect_button, True, True, 0)
+        
+        disconnect_button = Gtk.Button(label="Disconnect")
+        disconnect_button.connect("clicked", self.disconnect_bluetooth_device_selected)
+        action_box.pack_start(disconnect_button, True, True, 0)
+        
+        forget_button = Gtk.Button(label="Forget Device")
+        forget_button.connect("clicked", self.forget_bluetooth_device_selected)
+        action_box.pack_start(forget_button, True, True, 0)
+        
+        bluetooth_box.pack_start(action_box, False, False, 0)
+        
+        # Replace the old scrolled_bt with our new implementation
         scrolled_bt = Gtk.ScrolledWindow()
         scrolled_bt.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrolled_bt.add(bluetooth_box)
 
         self.tabs["Bluetooth"] = scrolled_bt
-        if self.tab_visibility.get("Bluetooth", True):  
+        if self.tab_visibility.get("Bluetooth", True):
             self.notebook.append_page(scrolled_bt, Gtk.Label(label="Bluetooth"))
 
         volume_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -1206,96 +1272,482 @@ class bettercontrol(Gtk.Window):
 
     def enable_bluetooth(self, button):
         if not shutil.which("bluetoothctl"):
-            self.show_error("BlueZ is not installed. Install it with:\n\nsudo pacman -S bluez bluez-utils")
-            return  
+            error_msg = "BlueZ is not installed. Install it with:\n\nsudo pacman -S bluez bluez-utils"
+            self.show_error(error_msg)
+            print(error_msg)
+            return False
 
-        print("Enabling Bluetooth...")
-        subprocess.run(["systemctl", "start", "bluetooth"])
+        print("===== Attempting to enable Bluetooth =====")
+        
+        # Try using bluetoothctl directly first - this has better user permissions
+        try:
+            print("Attempting to enable using bluetoothctl power on...")
+            # This is a more direct way that works for regular users
+            result = subprocess.run(
+                ["bluetoothctl", "power", "on"],
+                capture_output=True,
+                text=True
+            )
+            
+            print(f"bluetoothctl power on result: {result.returncode}")
+            print(f"stdout: {result.stdout}")
+            print(f"stderr: {result.stderr}")
+            
+            if result.returncode == 0:
+                print("Bluetooth enabled via bluetoothctl")
+                # Check if it's really on
+                check_result = subprocess.run(
+                    ["bluetoothctl", "show"],
+                    capture_output=True,
+                    text=True
+                )
+                if "Powered: yes" in check_result.stdout:
+                    print("Confirmed Bluetooth is powered on")
+                    return True
+                else:
+                    print("Warning: Bluetooth power on command succeeded but Bluetooth is not powered on")
+        except Exception as e:
+            print(f"Error using bluetoothctl to enable: {e}")
+        
+        # Try using rfkill which doesn't require root permissions
+        try:
+            print("Attempting to enable using rfkill...")
+            rfkill_status = subprocess.run(
+                ["rfkill", "list", "bluetooth"], 
+                capture_output=True, 
+                text=True
+            )
+            
+            print(f"rfkill status output: {rfkill_status.stdout}")
+            
+            if "bluetooth" not in rfkill_status.stdout:
+                print("No Bluetooth adapter found in rfkill")
+            elif "blocked: yes" in rfkill_status.stdout:
+                # Unblock Bluetooth if it's blocked
+                print("Bluetooth is blocked, attempting to unblock...")
+                result = subprocess.run(
+                    ["rfkill", "unblock", "bluetooth"], 
+                    capture_output=True,
+                    text=True
+                )
+                
+                print(f"rfkill unblock result: {result.returncode}")
+                print(f"stdout: {result.stdout}")
+                print(f"stderr: {result.stderr}")
+                
+                if result.returncode == 0:
+                    print("Bluetooth unblocked via rfkill.")
+                    
+                    # Check if service needs to be started too
+                    service_status = subprocess.run(
+                        ["systemctl", "is-active", "bluetooth"], 
+                        capture_output=True, 
+                        text=True
+                    ).stdout.strip()
+                    
+                    print(f"Bluetooth service status: {service_status}")
+                    
+                    if service_status != "active":
+                        # Try to start the service, but it's not critical if it fails
+                        # since we've already unblocked through rfkill
+                        try:
+                            print("Starting bluetooth service...")
+                            subprocess.run(["systemctl", "start", "bluetooth"])
+                        except Exception as e:
+                            print(f"Failed to start bluetooth service: {e}")
+                            pass
+                    
+                    # Now check if Bluetooth is really active
+                    for _ in range(3):
+                        bt_status = subprocess.run(
+                            ["systemctl", "is-active", "bluetooth"], 
+                            capture_output=True, 
+                            text=True
+                        ).stdout.strip()
+                        
+                        print(f"Checking if bluetooth is active: {bt_status}")
+                        
+                        if bt_status == "active":
+                            print("Bluetooth service is active.")
+                            
+                            # Also verify with bluetoothctl
+                            check_result = subprocess.run(
+                                ["bluetoothctl", "show"],
+                                capture_output=True,
+                                text=True
+                            )
+                            if "Powered: yes" in check_result.stdout:
+                                print("Confirmed Bluetooth is powered on")
+                                return True
+                            else:
+                                print("Warning: Service is active but Bluetooth is not powered on")
+                                # Try one more time to power on explicitly
+                                subprocess.run(["bluetoothctl", "power", "on"])
+                                return True
+                        time.sleep(0.5)
+            else:
+                # Not blocked, just check service
+                print("Bluetooth is not blocked in rfkill")
+                service_status = subprocess.run(
+                    ["systemctl", "is-active", "bluetooth"], 
+                    capture_output=True, 
+                    text=True
+                ).stdout.strip()
+                
+                print(f"Bluetooth service status: {service_status}")
+                
+                if service_status == "active":
+                    print("Bluetooth service is already active.")
+                    # Also verify with bluetoothctl
+                    check_result = subprocess.run(
+                        ["bluetoothctl", "show"],
+                        capture_output=True,
+                        text=True
+                    )
+                    if "Powered: yes" in check_result.stdout:
+                        print("Confirmed Bluetooth is powered on")
+                        return True
+                    else:
+                        print("Warning: Service is active but Bluetooth is not powered on")
+                        # Try to power on explicitly
+                        subprocess.run(["bluetoothctl", "power", "on"])
+                        return True
+        except FileNotFoundError as e:
+            print(f"Command not found: {e}")
+            print("rfkill not found, trying systemctl")
+        except Exception as e:
+            print(f"Error using rfkill: {e}")
+        
+        # Fallback to systemctl method
+        try:
+            print("Attempting to enable using systemctl...")
+            # Check if we're running with sufficient privileges
+            test_result = subprocess.run(
+                ["systemctl", "status", "bluetooth"],
+                capture_output=True,
+                text=True
+            )
+            
+            print(f"systemctl status result: {test_result.returncode}")
+            print(f"stdout: {test_result.stdout}")
+            print(f"stderr: {test_result.stderr}")
+            
+            if "Access denied" in test_result.stderr:
+                # Show error message but continue (bluez might already be running)
+                print("Insufficient privileges to control Bluetooth service")
+            else:
+                # We have privileges, try to start Bluetooth
+                print("Starting bluetooth service...")
+                start_result = subprocess.run(
+                    ["systemctl", "start", "bluetooth"],
+                    capture_output=True,
+                    text=True
+                )
+                print(f"systemctl start result: {start_result.returncode}")
+                print(f"stdout: {start_result.stdout}")
+                print(f"stderr: {start_result.stderr}")
 
-        for _ in range(5):
-            bt_status = subprocess.run(["systemctl", "is-active", "bluetooth"], capture_output=True, text=True).stdout.strip()
-            if bt_status == "active":
-                print("Bluetooth enabled.")
-                return
-            subprocess.run(["sleep", "1"])  
-
-        self.show_error("Failed to enable Bluetooth. Make sure BlueZ is installed.")
+            # Check if bluetooth is active
+            for _ in range(5):
+                bt_status = subprocess.run(
+                    ["systemctl", "is-active", "bluetooth"], 
+                    capture_output=True, 
+                    text=True
+                ).stdout.strip()
+                
+                print(f"Checking if bluetooth is active: {bt_status}")
+                
+                if bt_status == "active":
+                    print("Bluetooth enabled via systemctl.")
+                    # Also verify with bluetoothctl
+                    check_result = subprocess.run(
+                        ["bluetoothctl", "show"],
+                        capture_output=True,
+                        text=True
+                    )
+                    if "Powered: yes" in check_result.stdout:
+                        print("Confirmed Bluetooth is powered on")
+                        return True
+                    else:
+                        print("Warning: Service is active but Bluetooth is not powered on")
+                        # Try to power on explicitly
+                        subprocess.run(["bluetoothctl", "power", "on"])
+                        return True
+                time.sleep(1)
+                
+            error_msg = "Failed to enable Bluetooth. Make sure BlueZ is installed."
+            self.show_error(error_msg)
+            print(error_msg)
+            return False
+            
+        except Exception as e:
+            error_msg = f"Failed to enable Bluetooth: {str(e)}"
+            self.show_error(error_msg)
+            print(error_msg)
+            return False
+        
+        print("===== Finished enable Bluetooth attempt =====")
+        return False
 
     def disable_bluetooth(self, button):
-        print("Disabling Bluetooth...")
-        subprocess.run(["systemctl", "stop", "bluetooth"])
-        print("Bluetooth disabled.")
+        print("===== Attempting to disable Bluetooth =====")
+        
+        # Try using bluetoothctl directly first - this has better user permissions
+        try:
+            print("Attempting to disable using bluetoothctl power off...")
+            # This is a more direct way that works for regular users
+            result = subprocess.run(
+                ["bluetoothctl", "power", "off"],
+                capture_output=True,
+                text=True
+            )
+            
+            print(f"bluetoothctl power off result: {result.returncode}")
+            print(f"stdout: {result.stdout}")
+            print(f"stderr: {result.stderr}")
+            
+            if result.returncode == 0:
+                print("Bluetooth disabled via bluetoothctl")
+                # Update UI
+                self.bt_status_label.set_text("Bluetooth is disabled")
+                # Clear the device list
+                self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
+                return
+        except Exception as e:
+            print(f"Error using bluetoothctl to disable: {e}")
+            
+        # Try rfkill next
+        try:
+            print("Attempting to disable using rfkill...")
+            # Get bluetooth block status
+            rfkill_status = subprocess.run(
+                ["rfkill", "list", "bluetooth"], 
+                capture_output=True, 
+                text=True
+            )
+            
+            print(f"rfkill status output: {rfkill_status.stdout}")
+            
+            if "bluetooth" not in rfkill_status.stdout:
+                print("No Bluetooth adapter found in rfkill")
+            elif "blocked: no" in rfkill_status.stdout:
+                # Only block if not already blocked
+                print("Bluetooth is not blocked, attempting to block...")
+                result = subprocess.run(
+                    ["rfkill", "block", "bluetooth"], 
+                    capture_output=True,
+                    text=True
+                )
+                
+                print(f"rfkill block result: {result.returncode}")
+                print(f"stdout: {result.stdout}")
+                print(f"stderr: {result.stderr}")
+                
+                if result.returncode == 0:
+                    print("Bluetooth disabled via rfkill.")
+                    
+                    # Update UI
+                    self.bt_status_label.set_text("Bluetooth is disabled")
+                    # Clear the device list
+                    self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
+                    return
+                else:
+                    print(f"rfkill failed: {result.stderr}")
+            else:
+                print("Bluetooth already blocked according to rfkill")
+                # Update UI for consistency
+                self.bt_status_label.set_text("Bluetooth is disabled")
+                # Clear the device list
+                self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
+                return
+                
+        except FileNotFoundError:
+            print("rfkill not found, trying systemctl")
+        except Exception as e:
+            print(f"Error using rfkill: {e}")
+        
+        # Fallback to systemctl method that requires root
+        try:
+            print("Attempting to disable using systemctl...")
+            # Check if we're running with sufficient privileges
+            test_result = subprocess.run(
+                ["systemctl", "status", "bluetooth"],
+                capture_output=True,
+                text=True
+            )
+            
+            print(f"systemctl status result: {test_result.returncode}")
+            print(f"stdout: {test_result.stdout}")
+            print(f"stderr: {test_result.stderr}")
+            
+            if "Access denied" in test_result.stderr:
+                # Show error message about insufficient privileges
+                error_msg = "Cannot disable Bluetooth via system service: insufficient privileges"
+                print(error_msg)
+                self.show_error(error_msg)
+            else:
+                # We have privileges, try to stop Bluetooth
+                print("Attempting to stop bluetooth service...")
+                stop_result = subprocess.run(
+                    ["systemctl", "stop", "bluetooth"],
+                    capture_output=True,
+                    text=True
+                )
+                print(f"systemctl stop result: {stop_result.returncode}")
+                print(f"stdout: {stop_result.stdout}")
+                print(f"stderr: {stop_result.stderr}")
+                
+                if stop_result.returncode == 0:
+                    print("Bluetooth disabled via systemctl.")
+                else:
+                    print(f"Failed to stop Bluetooth service: {stop_result.stderr}")
+        except Exception as e:
+            error_msg = f"Failed to disable Bluetooth: {str(e)}"
+            self.show_error(error_msg)
+            print(error_msg)
+        
+        # Update UI regardless of success (user will see if it worked)
+        self.bt_status_label.set_text("Bluetooth is disabled")
+        # Clear the device list
+        self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
+        print("===== Finished disable Bluetooth attempt =====")
+
+    def on_bluetooth_switch_toggled(self, switch, gparam):        
+        # Get the current state    
+        active = switch.get_active()
+        print(f"User toggled Bluetooth switch to {'ON' if active else 'OFF'}")
+        
+        # Block signal handling to prevent recursive events
+        switch.handler_block_by_func(self.on_bluetooth_switch_toggled)
+        
+        try:
+            if active:
+                # Attempt to enable Bluetooth
+                self.bt_status_label.set_text("Enabling Bluetooth...")
+                success = self.enable_bluetooth(None)
+                
+                if success:
+                    self.bt_status_label.set_text("Scanning for devices...")
+                    # Automatically scan when enabled
+                    GLib.timeout_add(1000, self.refresh_bluetooth, None)
+                else:
+                    # If enabling failed, revert the switch to off
+                    print("Failed to enable Bluetooth, reverting switch")
+                    switch.set_active(False)
+                    self.bt_status_label.set_text("Failed to enable Bluetooth")
+            else:
+                # Attempt to disable Bluetooth
+                self.bt_status_label.set_text("Disabling Bluetooth...")
+                self.disable_bluetooth(None)
+                # UI updates are handled in the disable_bluetooth method
+        except Exception as e:
+            print(f"Exception in bluetooth switch handler: {e}")
+            # Make sure the switch reflects the actual bluetooth state
+            self.update_bluetooth_switch_state()
+        finally:
+            # Unblock signal handlers when done
+            switch.handler_unblock_by_func(self.on_bluetooth_switch_toggled)
+    
+    def update_bluetooth_switch_state(self):
+        """Update the Bluetooth switch to match the actual Bluetooth state."""
+        try:
+            # Check if bluetooth is actually on using bluetoothctl
+            check_result = subprocess.run(
+                ["bluetoothctl", "show"],
+                capture_output=True,
+                text=True
+            )
+            powered_on = "Powered: yes" in check_result.stdout
+            
+            # Block signals during update
+            self.bt_status_switch.handler_block_by_func(self.on_bluetooth_switch_toggled)
+            
+            # Set the switch state
+            self.bt_status_switch.set_active(powered_on)
+            
+            # Unblock signals
+            self.bt_status_switch.handler_unblock_by_func(self.on_bluetooth_switch_toggled)
+        except Exception as e:
+            print(f"Error updating bluetooth switch state: {e}")
+            
+            # In case of error, use systemctl as fallback
+            try:
+                bt_status = subprocess.run(
+                    ["systemctl", "is-active", "bluetooth"], 
+                    capture_output=True, 
+                    text=True
+                ).stdout.strip()
+                
+                self.bt_status_switch.handler_block_by_func(self.on_bluetooth_switch_toggled)
+                self.bt_status_switch.set_active(bt_status == "active")
+                self.bt_status_switch.handler_unblock_by_func(self.on_bluetooth_switch_toggled)
+                
+                print(f"Bluetooth service is {bt_status}")
+            except Exception as e2:
+                print(f"Error using systemctl fallback: {e2}")
+                # If all else fails, don't change the switch state
 
     def refresh_bluetooth(self, button):
-        """ Refreshes the list of Bluetooth devices (paired + nearby) """
+        """Refreshes the list of Bluetooth devices with improved UI feedback."""
+        # Update status
+        self.bt_status_label.set_text("Scanning for devices...")
+        
+        # Clear existing devices
         self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
-
+        
+        # Check if bluetooth is active
         bt_status = subprocess.run(
             ["systemctl", "is-active", "bluetooth"], capture_output=True, text=True
         ).stdout.strip()
-
+        
         if bt_status != "active":
-            self.show_error("Bluetooth is disabled. Enable it first.")
+            self.bt_status_label.set_text("Bluetooth is disabled.")
             return
-
-        # Start a thread to handle the scanning and updating
+        
+        # Start a thread to handle scanning
         thread = threading.Thread(target=self._refresh_bluetooth_thread)
         thread.daemon = True
         thread.start()
-            
+
     def _refresh_bluetooth_thread(self):
-        """ Refreshes the list of Bluetooth devices (paired + nearby) in a separate thread """
-        subprocess.run(["bluetoothctl", "scan", "on"], capture_output=True, text=True)
-        time.sleep(5)
+        """Performs Bluetooth scanning in a background thread."""
+        # Run scan for 5 seconds
+        try:
+            subprocess.run(["bluetoothctl", "scan", "on"], timeout=5, 
+                           capture_output=True, text=True)
+        except subprocess.TimeoutExpired:
+            # This is normal - we're just scanning for a fixed duration
+            pass
+        
+        # Turn off scanning
         subprocess.run(["bluetoothctl", "scan", "off"], capture_output=True, text=True)
+        
+        # Get all devices
+        output = subprocess.run(["bluetoothctl", "devices"], 
+                                capture_output=True, text=True).stdout.strip()
+        devices = output.split('\n')
+        
+        # Update the UI from the main thread
+        GLib.idle_add(self._update_bluetooth_list_with_rows, devices)
 
-        output = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True).stdout.strip()
-        devices = output.split("\n")
-
-        GLib.idle_add(self._update_bluetooth_list, devices)
-
-    def _update_bluetooth_list(self, devices):
-        """ Updates the Bluetooth listbox with the provided devices """
+    def _update_bluetooth_list_with_rows(self, devices):
+        """Updates the Bluetooth listbox with the provided devices using our new row class."""
+        # Clear any existing devices
         self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
-
+        
         if not devices or devices == [""]:
-            self.show_error("No Bluetooth devices found.")
+            self.bt_status_label.set_text("No Bluetooth devices found.")
             return
-
+        
+        # Add each device
         for device in devices:
-            parts = device.split(" ")
-            if len(parts) < 2:
-                continue
-            mac_address = parts[1]
-            device_name = " ".join(parts[2:]) if len(parts) > 2 else mac_address
-
-            try:
-                status_output = subprocess.getoutput(f"bluetoothctl info {mac_address}")
-                is_connected = "Connected: yes" in status_output
-            except Exception as e:
-                print(f"Error checking status for {mac_address}: {e}")
-                is_connected = False  
-
-            row = Gtk.ListBoxRow()
-            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-
-            label = Gtk.Label(label=device_name, xalign=0)
-            box.pack_start(label, True, True, 0)
-
-            if not is_connected:
-                connect_button = Gtk.Button(label="Connect")
-                connect_button.connect("clicked", self.connect_bluetooth_device, mac_address)
-                box.pack_start(connect_button, False, False, 0)
-
-            if is_connected:
-                disconnect_button = Gtk.Button(label="Disconnect")
-                disconnect_button.connect("clicked", self.disconnect_bluetooth_device, mac_address)
-                box.pack_start(disconnect_button, False, False, 0)
-
-            row.add(box)
-            self.bt_listbox.add(row)
-
+            if device.strip():  # Skip empty lines
+                row = BluetoothDeviceRow(device)
+                self.bt_listbox.add(row)
+        
         self.bt_listbox.show_all()
+        self.bt_status_label.set_text("Scan complete")
+        return False  # Don't repeat the timeout
 
     def show_error(self, message):
         """ Displays an error message in a popup """
@@ -1310,31 +1762,102 @@ class bettercontrol(Gtk.Window):
         dialog.run()
         dialog.destroy()
 
-    def connect_bluetooth_device(self, button, mac_address):
-        """ Connects to a selected Bluetooth device """
-        try:
-            subprocess.run(["bluetoothctl", "pair", mac_address], capture_output=True, text=True)
-            subprocess.run(["bluetoothctl", "connect", mac_address], capture_output=True, text=True)
+    def connect_bluetooth_device_selected(self, button):
+        """Connect to the selected Bluetooth device."""
+        selected_row = self.bt_listbox.get_selected_row()
+        if not selected_row:
+            return
+        
+        mac_address = selected_row.get_mac_address()
+        device_name = selected_row.get_device_name()
+        
+        # Show connecting status
+        self.bt_status_label.set_text(f"Connecting to {device_name}...")
+        
+        # Use a thread to not block the UI
+        def connect_thread():
+            try:
+                subprocess.run(["bluetoothctl", "pair", mac_address], capture_output=True, text=True)
+                subprocess.run(["bluetoothctl", "connect", mac_address], capture_output=True, text=True)
+                
+                # Update UI from main thread
+                GLib.idle_add(lambda: self.bt_status_label.set_text(f"Connected to {device_name}"))
+                GLib.idle_add(self.refresh_bluetooth, None)
+            except Exception as e:
+                GLib.idle_add(lambda: self.bt_status_label.set_text(f"Connection failed: {str(e)}"))
+        
+        thread = threading.Thread(target=connect_thread)
+        thread.daemon = True
+        thread.start()
 
-            self.refresh_bluetooth(None)  
-        except Exception as e:
-            self.show_error(f"Error connecting to {mac_address}: {e}")
+    def disconnect_bluetooth_device_selected(self, button):
+        """Disconnect the selected Bluetooth device."""
+        selected_row = self.bt_listbox.get_selected_row()
+        if not selected_row:
+            return
+        
+        mac_address = selected_row.get_mac_address()
+        device_name = selected_row.get_device_name()
+        
+        self.bt_status_label.set_text(f"Disconnecting from {device_name}...")
+        
+        def disconnect_thread():
+            try:
+                subprocess.run(["bluetoothctl", "disconnect", mac_address], capture_output=True, text=True)
+                
+                GLib.idle_add(lambda: self.bt_status_label.set_text(f"Disconnected from {device_name}"))
+                GLib.idle_add(self.refresh_bluetooth, None)
+            except Exception as e:
+                GLib.idle_add(lambda: self.bt_status_label.set_text(f"Disconnection failed: {str(e)}"))
+        
+        thread = threading.Thread(target=disconnect_thread)
+        thread.daemon = True
+        thread.start()
 
-    def disconnect_bluetooth_device(self, button, mac_address):
-        """ Disconnects from a selected Bluetooth device """
-        try:
-            subprocess.run(["bluetoothctl", "disconnect", mac_address], capture_output=True, text=True)
+    def on_device_row_activated(self, listbox, row):
+        """Handle activation of a device row by connecting to it."""
+        if row:
+            self.connect_bluetooth_device_selected(None)
 
-            self.refresh_bluetooth(None)  
-        except Exception as e:
-            self.show_error(f"Error disconnecting from {mac_address}: {e}")
-
-    def forget_bluetooth_device(self, button, mac_address):
-        """ Removes a Bluetooth device from known devices """
-        try:
-            subprocess.run(["bluetoothctl", "remove", mac_address], capture_output=True, text=True)
-        except Exception as e:
-            self.show_error(f"Error forgetting {mac_address}: {e}")
+    def forget_bluetooth_device_selected(self, button):
+        """Remove the selected Bluetooth device."""
+        selected_row = self.bt_listbox.get_selected_row()
+        if not selected_row:
+            return
+        
+        mac_address = selected_row.get_mac_address()
+        device_name = selected_row.get_device_name()
+        
+        # Show confirmation dialog
+        dialog = Gtk.MessageDialog(
+            transient_for=self,
+            modal=True,
+            destroy_with_parent=True,
+            message_type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.YES_NO,
+            text=f"Forget Bluetooth Device"
+        )
+        dialog.format_secondary_text(f"Are you sure you want to forget the device '{device_name}'?")
+        response = dialog.run()
+        dialog.destroy()
+        
+        if response != Gtk.ResponseType.YES:
+            return
+        
+        self.bt_status_label.set_text(f"Removing {device_name}...")
+        
+        def forget_thread():
+            try:
+                subprocess.run(["bluetoothctl", "remove", mac_address], capture_output=True, text=True)
+                
+                GLib.idle_add(lambda: self.bt_status_label.set_text(f"Removed {device_name}"))
+                GLib.idle_add(self.refresh_bluetooth, None)
+            except Exception as e:
+                GLib.idle_add(lambda: self.bt_status_label.set_text(f"Removal failed: {str(e)}"))
+        
+        thread = threading.Thread(target=forget_thread)
+        thread.daemon = True
+        thread.start()
 
     def mzero(self, button):
         self.set_mic_level(0)
@@ -1459,6 +1982,8 @@ class bettercontrol(Gtk.Window):
 
     def on_wifi_switch_toggled(self, switch, gparam):
         active = switch.get_active()
+        print(f"User toggled Wi-Fi switch to {'ON' if active else 'OFF'}")
+        
         if active:
             try:
                 subprocess.run(["nmcli", "radio", "wifi", "on"], check=True)
@@ -2084,8 +2609,17 @@ class bettercontrol(Gtk.Window):
         """Check dependencies when switching to a tab."""
         tab_label = self.notebook.get_tab_label_text(tab)
 
-        if tab_label == "Bluetooth" and not shutil.which("bluetoothctl"):
-            self.show_error_dialog("bluetoothctl is missing. Please check our GitHub page to see all dependencies and install them.")
+        if tab_label == "Bluetooth":
+            if not shutil.which("bluetoothctl"):
+                self.show_error_dialog("bluetoothctl is missing. Please check our GitHub page to see all dependencies and install them.")
+            else:
+                # Update the switch to reflect the actual Bluetooth state
+                self.update_bluetooth_switch_state()
+                
+                # Only initialize Bluetooth when the tab is selected and if Bluetooth is on
+                if not self._bt_initialized and self.bt_status_switch.get_active():
+                    self._bt_initialized = True
+                    self.refresh_bluetooth(None)
 
         elif tab_label == "Wi-Fi" and not shutil.which("nmcli"):
             self.show_error_dialog("NetworkManager (nmcli) is missing. Please check our GitHub page to see all dependencies and install them.")
@@ -2101,9 +2635,7 @@ class bettercontrol(Gtk.Window):
 
         if tab_label == "Wi-Fi":
             self.refresh_wifi(None)
-        elif tab_label == "Bluetooth":
-            self.refresh_bluetooth(None)
-
+    
     def on_tab_switched(self, notebook, page, page_num):
         """Handle tab switching to refresh data when a tab is selected."""
         tab_label = notebook.get_tab_label_text(notebook.get_nth_page(page_num))
@@ -2111,6 +2643,15 @@ class bettercontrol(Gtk.Window):
             # Only refresh if we're not already refreshing
             if not getattr(self, '_is_refreshing', False):
                 self.refresh_wifi(None)
+        elif tab_label == "Bluetooth":
+            # First update the switch to reflect the actual Bluetooth state
+            self.update_bluetooth_switch_state()
+            
+            # Initialize and refresh Bluetooth only when its tab is selected
+            # and if Bluetooth is enabled
+            if self.bt_status_switch.get_active():
+                self._bt_initialized = True
+                self.refresh_bluetooth(None)
 
     def refresh_app_volume(self, button=None):
         """Refresh the list of applications playing audio and create sliders for them."""
@@ -2250,6 +2791,118 @@ class bettercontrol(Gtk.Window):
             print(f"Error refreshing application volume list in real-time: {e}")
 
         return True
+
+class BluetoothDeviceRow(Gtk.ListBoxRow):
+    def __init__(self, device_info):
+        super().__init__()
+        self.set_margin_top(5)
+        self.set_margin_bottom(5)
+        self.set_margin_start(10)
+        self.set_margin_end(10)
+        
+        # Parse device information
+        parts = device_info.split(" ", 2)
+        self.mac_address = parts[1] if len(parts) > 1 else ""
+        self.device_name = parts[2] if len(parts) > 2 else self.mac_address
+        
+        # Get connection status
+        self.is_connected = False
+        try:
+            status_output = subprocess.getoutput(f"bluetoothctl info {self.mac_address}")
+            self.is_connected = "Connected: yes" in status_output
+            
+            # Get device type if available
+            if "Icon: " in status_output:
+                icon_line = [line for line in status_output.split('\n') if "Icon: " in line]
+                self.device_type = icon_line[0].split("Icon: ")[1].strip() if icon_line else "unknown"
+            else:
+                self.device_type = "unknown"
+        except Exception as e:
+            print(f"Error checking status for {self.mac_address}: {e}")
+            self.device_type = "unknown"
+        
+        # Main container for the row
+        container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.add(container)
+        
+        # Device icon based on type
+        icon_name = self.get_icon_name_for_device()
+        device_icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.LARGE_TOOLBAR)
+        container.pack_start(device_icon, False, False, 0)
+        
+        # Left side with device name and type
+        left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+        
+        name_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        name_label = Gtk.Label(label=self.device_name)
+        name_label.set_halign(Gtk.Align.START)
+        if self.is_connected:
+            name_label.set_markup(f"<b>{self.device_name}</b>")
+        name_box.pack_start(name_label, True, True, 0)
+        
+        if self.is_connected:
+            connected_label = Gtk.Label(label=" (Connected)")
+            connected_label.get_style_context().add_class("success-label")
+            name_box.pack_start(connected_label, False, False, 0)
+        
+        left_box.pack_start(name_box, False, False, 0)
+        
+        # Device details box
+        details_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        
+        type_label = Gtk.Label(label=self.get_friendly_device_type())
+        type_label.set_halign(Gtk.Align.START)
+        type_label.get_style_context().add_class("dim-label")
+        details_box.pack_start(type_label, False, False, 0)
+        
+        mac_label = Gtk.Label(label=self.mac_address)
+        mac_label.set_halign(Gtk.Align.START)
+        mac_label.get_style_context().add_class("dim-label")
+        details_box.pack_start(mac_label, False, False, 10)
+        
+        left_box.pack_start(details_box, False, False, 0)
+        
+        container.pack_start(left_box, True, True, 0)
+    
+    def get_icon_name_for_device(self):
+        """Return appropriate icon based on device type"""
+        if self.device_type == "audio-headset" or self.device_type == "audio-headphones":
+            return "audio-headset-symbolic"
+        elif self.device_type == "audio-card":
+            return "audio-speakers-symbolic"
+        elif self.device_type == "input-keyboard":
+            return "input-keyboard-symbolic"
+        elif self.device_type == "input-mouse":
+            return "input-mouse-symbolic"
+        elif self.device_type == "input-gaming":
+            return "input-gaming-symbolic"
+        elif self.device_type == "phone":
+            return "phone-symbolic"
+        else:
+            return "bluetooth-symbolic"
+    
+    def get_friendly_device_type(self):
+        """Return user-friendly device type name"""
+        type_names = {
+            "audio-headset": "Headset",
+            "audio-headphones": "Headphones",
+            "audio-card": "Speaker",
+            "input-keyboard": "Keyboard",
+            "input-mouse": "Mouse",
+            "input-gaming": "Game Controller",
+            "phone": "Phone",
+            "unknown": "Device"
+        }
+        return type_names.get(self.device_type, "Bluetooth Device")
+    
+    def get_mac_address(self):
+        return self.mac_address
+    
+    def get_device_name(self):
+        return self.device_name
+    
+    def get_is_connected(self):
+        return self.is_connected
 
 if __name__ == "__main__":
     win = bettercontrol()
