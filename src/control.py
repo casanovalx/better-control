@@ -353,7 +353,7 @@ class BatteryTab(Gtk.Box):
         Show a password entry dialog and return the entered password.
         """
         dialog = Gtk.MessageDialog(
-            transient_for=self.parent,
+            transient_for=self,
             flags=0,
             message_type=Gtk.MessageType.QUESTION,
             buttons=Gtk.ButtonsType.OK_CANCEL,
@@ -700,12 +700,6 @@ class bettercontrol(Gtk.Window):
                 border-radius: 20px;
                 padding: 8px 16px;
             }
-            .wifi-action-button {
-                border-radius: 5px;
-                padding: 5px 10px;
-                background-color: #3498db;
-                color: white;
-            }
             .info-notification {
                 background-color: #3498db;
                 color: white;
@@ -805,7 +799,7 @@ class bettercontrol(Gtk.Window):
         action_box.set_margin_top(10)
         
         connect_button = Gtk.Button(label="Connect")
-        connect_button.get_style_context().add_class("wifi-action-button")
+        connect_button.get_style_context().add_class("suggested-action")
         connect_button.connect("clicked", self.connect_wifi)
         action_box.pack_start(connect_button, True, True, 0)
         
@@ -914,7 +908,7 @@ class bettercontrol(Gtk.Window):
         action_box.set_margin_top(10)
         
         connect_button = Gtk.Button(label="Connect")
-        connect_button.get_style_context().add_class("wifi-action-button")
+        connect_button.get_style_context().add_class("suggested-action")
         connect_button.connect("clicked", self.connect_bluetooth_device_selected)
         action_box.pack_start(connect_button, True, True, 0)
         
@@ -1104,6 +1098,7 @@ class bettercontrol(Gtk.Window):
         app_header.pack_start(app_label, True, True, 0)
         
         refresh_app_volume_button = Gtk.Button(label="Refresh Applications")
+        refresh_app_volume_button.get_style_context().add_class("suggested-action")
         refresh_app_volume_button.connect("clicked", self.refresh_app_volume)
         app_header.pack_end(refresh_app_volume_button, False, False, 0)
         
