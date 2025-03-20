@@ -1,6 +1,6 @@
 #!/usr/bin/env xdg-open
 [Desktop Entry]
-Version=3.5
+Version=3.6
 Type=Application
 Name=control
 GenericName=Control Center
