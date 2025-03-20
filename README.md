@@ -4,10 +4,10 @@ A gtk themed control panel for linux 🐧
 <img src="https://github.com/user-attachments/assets/501cf1e4-f8aa-4e6d-9bef-b5b6803d68ba" width="500">
 
 Whats new :
-- Wifi, Display, Bluetooth and Volume tabs got a new UI
-- Added Network Speed Display
-- Added Blue Light Filter 
-- Fixed bugs and removed unecessary code
+- Wifi, Display, Bluetooth, Volume and Settings tabs got a new UI
+- Changed the path of the configuration file to the user config dir
+- Made it possible to change tabs order on the settings
+- Fixed many bugs and removed unecessary code
 
 This project is still under development, contriubutions such as ideas and feature requests towards project and testers are welcome.
 

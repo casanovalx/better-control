@@ -27,7 +27,10 @@ gi.require_version('Pango', '1.0')
 from gi.repository import Gtk, Pango
 import threading
 
-SETTINGS_FILE = "settings.json"
+# Get configuration directory from XDG standard or fallback to ~/.config
+CONFIG_DIR = os.environ.get('XDG_CONFIG_HOME', os.path.expanduser('~/.config'))
+CONFIG_PATH = os.path.join(CONFIG_DIR, 'better-control')
+SETTINGS_FILE = os.path.join(CONFIG_PATH, 'settings.json')
 
 def check_dependency(command, name, install_instructions):
     if not shutil.which(command):
@@ -53,13 +56,21 @@ def check_all_dependencies(parent):
 
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
-        with open(SETTINGS_FILE, "r") as f:
-            return json.load(f)
+        try:
+            with open(SETTINGS_FILE, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            logging.error(f"Error loading settings: {e}")
     return {}
 
 def save_settings(settings):
-    with open(SETTINGS_FILE, "w") as f:
-        json.dump(settings, f)
+    try:
+        # Ensure the config directory exists
+        os.makedirs(CONFIG_PATH, exist_ok=True)
+        with open(SETTINGS_FILE, "w") as f:
+            json.dump(settings, f)
+    except Exception as e:
+        logging.error(f"Error saving settings: {e}")
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -427,7 +438,7 @@ class BatteryTab(Gtk.Box):
 
 class bettercontrol(Gtk.Window):
     _is_connecting = False
-
+    
     def __init__(self):
         Gtk.Window.__init__(self, title="Control Center")
         self.set_type_hint(Gdk.WindowTypeHint.DIALOG)
@@ -438,7 +449,9 @@ class bettercontrol(Gtk.Window):
             subprocess.run(["hyprctl", "keyword", "windowrulev2", "float,class:^(control)$"])
 
         self.tabs = {}  
-        self.tab_visibility = self.load_settings()  
+        self.tab_visibility = self.load_settings()
+        # Dictionary to store original tab positions
+        self.original_tab_positions = self.original_tab_positions if hasattr(self, 'original_tab_positions') else {}
         self.main_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.add(self.main_container)
 
@@ -1048,9 +1061,14 @@ class bettercontrol(Gtk.Window):
 
         self.populate_settings_tab()
 
+        # Apply the saved tab order if available
+        self.apply_saved_tab_order()
+
         GLib.idle_add(self.notebook.set_current_page, 0)
 
         self.update_button_labels()
+        
+        # The original_tab_positions dictionary is already initialized earlier
 
     def apply_css(self, widget):
         css = """
@@ -1244,21 +1262,118 @@ class bettercontrol(Gtk.Window):
                 print(f"Switched to sink: {selected_sink}")
 
     def populate_settings_tab(self):
-        """ Populate the Settings tab with toggle options for showing/hiding other tabs. """
+        """ Populate the Settings tab with toggle options for showing/hiding other tabs and reordering controls. """
         settings_box = self.tabs["Settings"]
 
         for child in settings_box.get_children():
             settings_box.remove(child)
 
+        # Header with Settings title and icon
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        header_box.set_margin_bottom(10)
+        
+        settings_icon = Gtk.Image.new_from_icon_name("preferences-system-symbolic", Gtk.IconSize.DIALOG)
+        header_box.pack_start(settings_icon, False, False, 0)
+        
+        settings_label = Gtk.Label(label="Settings")
+        settings_label.get_style_context().add_class("wifi-header")
+        header_box.pack_start(settings_label, False, False, 0)
+        
+        settings_box.pack_start(header_box, False, False, 0)
+        
+        # Create a scrolled window for the settings content
+        scroll_window = Gtk.ScrolledWindow()
+        scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll_window.set_vexpand(True)
+        
+        # Container for all settings
+        settings_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        settings_container.set_margin_top(10)
+        settings_container.set_margin_bottom(10)
+        settings_container.set_margin_start(10)
+        settings_container.set_margin_end(10)
+        
+        # Tab visibility and order section
+        tab_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        tab_section.set_margin_bottom(15)
+        
+        section_label = Gtk.Label()
+        section_label.set_markup("<b>Tab Visibility and Order</b>")
+        section_label.set_halign(Gtk.Align.START)
+        section_label.set_margin_bottom(5)
+        tab_section.pack_start(section_label, False, False, 0)
+        
+        instruction_label = Gtk.Label(label="Use the checkboxes to show/hide tabs and the arrows to change tab order.")
+        instruction_label.set_halign(Gtk.Align.START)
+        instruction_label.set_margin_bottom(10)
+        tab_section.pack_start(instruction_label, False, False, 0)
+
+        # Create a list of tab names sorted by their current positions
+        tab_list = list(self.tabs.keys())
+        tab_list.sort(key=lambda tab_name: 
+            self.notebook.page_num(self.tabs[tab_name]) 
+            if self.notebook.page_num(self.tabs[tab_name]) != -1 
+            else float('inf')
+        )
+        
+        # Special case: keep Settings tab at the end
+        if "Settings" in tab_list:
+            tab_list.remove("Settings")
+            tab_list.append("Settings")
+        
         self.check_buttons = {}
-        for tab_name in self.tabs.keys():
-            if tab_name != "Settings":  
-                check_button = Gtk.CheckButton(label=f"Show {tab_name}")
+        for tab_name in tab_list:
+            if tab_name != "Settings":  # Don't allow hiding Settings tab
+                # Create a stylized container for each tab
+                row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+                row_box.set_margin_bottom(5)
+                
+                # Checkbox for visibility
+                check_button = Gtk.CheckButton()
                 check_button.set_active(self.tab_visibility.get(tab_name, True))
                 check_button.connect("toggled", self.toggle_tab, tab_name)
-                settings_box.pack_start(check_button, False, False, 0)
-                self.check_buttons[tab_name] = check_button  
-
+                row_box.pack_start(check_button, False, False, 0)
+                self.check_buttons[tab_name] = check_button
+                
+                # Tab label
+                tab_label = Gtk.Label(label=tab_name)
+                tab_label.set_halign(Gtk.Align.START)
+                row_box.pack_start(tab_label, True, True, 0)
+                
+                # Button container for movement controls
+                button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                
+                # Up button for moving tab up in order
+                up_button = Gtk.Button()
+                up_button.set_tooltip_text(f"Move {tab_name} tab up")
+                up_image = Gtk.Image.new_from_icon_name("go-up-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+                up_button.set_image(up_image)
+                up_button.connect("clicked", self.move_tab_up, tab_name)
+                button_box.pack_start(up_button, False, False, 0)
+                
+                # Down button for moving tab down in order
+                down_button = Gtk.Button()
+                down_button.set_tooltip_text(f"Move {tab_name} tab down")
+                down_image = Gtk.Image.new_from_icon_name("go-down-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+                down_button.set_image(down_image)
+                down_button.connect("clicked", self.move_tab_down, tab_name)
+                button_box.pack_start(down_button, False, False, 0)
+                
+                row_box.pack_end(button_box, False, False, 0)
+                
+                tab_section.pack_start(row_box, False, False, 0)
+        
+        settings_container.pack_start(tab_section, False, False, 0)
+        
+        # Add a separator
+        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        separator.set_margin_top(5)
+        separator.set_margin_bottom(15)
+        settings_container.pack_start(separator, False, False, 0)
+        
+        scroll_window.add(settings_container)
+        settings_box.pack_start(scroll_window, True, True, 0)
+        
         settings_box.show_all()
 
     def toggle_tab(self, button, tab_name):
@@ -1268,11 +1383,19 @@ class bettercontrol(Gtk.Window):
 
         if button.get_active():
             if page_num == -1:  
-                self.notebook.append_page(tab_widget, Gtk.Label(label=tab_name))
+                if tab_name in self.original_tab_positions:
+                    # Insert at original position
+                    position = min(self.original_tab_positions[tab_name], self.notebook.get_n_pages())
+                    self.notebook.insert_page(tab_widget, Gtk.Label(label=tab_name), position)
+                else:
+                    # If no original position known, just append
+                    self.notebook.append_page(tab_widget, Gtk.Label(label=tab_name))
                 self.notebook.show_all()  
                 self.tab_visibility[tab_name] = True
         else:
-            if page_num != -1:  
+            if page_num != -1:
+                # Store the position before removing
+                self.original_tab_positions[tab_name] = page_num
                 self.notebook.remove_page(page_num)
                 tab_widget.hide()  
                 self.tab_visibility[tab_name] = False
@@ -1280,22 +1403,50 @@ class bettercontrol(Gtk.Window):
         self.save_settings()  
 
     def save_settings(self):
-        """ Save tab visibility states to a file """
+        """ Save tab visibility states and positions to a file """
         try:
+            # Save tab visibility and positions
+            settings_data = {
+                "visibility": self.tab_visibility,
+                "positions": {}
+            }
+            
+            # Store current positions of all tabs
+            for tab_name in self.tabs.keys():
+                tab_widget = self.tabs[tab_name]
+                page_num = self.notebook.page_num(tab_widget)
+                if page_num != -1:
+                    settings_data["positions"][tab_name] = page_num
+                elif tab_name in self.original_tab_positions:
+                    settings_data["positions"][tab_name] = self.original_tab_positions[tab_name]
+            
+            # Ensure the config directory exists
+            os.makedirs(CONFIG_PATH, exist_ok=True)
             with open(SETTINGS_FILE, "w") as f:
-                json.dump(self.tab_visibility, f, indent=4)
+                json.dump(settings_data, f, indent=4)
         except Exception as e:
             print(f"Error saving settings: {e}")
 
     def load_settings(self):
-        """ Load tab visibility states from a file """
+        """ Load tab visibility states and positions from a file """
+        settings = {"visibility": {}, "positions": {}}
         if os.path.exists(SETTINGS_FILE):
             try:
                 with open(SETTINGS_FILE, "r") as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    # Handle legacy format (just visibility settings)
+                    if isinstance(data, dict) and not ("visibility" in data and "positions" in data):
+                        settings["visibility"] = data
+                    else:
+                        settings = data
+                    
+                    # Initialize original_tab_positions from saved positions
+                    self.original_tab_positions = settings.get("positions", {})
+                    
+                    return settings["visibility"]
             except json.JSONDecodeError:
                 return {}  
-        return {}  
+        return {}
 
     def enable_bluetooth(self, button):
         if not shutil.which("bluetoothctl"):
@@ -2818,6 +2969,107 @@ class bettercontrol(Gtk.Window):
             print(f"Error refreshing application volume list in real-time: {e}")
 
         return True
+
+    def move_tab_up(self, button, tab_name):
+        """Move a tab up in the order (lower position number)"""
+        tab_widget = self.tabs[tab_name]
+        current_position = self.notebook.page_num(tab_widget)
+        
+        # Can't move up if it's already at the top or not visible
+        if current_position <= 0 or current_position == -1:
+            return
+        
+        # Get the tab label
+        tab_label = self.notebook.get_tab_label(tab_widget)
+        
+        # Remember the currently active tab
+        current_active_tab = self.notebook.get_current_page()
+        
+        # Remove the tab and reinsert it at the new position
+        self.notebook.remove_page(current_position)
+        new_position = current_position - 1
+        self.notebook.insert_page(tab_widget, tab_label, new_position)
+        
+        # Restore the previously active tab instead of switching to the moved tab
+        self.notebook.set_current_page(current_active_tab if current_active_tab != current_position else new_position)
+        
+        # Update the original_tab_positions dictionary
+        for name, pos in self.original_tab_positions.items():
+            if pos == new_position:
+                self.original_tab_positions[name] = current_position
+        self.original_tab_positions[tab_name] = new_position
+        
+        # Save the new order
+        self.save_settings()
+        
+        # Update the settings tab to reflect the new order
+        self.populate_settings_tab()
+        
+    def move_tab_down(self, button, tab_name):
+        """Move a tab down in the order (higher position number)"""
+        tab_widget = self.tabs[tab_name]
+        current_position = self.notebook.page_num(tab_widget)
+        last_position = self.notebook.get_n_pages() - 1
+        
+        # Can't move down if it's already at the bottom, is the Settings tab, or not visible
+        if current_position == last_position or current_position == -1 or tab_name == "Settings":
+            return
+            
+        # Get the tab label
+        tab_label = self.notebook.get_tab_label(tab_widget)
+        
+        # Remember the currently active tab
+        current_active_tab = self.notebook.get_current_page()
+        
+        # Remove the tab and reinsert it at the new position
+        self.notebook.remove_page(current_position)
+        new_position = current_position + 1
+        self.notebook.insert_page(tab_widget, tab_label, new_position)
+        
+        # Restore the previously active tab instead of switching to the moved tab
+        self.notebook.set_current_page(current_active_tab if current_active_tab != current_position else new_position)
+        
+        # Update the original_tab_positions dictionary
+        for name, pos in self.original_tab_positions.items():
+            if pos == new_position:
+                self.original_tab_positions[name] = current_position
+        self.original_tab_positions[tab_name] = new_position
+        
+        # Save the new order
+        self.save_settings()
+        
+        # Update the settings tab to reflect the new order
+        self.populate_settings_tab()
+
+    def apply_saved_tab_order(self):
+        """Apply the saved tab order from settings"""
+        # Create a list of tabs sorted by their saved positions
+        if not self.original_tab_positions:
+            return
+            
+        # Get all currently visible tabs
+        visible_tabs = []
+        for i in range(self.notebook.get_n_pages()):
+            page = self.notebook.get_nth_page(i)
+            label_text = self.notebook.get_tab_label_text(page)
+            visible_tabs.append((label_text, page))
+            
+        # Remove all tabs
+        while self.notebook.get_n_pages() > 0:
+            self.notebook.remove_page(0)
+            
+        # Sort tabs by saved positions
+        visible_tabs.sort(key=lambda x: self.original_tab_positions.get(x[0], 999))
+        
+        # Add tabs back in the sorted order
+        for label_text, page in visible_tabs:
+            self.notebook.append_page(page, Gtk.Label(label=label_text))
+            
+        self.notebook.show_all()
+        
+        # Make sure the notebook selects the first page
+        if self.notebook.get_n_pages() > 0:
+            self.notebook.set_current_page(0)
 
 class BluetoothDeviceRow(Gtk.ListBoxRow):
     def __init__(self, device_info):
