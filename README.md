@@ -6,6 +6,7 @@ A gtk themed control panel for linux 🐧
 Whats new :
 - Volume tab overhaul
 - Bluetooth tab overhaul
+- Display tab overhaul
 - Wifi tab overhaul
 - Added Network Speed Display
 - Added Blue Light Filter 

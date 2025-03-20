@@ -872,121 +872,133 @@ class bettercontrol(Gtk.Window):
         if self.tab_visibility.get("Volume", True):
             self.notebook.append_page(scrolled_volume, Gtk.Label(label="Volume"))
 
+        # Updated Display tab with new UI matching Bluetooth and WiFi tabs
         brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        brightness_box.set_margin_top(10)
-        brightness_box.set_margin_bottom(10)
-        brightness_box.set_margin_start(10)
-        brightness_box.set_margin_end(10)
+        brightness_box.set_margin_top(15)
+        brightness_box.set_margin_bottom(15)
+        brightness_box.set_margin_start(15)
+        brightness_box.set_margin_end(15)
         brightness_box.set_hexpand(True)
         brightness_box.set_vexpand(True)
-
-        grid = Gtk.Grid()
-        grid.set_column_homogeneous(True)  
-        grid.set_row_homogeneous(False)    
-        grid.set_column_spacing(10)
-        grid.set_row_spacing(10)
-        brightness_box.pack_start(grid, True, True, 0)
-
-        self.brightness_label = Gtk.Label(label="Brightness")
-        grid.attach(self.brightness_label, 0,0,5,1)
-
-        self.brightness_zero = Gtk.Button(label="0%")
-        self.brightness_zero.set_size_request(80, 30)
-        self.brightness_zero.connect("clicked", self.zero)
-        self.brightness_zero.set_vexpand(False)
-        self.brightness_zero.set_valign(Gtk.Align.START)
-
-        self.brightness_tfive = Gtk.Button(label="25%")
-        self.brightness_tfive.set_size_request(80, 30)
-        self.brightness_tfive.connect("clicked", self.tfive)
-        self.brightness_tfive.set_vexpand(False)
-        self.brightness_tfive.set_valign(Gtk.Align.START)
-
-        self.brightness_fifty = Gtk.Button(label="50%")
-        self.brightness_fifty.set_size_request(80, 30)
-        self.brightness_fifty.connect("clicked", self.fifty)
-        self.brightness_fifty.set_vexpand(False)
-        self.brightness_fifty.set_valign(Gtk.Align.START)
-
-        self.brightness_sfive = Gtk.Button(label="75%")
-        self.brightness_sfive.set_size_request(80, 30)
-        self.brightness_sfive.connect("clicked", self.sfive)
-        self.brightness_sfive.set_vexpand(False)
-        self.brightness_sfive.set_valign(Gtk.Align.START)
-
-        self.brightness_hund = Gtk.Button(label="100%")
-        self.brightness_hund.set_size_request(80, 30)
-        self.brightness_hund.connect("clicked", self.hund)
-        self.brightness_hund.set_vexpand(False)
-        self.brightness_hund.set_valign(Gtk.Align.START)
-
-        grid.attach(self.brightness_zero, 0, 1, 1, 1)   
-        grid.attach(self.brightness_tfive, 1, 1, 1, 1)  
-        grid.attach(self.brightness_fifty, 2, 1, 1, 1)  
-        grid.attach(self.brightness_sfive, 3, 1, 1, 1)  
-        grid.attach(self.brightness_hund, 4, 1, 1, 1)   
-
+        
+        # Header with Display title and icon
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        header_box.set_margin_bottom(10)
+        
+        display_icon = Gtk.Image.new_from_icon_name("video-display-symbolic", Gtk.IconSize.DIALOG)
+        header_box.pack_start(display_icon, False, False, 0)
+        
+        display_title = Gtk.Label(label="Display Settings")
+        display_title.get_style_context().add_class("wifi-header")
+        header_box.pack_start(display_title, False, False, 0)
+        
+        brightness_box.pack_start(header_box, False, False, 0)
+        
+        # Content area with scrolling
+        scroll_window = Gtk.ScrolledWindow()
+        scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll_window.set_vexpand(True)
+        
+        display_controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+        display_controls.set_margin_top(10)
+        
+        # Brightness section
+        brightness_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        
+        brightness_label = Gtk.Label(label="Brightness")
+        brightness_label.set_xalign(0)
+        brightness_section.pack_start(brightness_label, False, False, 0)
+        
+        # Brightness slider
         self.brightness_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
         self.brightness_scale.set_hexpand(True)
         self.brightness_scale.set_value(self.get_current_brightness())
-        self.brightness_scale.set_value_pos(Gtk.PositionType.BOTTOM)
+        self.brightness_scale.set_value_pos(Gtk.PositionType.RIGHT)
         self.brightness_scale.connect("value-changed", self.set_brightness)
-
-        grid.attach(self.brightness_scale, 0, 2, 5, 1)  
-
-        self.blue_light_label = Gtk.Label(label="Blue Light Filter")
-
-        self.blue_zero = Gtk.Button(label="0%")
-        self.blue_zero.set_size_request(80, 30)
-        self.blue_zero.connect("clicked", self.bzero)
-        self.blue_zero.set_vexpand(False)
-        self.blue_zero.set_valign(Gtk.Align.START)
-
-        self.blue_tfive = Gtk.Button(label="25%")
-        self.blue_tfive.set_size_request(80, 30)
-        self.blue_tfive.connect("clicked", self.btfive)
-        self.blue_tfive.set_vexpand(False)
-        self.blue_tfive.set_valign(Gtk.Align.START)
-
-        self.blue_fifty = Gtk.Button(label="50%")
-        self.blue_fifty.set_size_request(80, 30)
-        self.blue_fifty.connect("clicked", self.bfifty)
-        self.blue_fifty.set_vexpand(False)
-        self.blue_fifty.set_valign(Gtk.Align.START)
-
-        self.blue_sfive = Gtk.Button(label="75%")
-        self.blue_sfive.set_size_request(80, 30)
-        self.blue_sfive.connect("clicked", self.bsfive)
-        self.blue_sfive.set_vexpand(False)
-        self.blue_sfive.set_valign(Gtk.Align.START)
-
-        self.blue_hund = Gtk.Button(label="100%")
-        self.blue_hund.set_size_request(80, 30)
-        self.blue_hund.connect("clicked", self.bhund)
-        self.blue_hund.set_vexpand(False)
-        self.blue_hund.set_valign(Gtk.Align.START)
-
+        brightness_section.pack_start(self.brightness_scale, False, False, 0)
+        
+        # Quick brightness buttons
+        brightness_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        
+        self.brightness_zero = Gtk.Button(label="0%")
+        self.brightness_zero.connect("clicked", self.zero)
+        brightness_buttons.pack_start(self.brightness_zero, True, True, 0)
+        
+        self.brightness_tfive = Gtk.Button(label="25%")
+        self.brightness_tfive.connect("clicked", self.tfive)
+        brightness_buttons.pack_start(self.brightness_tfive, True, True, 0)
+        
+        self.brightness_fifty = Gtk.Button(label="50%")
+        self.brightness_fifty.connect("clicked", self.fifty)
+        brightness_buttons.pack_start(self.brightness_fifty, True, True, 0)
+        
+        self.brightness_sfive = Gtk.Button(label="75%")
+        self.brightness_sfive.connect("clicked", self.sfive)
+        brightness_buttons.pack_start(self.brightness_sfive, True, True, 0)
+        
+        self.brightness_hund = Gtk.Button(label="100%")
+        self.brightness_hund.connect("clicked", self.hund)
+        brightness_buttons.pack_start(self.brightness_hund, True, True, 0)
+        
+        brightness_section.pack_start(brightness_buttons, False, False, 0)
+        display_controls.pack_start(brightness_section, False, False, 0)
+        
+        # Blue light filter section
+        bluelight_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        bluelight_section.set_margin_top(15)
+        
+        blue_light_label = Gtk.Label(label="Blue Light Filter")
+        blue_light_label.set_xalign(0)
+        bluelight_section.pack_start(blue_light_label, False, False, 0)
+        
+        # Blue light slider
         self.blue_light_slider = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 2500, 6500, 100)
-        self.blue_light_slider.set_value(6500)  
-        self.blue_light_slider.set_value_pos(Gtk.PositionType.BOTTOM)
-        self.blue_light_slider.connect("value-changed", self.set_bluelight_filter)
-
+        self.blue_light_slider.set_hexpand(True)
+        self.blue_light_slider.set_value_pos(Gtk.PositionType.RIGHT)
+        
+        # Set initial value from settings
         settings = load_settings()
         saved_gamma = settings.get("gamma", 6500)
         self.blue_light_slider.set_value(saved_gamma)
         self.blue_light_slider.connect("value-changed", self.set_bluelight_filter)
-
-        grid.attach(self.blue_light_label,0,3,5,1)
-        grid.attach(self.blue_zero, 0, 4, 1, 1)   
-        grid.attach(self.blue_tfive, 1, 4, 1, 1)  
-        grid.attach(self.blue_fifty, 2, 4, 1, 1)  
-        grid.attach(self.blue_sfive, 3, 4, 1, 1)  
-        grid.attach(self.blue_hund, 4, 4, 1, 1)   
-        grid.attach(self.blue_light_slider, 0, 5, 5, 1)  
-
-        self.tabs["Display"] = brightness_box
-        if self.tab_visibility.get("Display", True):  
-            self.notebook.append_page(brightness_box, Gtk.Label(label="Display"))
+        bluelight_section.pack_start(self.blue_light_slider, False, False, 0)
+        
+        # Quick blue light buttons
+        bluelight_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        
+        self.blue_zero = Gtk.Button(label="0%")
+        self.blue_zero.connect("clicked", self.bzero)
+        bluelight_buttons.pack_start(self.blue_zero, True, True, 0)
+        
+        self.blue_tfive = Gtk.Button(label="25%")
+        self.blue_tfive.connect("clicked", self.btfive)
+        bluelight_buttons.pack_start(self.blue_tfive, True, True, 0)
+        
+        self.blue_fifty = Gtk.Button(label="50%")
+        self.blue_fifty.connect("clicked", self.bfifty)
+        bluelight_buttons.pack_start(self.blue_fifty, True, True, 0)
+        
+        self.blue_sfive = Gtk.Button(label="75%")
+        self.blue_sfive.connect("clicked", self.bsfive)
+        bluelight_buttons.pack_start(self.blue_sfive, True, True, 0)
+        
+        self.blue_hund = Gtk.Button(label="100%")
+        self.blue_hund.connect("clicked", self.bhund)
+        bluelight_buttons.pack_start(self.blue_hund, True, True, 0)
+        
+        bluelight_section.pack_start(bluelight_buttons, False, False, 0)
+        display_controls.pack_start(bluelight_section, False, False, 0)
+        
+        scroll_window.add(display_controls)
+        brightness_box.pack_start(scroll_window, True, True, 0)
+        
+        scrolled_display = Gtk.ScrolledWindow()
+        scrolled_display.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scrolled_display.add(brightness_box)
+        
+        self.tabs["Display"] = scrolled_display
+        if self.tab_visibility.get("Display", True):
+            self.notebook.append_page(scrolled_display, Gtk.Label(label="Display"))
 
         app_volume_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         app_volume_box.set_margin_top(10)
