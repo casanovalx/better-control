@@ -1,81 +1,90 @@
-# Better-Control 🛠️ 
-A gtk themed control panel for linux 🐧
+# Better-Control 🛠️
+A GTK-themed control panel for Linux 🐧
 
 <img src="https://github.com/user-attachments/assets/501cf1e4-f8aa-4e6d-9bef-b5b6803d68ba" width="500">
 
-Whats new :
+## What's New
 - Complete UI overhaul
-- Removed Application Volume tab, you can manage all volume related things on the Volume tab
-- Changed the path of the configuration file to the user config dir
-- Made it possible to change tabs order on the settings
-- Fixed many bugs and removed unecessary code
+- Integrated all volume controls into a single Volume tab
+- Configuration file now stored in the user config directory
+- Added customizable tab ordering in settings
+- Fixed numerous bugs and optimized code
 
-This project is still under development, contriubutions such as ideas and feature requests towards project and testers are welcome.
+> **Note:** This project is under active development. Contributions, feature requests, ideas, and testers are welcome!
 
-# How to Install? ✅ 
-before install make sure u have `git` and `base-devel` installed
+## Installation ✅
 
-## Dependencies
+### Prerequisites
+Before installing, make sure you have `git` and `base-devel` installed.
 
-- GTK 3 (for the UI)
-- NetworkManager (for managing Wi-Fi & Ethernet)
-- BlueZ & BlueZ Utils (for Bluetooth support)
-- PipeWire Pulse (for audio control)
-- Brightnessctl (for screen brightness control)
-- Cpupower (for battery controls)
-- Gammastep (for blue light filter)
-- Python Libraries: python-gobject and python-pydbus and python3 and psutil
+### Dependencies
 
-#### if you dont want to use a feature in better-control , u can safely remove the dependency u dont wanna use and hide the tab
+- **GTK 3** - UI framework
+- **NetworkManager** - Wi-Fi & Ethernet management
+- **BlueZ & BlueZ Utils** - Bluetooth support
+- **PipeWire Pulse** - Audio control
+- **Brightnessctl** - Screen brightness control
+- **Power-profiles-daemon** - Battery management
+- **Gammastep** - Blue light filter
+- **Python Libraries** - python-gobject, python-pydbus, python3, psutil
 
-### Arch Based
-Arch users can just install the AUR package.
-```yay -S better-control-git```
+> **Tip:** If you don't need a specific feature, you can safely omit its corresponding dependency and hide its tab in the settings.
 
-### Debian Based
-```sudo apt update && sudo apt install -y libgtk-3dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python linux-tools-common linux-tools-generic python3-psutil gammastep```
+### Installing Dependencies
 
-### Fedora Based
-```sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python kernel-tools python3-psutil gammastep```
+#### Arch-based Distributions
+```
+sudo pacman -S gtk3 networkmanager bluez bluez-utils pipewire-pulse brightnessctl python-gobject python-dbus python power-profiles-daemon python-psutil gammastep
+```
 
-### Void Linux
-```sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python cpupower python3-psutil gammastep```
+#### Debian-based Distributions
+```
+sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python3 power-profiles-daemon python3-psutil gammastep
+```
 
-### Alpine Linux
-```sudo apk add gtk3 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus python cpufrequtils py3-psutil gammastep```
+#### Fedora-based Distributions
+```
+sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon python3-psutil gammastep
+```
 
+#### Void Linux
+```
+sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon python3-psutil gammastep
+```
 
-## After you get the dependencies 
+#### Alpine Linux
+```
+sudo apk add gtk3 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus python3 power-profiles-daemon py3-psutil gammastep
+```
+
+### Installation Steps
 ```
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
 sudo make install
 sudo rm -rf ~/better-control
-
 ```
-# How to uninstall? ❌
 
-For arch users who installed through AUR do this to uninstall `sudo pacman -Rns better-control-git`
+## Uninstallation ❌
 
-For others who installed with makefile follow the lines below :
-
+### It's the same steps for every distro
 ```
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
 sudo make uninstall
 sudo rm -rf ~/better-control
-
 ```
 
-# Compatability 📄
-I have only tested this on Arch Linux with Hyprland,Gnome & KDE Plasma so testers are welcome to test it out and share their review in discussions/issues. This should work on all distros (if u tested it pls leave a comment for any issues)
+## Compatibility 📄
 
-Probably will work on the stuff below 
-| **Category**         | **Requirements**                                                                 |
-|-----------------------|----------------------------------------------------------------------------------|
-| **Operating System**  | Linux                                                                            |
-| **Distributions**     | Arch based,Fedora Based,Debian Based,Void,Alpine                                                            |
-| **Desktop Environments** | GNOME (tested), XFCE, KDE Plasma (tested with GTK support), LXDE/LXQT, etc.                  |
-| **Window Managers**   | Hyprland (tested), Sway, i3, Openbox, Fluxbox, etc.                             |
-| **Display Protocol**     | Wayland (recommended), X11 (partial functionality)                               |
+Better-Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasma. It should work on most Linux distributions with minor adjustments.
 
+| **Category** | **Compatibility** |
+|--------------|-------------------|
+| **Operating System** | Linux |
+| **Distributions** | Arch-based, Fedora-based, Debian-based, Void, Alpine |
+| **Desktop Environments** | GNOME (tested), KDE Plasma (tested with GTK support), XFCE, LXDE/LXQT |
+| **Window Managers** | Hyprland (tested), Sway, i3, Openbox, Fluxbox |
+| **Display Protocol** | Wayland (recommended), X11 (partial functionality) |
+
+> If you test Better-Control on a different setup, please share your experience in the discussions or issues section.
