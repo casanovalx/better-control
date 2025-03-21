@@ -680,6 +680,15 @@ class bettercontrol(Gtk.Window):
         self.notebook.set_scrollable(True)
         self.main_container.pack_start(self.notebook, True, True, 0)
         self.notebook.connect("switch-page", self.on_tab_switch)
+        
+        # Create Settings button in the tab bar action area (right side)
+        settings_button = Gtk.Button()
+        settings_icon = Gtk.Image.new_from_icon_name("preferences-system-symbolic", Gtk.IconSize.BUTTON)
+        settings_button.set_image(settings_icon)
+        settings_button.set_tooltip_text("Settings")
+        settings_button.connect("clicked", self.toggle_settings_panel)
+        self.notebook.set_action_widget(settings_button, Gtk.PackType.END)
+        settings_button.show()
 
         # Create custom CSS for our UI
         css_provider = Gtk.CssProvider()
@@ -822,7 +831,7 @@ class bettercontrol(Gtk.Window):
         
         self.tabs["Wi-Fi"] = wifi_box
         if self.tab_visibility.get("Wi-Fi", True):
-            self.notebook.append_page(wifi_box, Gtk.Label(label="Wi-Fi"))
+            self.notebook.append_page(wifi_box, self.create_tab_label_with_icon("Wi-Fi"))
             # Start loading WiFi networks
             self.refresh_wifi(None)
             
@@ -931,7 +940,7 @@ class bettercontrol(Gtk.Window):
 
         self.tabs["Bluetooth"] = scrolled_bt
         if self.tab_visibility.get("Bluetooth", True):
-            self.notebook.append_page(scrolled_bt, Gtk.Label(label="Bluetooth"))
+            self.notebook.append_page(scrolled_bt, self.create_tab_label_with_icon("Bluetooth"))
 
         # Updated Volume tab with new UI matching Bluetooth and WiFi tabs
         volume_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -1125,7 +1134,7 @@ class bettercontrol(Gtk.Window):
 
         self.tabs["Volume"] = scrolled_volume
         if self.tab_visibility.get("Volume", True):
-            self.notebook.append_page(scrolled_volume, Gtk.Label(label="Volume"))
+            self.notebook.append_page(scrolled_volume, self.create_tab_label_with_icon("Volume"))
 
         # Updated Display tab with new UI matching Bluetooth and WiFi tabs
         brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -1253,15 +1262,16 @@ class bettercontrol(Gtk.Window):
         
         self.tabs["Display"] = scrolled_display
         if self.tab_visibility.get("Display", True):
-            self.notebook.append_page(scrolled_display, Gtk.Label(label="Display"))
+            self.notebook.append_page(scrolled_display, self.create_tab_label_with_icon("Display"))
 
         self.battery_tab = BatteryTab(self)
         self.tabs["Battery"] = self.battery_tab
         if self.tab_visibility.get("Battery", True):  
-            self.notebook.append_page(self.battery_tab, Gtk.Label(label="Battery"))
+            self.notebook.append_page(self.battery_tab, self.create_tab_label_with_icon("Battery"))
 
         GLib.idle_add(self.notebook.set_current_page, 0)
 
+        # Create the settings box but don't add it to the notebook
         settings_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         settings_box.set_margin_top(10)
         settings_box.set_margin_bottom(10)
@@ -1271,10 +1281,8 @@ class bettercontrol(Gtk.Window):
         settings_box.set_vexpand(True)
 
         self.tabs["Settings"] = settings_box  
-
-        if self.tab_visibility.get("Settings", True):  
-            self.notebook.append_page(settings_box, Gtk.Label(label="Settings"))
-
+        
+        # Initialize the settings box content
         self.populate_settings_tab()
 
         # Apply the saved tab order if available
@@ -1532,52 +1540,66 @@ class bettercontrol(Gtk.Window):
             else float('inf')
         )
         
-        # Special case: keep Settings tab at the end
+        # Remove Settings from the tab list since it's now a button, not a tab
         if "Settings" in tab_list:
             tab_list.remove("Settings")
-            tab_list.append("Settings")
+        
+        # Map tab names to appropriate icons
+        tab_icons = {
+            "Wi-Fi": "network-wireless-symbolic",
+            "Bluetooth": "bluetooth-symbolic",
+            "Volume": "audio-volume-high-symbolic",
+            "Application Volume": "audio-speakers-symbolic",
+            "Display": "video-display-symbolic",
+            "Battery": "battery-good-symbolic",
+            "Brightness": "display-brightness-symbolic"
+        }
         
         self.check_buttons = {}
         for tab_name in tab_list:
-            if tab_name != "Settings":  # Don't allow hiding Settings tab
-                # Create a stylized container for each tab
-                row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-                row_box.set_margin_bottom(5)
-                
-                # Checkbox for visibility
-                check_button = Gtk.CheckButton()
-                check_button.set_active(self.tab_visibility.get(tab_name, True))
-                check_button.connect("toggled", self.toggle_tab, tab_name)
-                row_box.pack_start(check_button, False, False, 0)
-                self.check_buttons[tab_name] = check_button
-                
-                # Tab label
-                tab_label = Gtk.Label(label=tab_name)
-                tab_label.set_halign(Gtk.Align.START)
-                row_box.pack_start(tab_label, True, True, 0)
-                
-                # Button container for movement controls
-                button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-                
-                # Up button for moving tab up in order
-                up_button = Gtk.Button()
-                up_button.set_tooltip_text(f"Move {tab_name} tab up")
-                up_image = Gtk.Image.new_from_icon_name("go-up-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
-                up_button.set_image(up_image)
-                up_button.connect("clicked", self.move_tab_up, tab_name)
-                button_box.pack_start(up_button, False, False, 0)
-                
-                # Down button for moving tab down in order
-                down_button = Gtk.Button()
-                down_button.set_tooltip_text(f"Move {tab_name} tab down")
-                down_image = Gtk.Image.new_from_icon_name("go-down-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
-                down_button.set_image(down_image)
-                down_button.connect("clicked", self.move_tab_down, tab_name)
-                button_box.pack_start(down_button, False, False, 0)
-                
-                row_box.pack_end(button_box, False, False, 0)
-                
-                tab_section.pack_start(row_box, False, False, 0)
+            # Create a stylized container for each tab
+            row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            row_box.set_margin_bottom(5)
+            
+            # Checkbox for visibility
+            check_button = Gtk.CheckButton()
+            check_button.set_active(self.tab_visibility.get(tab_name, True))
+            check_button.connect("toggled", self.toggle_tab, tab_name)
+            row_box.pack_start(check_button, False, False, 0)
+            self.check_buttons[tab_name] = check_button
+            
+            # Add icon for the tab
+            icon_name = tab_icons.get(tab_name, "applications-system-symbolic")  # Default icon if not found
+            tab_icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.SMALL_TOOLBAR)
+            row_box.pack_start(tab_icon, False, False, 0)
+            
+            # Tab label
+            tab_label = Gtk.Label(label=tab_name)
+            tab_label.set_halign(Gtk.Align.START)
+            row_box.pack_start(tab_label, True, True, 0)
+            
+            # Button container for movement controls
+            button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+            
+            # Up button for moving tab up in order
+            up_button = Gtk.Button()
+            up_button.set_tooltip_text(f"Move {tab_name} tab up")
+            up_image = Gtk.Image.new_from_icon_name("go-up-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+            up_button.set_image(up_image)
+            up_button.connect("clicked", self.move_tab_up, tab_name)
+            button_box.pack_start(up_button, False, False, 0)
+            
+            # Down button for moving tab down in order
+            down_button = Gtk.Button()
+            down_button.set_tooltip_text(f"Move {tab_name} tab down")
+            down_image = Gtk.Image.new_from_icon_name("go-down-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+            down_button.set_image(down_image)
+            down_button.connect("clicked", self.move_tab_down, tab_name)
+            button_box.pack_start(down_button, False, False, 0)
+            
+            row_box.pack_end(button_box, False, False, 0)
+            
+            tab_section.pack_start(row_box, False, False, 0)
         
         settings_container.pack_start(tab_section, False, False, 0)
         
@@ -1599,24 +1621,27 @@ class bettercontrol(Gtk.Window):
 
         if button.get_active():
             if page_num == -1:  
+                # Create a tab label with an icon
+                tab_label_box = self.create_tab_label_with_icon(tab_name)
+                
                 if tab_name in self.original_tab_positions:
                     # Insert at original position
                     position = min(self.original_tab_positions[tab_name], self.notebook.get_n_pages())
-                    self.notebook.insert_page(tab_widget, Gtk.Label(label=tab_name), position)
+                    self.notebook.insert_page(tab_widget, tab_label_box, position)
                 else:
                     # If no original position known, just append
-                    self.notebook.append_page(tab_widget, Gtk.Label(label=tab_name))
+                    self.notebook.append_page(tab_widget, tab_label_box)
                 self.notebook.show_all()  
                 self.tab_visibility[tab_name] = True
         else:
             if page_num != -1:
-                # Store the position before removing
+                # Store the position
                 self.original_tab_positions[tab_name] = page_num
                 self.notebook.remove_page(page_num)
                 tab_widget.hide()  
                 self.tab_visibility[tab_name] = False
 
-        self.save_settings()  
+        self.save_settings()
 
     def save_settings(self):
         """ Save tab visibility states and positions to a file """
@@ -3001,7 +3026,7 @@ class bettercontrol(Gtk.Window):
 
     def on_tab_switch(self, notebook, tab, page_num):
         """Check dependencies when switching to a tab."""
-        tab_label = self.notebook.get_tab_label_text(tab)
+        tab_label = self.get_tab_name_from_label(tab)
 
         if tab_label == "Bluetooth":
             if not shutil.which("bluetoothctl"):
@@ -3032,7 +3057,9 @@ class bettercontrol(Gtk.Window):
     
     def on_tab_switched(self, notebook, page, page_num):
         """Handle tab switching to refresh data when a tab is selected."""
-        tab_label = notebook.get_tab_label_text(notebook.get_nth_page(page_num))
+        tab_page = notebook.get_nth_page(page_num)
+        tab_label = self.get_tab_name_from_label(tab_page)
+        
         if tab_label == "Wi-Fi":
             # Only refresh if we're not already refreshing
             if not getattr(self, '_is_refreshing', False):
@@ -3237,8 +3264,8 @@ class bettercontrol(Gtk.Window):
         current_position = self.notebook.page_num(tab_widget)
         last_position = self.notebook.get_n_pages() - 1
         
-        # Can't move down if it's already at the bottom, is the Settings tab, or not visible
-        if current_position == last_position or current_position == -1 or tab_name == "Settings":
+        # Can't move down if it's already at the bottom or not visible
+        if current_position == last_position or current_position == -1:
             return
             
         # Get the tab label
@@ -3277,7 +3304,7 @@ class bettercontrol(Gtk.Window):
         visible_tabs = []
         for i in range(self.notebook.get_n_pages()):
             page = self.notebook.get_nth_page(i)
-            label_text = self.notebook.get_tab_label_text(page)
+            label_text = self.get_tab_name_from_label(page)
             visible_tabs.append((label_text, page))
             
         # Remove all tabs
@@ -3289,7 +3316,7 @@ class bettercontrol(Gtk.Window):
         
         # Add tabs back in the sorted order
         for label_text, page in visible_tabs:
-            self.notebook.append_page(page, Gtk.Label(label=label_text))
+            self.notebook.append_page(page, self.create_tab_label_with_icon(label_text))
             
         self.notebook.show_all()
         
@@ -3334,6 +3361,85 @@ class bettercontrol(Gtk.Window):
         
         # Return a generic audio icon as fallback
         return "audio-x-generic-symbolic"
+
+    def toggle_settings_panel(self, button):
+        """Toggle the visibility of the settings panel"""
+        if hasattr(self, 'settings_window') and self.settings_window.get_visible():
+            self.settings_window.hide()
+        else:
+            self.show_settings_panel()
+    
+    def show_settings_panel(self):
+        """Show the settings panel in a separate window"""
+        if not hasattr(self, 'settings_window'):
+            # Create settings window
+            self.settings_window = Gtk.Window(title="Settings")
+            self.settings_window.set_transient_for(self)
+            self.settings_window.set_modal(True)
+            self.settings_window.set_default_size(400, 500)
+            self.settings_window.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
+            
+            # Create the settings box
+            settings_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+            settings_box.set_margin_top(10)
+            settings_box.set_margin_bottom(10)
+            settings_box.set_margin_start(10)
+            settings_box.set_margin_end(10)
+            settings_box.set_hexpand(True)
+            settings_box.set_vexpand(True)
+            
+            self.settings_window.add(settings_box)
+            self.tabs["Settings"] = settings_box
+            
+            # Populate the settings content
+            self.populate_settings_tab()
+            
+            # Connect the close event
+            self.settings_window.connect("delete-event", lambda w, e: w.hide() or True)
+        
+        self.settings_window.show_all()
+
+    def create_tab_label_with_icon(self, tab_name):
+        """Create a tab label with an icon and text"""
+        # Map tab names to appropriate icons
+        tab_icons = {
+            "Wi-Fi": "network-wireless-symbolic",
+            "Bluetooth": "bluetooth-symbolic",
+            "Volume": "audio-volume-high-symbolic",
+            "Application Volume": "audio-speakers-symbolic",
+            "Display": "video-display-symbolic",
+            "Battery": "battery-good-symbolic",
+            "Brightness": "display-brightness-symbolic"
+        }
+        
+        # Create a box for the tab label with icon and text
+        tab_label_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        
+        # Add icon
+        icon_name = tab_icons.get(tab_name, "applications-system-symbolic")  # Default icon if not found
+        tab_icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.MENU)
+        tab_label_box.pack_start(tab_icon, False, False, 0)
+        
+        # Add text label
+        label = Gtk.Label(label=tab_name)
+        tab_label_box.pack_start(label, False, False, 0)
+        
+        tab_label_box.show_all()
+        return tab_label_box
+
+    def get_tab_name_from_label(self, tab):
+        """Get the tab name from a tab label which could be a box with icon and text"""
+        tab_label = self.notebook.get_tab_label(tab)
+        
+        # If the tab label is a box (our custom label with icon)
+        if isinstance(tab_label, Gtk.Box):
+            # Get the label from the second child (first is icon, second is label)
+            for child in tab_label.get_children():
+                if isinstance(child, Gtk.Label):
+                    return child.get_text()
+            
+        # Fallback to the standard method for text-only labels
+        return self.notebook.get_tab_label_text(tab)
 
 class BluetoothDeviceRow(Gtk.ListBoxRow):
     def __init__(self, device_info):
