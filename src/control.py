@@ -39,7 +39,7 @@ def check_dependency(command, name, install_instructions):
     return None
 
 dependencies = [
-    ("cpupower", "CPU Power Management", "- Debian/Ubuntu: sudo apt install linux-tools-common linux-tools-generic\n- Arch Linux: sudo pacman -S cpupower\n- Fedora: sudo dnf install kernel-tools"),
+    ("powerprofilesctl", "Power Profiles Control", "- Debian/Ubuntu: sudo apt install power-profiles-daemon\n- Arch Linux: sudo pacman -S power-profiles-daemon\n- Fedora: sudo dnf install power-profiles-daemon"),
     ("nmcli", "Network Manager CLI", "- Install NetworkManager package for your distro"),
     ("bluetoothctl", "Bluetooth Control", "- Debian/Ubuntu: sudo apt install bluez\n- Arch Linux: sudo pacman -S bluez bluez-utils\n- Fedora: sudo dnf install bluez"),
     ("pactl", "PulseAudio Control", "- Install PulseAudio or PipeWire depending on your distro"),
@@ -303,8 +303,8 @@ class BatteryTab(Gtk.Box):
         
         self.power_mode_dropdown = Gtk.ComboBoxText()
         self.power_modes = {
-            "Power Saving": "powersave",
-            "Balanced": "ondemand",
+            "Power Saving": "power-saver",
+            "Balanced": "balanced",
             "Performance": "performance"
         }
 
@@ -312,7 +312,7 @@ class BatteryTab(Gtk.Box):
             self.power_mode_dropdown.append_text(mode)
 
         settings = load_settings()
-        saved_mode = settings.get("power_mode", "ondemand")
+        saved_mode = settings.get("power_mode", "balanced")
 
         matching_label = next((label for label, value in self.power_modes.items() if value == saved_mode), "Balanced")
         if matching_label:
@@ -353,7 +353,7 @@ class BatteryTab(Gtk.Box):
         Show a password entry dialog and return the entered password.
         """
         dialog = Gtk.MessageDialog(
-            transient_for=self.parent,
+            transient_for=self,
             flags=0,
             message_type=Gtk.MessageType.QUESTION,
             buttons=Gtk.ButtonsType.OK_CANCEL,
@@ -378,21 +378,17 @@ class BatteryTab(Gtk.Box):
         return password
 
     def set_power_mode(self, widget):
-        """Handle power mode change using a GUI password prompt."""
+        """Handle power mode change using powerprofilesctl."""
         selected_mode = widget.get_active_text()
         if selected_mode in self.power_modes:
             mode_value = self.power_modes[selected_mode]
 
-            password = self.show_password_dialog()
-            if not password:
-                return  
-
             try:
-                command = f"echo {password} | sudo -S cpupower frequency-set -g {mode_value}"
+                command = f"powerprofilesctl set {mode_value}"
                 result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
                 if result.returncode != 0:
-                    error_message = "cpupower is missing. Please check our GitHub page to see all dependencies and install them."
+                    error_message = "powerprofilesctl is missing. Please check our GitHub page to see all dependencies and install them."
                     logging.error(error_message)
                     self.parent.show_error_dialog(error_message)  
                 else:
@@ -406,8 +402,8 @@ class BatteryTab(Gtk.Box):
                 self.parent.show_error_dialog(f"Failed to set power mode: {e}")
 
             except FileNotFoundError:
-                self.parent.show_error_dialog("cpupower is not installed or not found in PATH.")
-                
+                self.parent.show_error_dialog("powerprofilesctl is not installed or not found in PATH.")
+
     def refresh_battery_info(self, button=None):
         """Refresh battery information. Can be triggered by button press."""
         # Clear content box
@@ -3028,8 +3024,8 @@ class bettercontrol(Gtk.Window):
         elif tab_label in ["Volume", "Application Volume"] and not shutil.which("pactl"):
             self.show_error_dialog("pactl is missing. Please check our GitHub page to see all dependencies and install them.")
 
-        elif tab_label in ["Battery"] and not shutil.which("cpupower"):
-            self.show_error_dialog("cpupower is missing. Please check our GitHub page to see all dependencies and install them.")
+        elif tab_label in ["Battery"] and not shutil.which("powerprofilesctl"):
+            self.show_error_dialog("powerprofilesctl is missing. Please check our GitHub page to see all dependencies and install them.")
 
         if tab_label == "Wi-Fi":
             self.refresh_wifi(None)
