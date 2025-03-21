@@ -1,7 +1,7 @@
 # Better-Control 🛠️
 A GTK-themed control panel for Linux 🐧
 
-<img src="https://github.com/user-attachments/assets/501cf1e4-f8aa-4e6d-9bef-b5b6803d68ba" width="500">
+<img src="https://github.com/user-attachments/assets/b219415d-3dbf-4471-990d-bc8cd0f021c1" width="500">
 
 ## What's New
 - Complete UI overhaul
