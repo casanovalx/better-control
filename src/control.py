@@ -659,6 +659,7 @@ class BatteryTab(Gtk.Box):
 
 class bettercontrol(Gtk.Window):
     _is_connecting = False
+    _tabs_initialized = {}  # Track which tabs have been initialized
     
     def __init__(self):
         Gtk.Window.__init__(self, title="Control Center")
@@ -832,8 +833,8 @@ class bettercontrol(Gtk.Window):
         self.tabs["Wi-Fi"] = wifi_box
         if self.tab_visibility.get("Wi-Fi", True):
             self.notebook.append_page(wifi_box, self.create_tab_label_with_icon("Wi-Fi"))
-            # Start loading WiFi networks
-            self.refresh_wifi(None)
+            # Don't scan WiFi on startup - will be scanned when tab is selected
+            self._tabs_initialized["Wi-Fi"] = False
             
             # Add signal for tab change to refresh WiFi when tab is selected
             self.notebook.connect("switch-page", self.on_tab_switched)
@@ -860,15 +861,14 @@ class bettercontrol(Gtk.Window):
         
         # Add an initialization flag for Bluetooth
         self._bt_initialized = False
+        self._tabs_initialized["Bluetooth"] = False
         
         # Set up the Bluetooth switch
         self.bt_status_switch = Gtk.Switch()
         self.bt_status_switch.set_valign(Gtk.Align.CENTER)
         
-        # Set initial state based on bluetooth service status
-        bt_status = subprocess.run(["systemctl", "is-active", "bluetooth"], 
-                                  capture_output=True, text=True).stdout.strip()
-        self.bt_status_switch.set_active(bt_status == "active")
+        # Don't check Bluetooth status at startup - will be checked when tab is selected
+        self.bt_status_switch.set_active(False)
         
         # Connect the signal handler
         self.bt_status_switch.connect("notify::active", self.on_bluetooth_switch_toggled)
@@ -1790,7 +1790,28 @@ class bettercontrol(Gtk.Window):
                 print(f"Switched to source: {display_name} ({source_id})")
 
     def populate_settings_tab(self):
-        """ Populate the Settings tab with toggle options for showing/hiding other tabs and reordering controls. """
+        """Populate the settings tab with tabs management options."""
+        # Use lazy initialization
+        if hasattr(self, '_settings_populated') and self._settings_populated:
+            return
+            
+        self._settings_populated = True
+        
+        # Create the scrolled window if it doesn't exist
+        if not hasattr(self, 'settings_scroll'):
+            self.settings_scroll = Gtk.ScrolledWindow()
+            self.settings_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        
+        # Create the main container for settings if it doesn't exist  
+        if not hasattr(self, 'settings_box'):
+            self.settings_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+            self.settings_box.set_margin_top(20)
+            self.settings_box.set_margin_bottom(20) 
+            self.settings_box.set_margin_start(20)
+            self.settings_box.set_margin_end(20)
+            self.settings_scroll.add(self.settings_box)
+        
+        # Rest of the method stays the same
         settings_box = self.tabs["Settings"]
 
         for child in settings_box.get_children():
@@ -1977,20 +1998,32 @@ class bettercontrol(Gtk.Window):
         settings = {"visibility": {}, "positions": {}}
         if os.path.exists(SETTINGS_FILE):
             try:
-                with open(SETTINGS_FILE, "r") as f:
-                    data = json.load(f)
-                    # Handle legacy format (just visibility settings)
-                    if isinstance(data, dict) and not ("visibility" in data and "positions" in data):
-                        settings["visibility"] = data
-                    else:
-                        settings = data
-                    
-                    # Initialize original_tab_positions from saved positions
-                    self.original_tab_positions = settings.get("positions", {})
-                    
-                    return settings["visibility"]
-            except json.JSONDecodeError:
-                return {}  
+                # Use a thread to avoid blocking UI during file I/O
+                def load_settings_thread():
+                    nonlocal settings
+                    try:
+                        with open(SETTINGS_FILE, "r") as f:
+                            data = json.load(f)
+                            # Handle legacy format (just visibility settings)
+                            if isinstance(data, dict) and not ("visibility" in data and "positions" in data):
+                                settings["visibility"] = data
+                            else:
+                                settings = data
+                            
+                            # Initialize original_tab_positions from saved positions
+                            GLib.idle_add(lambda: setattr(self, 'original_tab_positions', settings.get("positions", {})))
+                    except json.JSONDecodeError:
+                        settings = {"visibility": {}, "positions": {}}
+                
+                # Start in a thread but wait for it to complete since we need the settings
+                thread = threading.Thread(target=load_settings_thread)
+                thread.start()
+                thread.join(0.1)  # Short timeout to not block UI too long
+                
+                return settings["visibility"]
+            except Exception as e:
+                print(f"Error loading settings: {e}")
+                return {}
         return {}
 
     def enable_bluetooth(self, button):
@@ -2373,42 +2406,52 @@ class bettercontrol(Gtk.Window):
     
     def update_bluetooth_switch_state(self):
         """Update the Bluetooth switch to match the actual Bluetooth state."""
-        try:
-            # Check if bluetooth is actually on using bluetoothctl
-            check_result = subprocess.run(
-                ["bluetoothctl", "show"],
-                capture_output=True,
-                text=True
-            )
-            powered_on = "Powered: yes" in check_result.stdout
-            
+        # Run this in a thread to avoid blocking the UI
+        def check_bt_status():
+            try:
+                # Check if bluetooth is actually on using bluetoothctl
+                check_result = subprocess.run(
+                    ["bluetoothctl", "show"],
+                    capture_output=True,
+                    text=True
+                )
+                powered_on = "Powered: yes" in check_result.stdout
+                
+                # Update UI in main thread
+                GLib.idle_add(lambda: self._update_bt_switch(powered_on))
+            except Exception as e:
+                print(f"Error updating bluetooth switch state: {e}")
+                
+                # In case of error, use systemctl as fallback
+                try:
+                    bt_status = subprocess.run(
+                        ["systemctl", "is-active", "bluetooth"], 
+                        capture_output=True, 
+                        text=True
+                    ).stdout.strip()
+                    
+                    # Update UI in main thread
+                    GLib.idle_add(lambda: self._update_bt_switch(bt_status == "active"))
+                    
+                    print(f"Bluetooth service is {bt_status}")
+                except Exception as e2:
+                    print(f"Error using systemctl fallback: {e2}")
+                    # If all else fails, don't change the switch state
+                    
+            return False  # To stop GLib.idle_add
+        
+        def _update_bt_switch(self, is_active):
+            """Helper to update the bluetooth switch from the main thread."""
             # Block signals during update
             self.bt_status_switch.handler_block_by_func(self.on_bluetooth_switch_toggled)
             
             # Set the switch state
-            self.bt_status_switch.set_active(powered_on)
+            self.bt_status_switch.set_active(is_active)
             
             # Unblock signals
             self.bt_status_switch.handler_unblock_by_func(self.on_bluetooth_switch_toggled)
-        except Exception as e:
-            print(f"Error updating bluetooth switch state: {e}")
             
-            # In case of error, use systemctl as fallback
-            try:
-                bt_status = subprocess.run(
-                    ["systemctl", "is-active", "bluetooth"], 
-                    capture_output=True, 
-                    text=True
-                ).stdout.strip()
-                
-                self.bt_status_switch.handler_block_by_func(self.on_bluetooth_switch_toggled)
-                self.bt_status_switch.set_active(bt_status == "active")
-                self.bt_status_switch.handler_unblock_by_func(self.on_bluetooth_switch_toggled)
-                
-                print(f"Bluetooth service is {bt_status}")
-            except Exception as e2:
-                print(f"Error using systemctl fallback: {e2}")
-                # If all else fails, don't change the switch state
+            return False  # To stop GLib.idle_add
 
     def refresh_bluetooth(self, button):
         """Refreshes the list of Bluetooth devices with improved UI feedback."""
@@ -2646,6 +2689,18 @@ class bettercontrol(Gtk.Window):
             return
             
         self._is_refreshing = True
+        
+        # Get current tab to check if WiFi tab is active
+        current_page = self.notebook.get_current_page()
+        current_tab = self.notebook.get_nth_page(current_page)
+        current_tab_name = self.get_tab_name_from_label(current_tab)
+        
+        # If we're not on the WiFi tab, just mark as not refreshing and return
+        # This prevents unnecessary scans when the WiFi tab isn't visible
+        if current_tab_name != "Wi-Fi" and button is not None:  # Allow forced refresh
+            self._is_refreshing = False
+            return
+            
         thread = threading.Thread(target=self._refresh_wifi_thread)
         thread.daemon = True
         thread.start()
@@ -2654,6 +2709,19 @@ class bettercontrol(Gtk.Window):
         # We don't need the tabular format anymore as we'll use the standard output format
         # directly for all operations
         try:
+            # Use rescan to make it faster for subsequent calls
+            if hasattr(self, '_wifi_scanned_once') and self._wifi_scanned_once:
+                # Just update the list without rescanning - much faster
+                pass
+            else:
+                # On first scan, try to be quicker by using a short timeout
+                try:
+                    subprocess.run(["nmcli", "device", "wifi", "rescan"], timeout=1)
+                except subprocess.TimeoutExpired:
+                    # This is normal, it might take longer than our timeout
+                    pass
+                self._wifi_scanned_once = True
+                
             GLib.idle_add(self._update_wifi_list)
         except Exception as e:
             print(f"Error in refresh WiFi thread: {e}")
@@ -3336,16 +3404,22 @@ class bettercontrol(Gtk.Window):
             if not shutil.which("bluetoothctl"):
                 self.show_error_dialog("bluetoothctl is missing. Please check our GitHub page to see all dependencies and install them.")
             else:
-                # Update the switch to reflect the actual Bluetooth state
-                self.update_bluetooth_switch_state()
+                # Update the switch to reflect the actual Bluetooth state only if not initialized
+                if not self._tabs_initialized.get("Bluetooth", False):
+                    self.update_bluetooth_switch_state()
+                    self._tabs_initialized["Bluetooth"] = True
                 
                 # Only initialize Bluetooth when the tab is selected and if Bluetooth is on
                 if not self._bt_initialized and self.bt_status_switch.get_active():
                     self._bt_initialized = True
                     self.refresh_bluetooth(None)
 
-        elif tab_label == "Wi-Fi" and not shutil.which("nmcli"):
-            self.show_error_dialog("NetworkManager (nmcli) is missing. Please check our GitHub page to see all dependencies and install them.")
+        elif tab_label == "Wi-Fi":
+            if not shutil.which("nmcli"):
+                self.show_error_dialog("NetworkManager (nmcli) is missing. Please check our GitHub page to see all dependencies and install them.")
+            elif not self._tabs_initialized.get("Wi-Fi", False):
+                self._tabs_initialized["Wi-Fi"] = True
+                self.refresh_wifi(None)
 
         elif tab_label == "Brightness" and not shutil.which("brightnessctl"):
             self.show_error_dialog("brightnessctl is missing. Please check our GitHub page to see all dependencies and install them.")
@@ -3367,10 +3441,15 @@ class bettercontrol(Gtk.Window):
         if tab_label == "Wi-Fi":
             # Only refresh if we're not already refreshing
             if not getattr(self, '_is_refreshing', False):
+                # Initialize if needed
+                if not self._tabs_initialized.get("Wi-Fi", False):
+                    self._tabs_initialized["Wi-Fi"] = True
                 self.refresh_wifi(None)
         elif tab_label == "Bluetooth":
-            # First update the switch to reflect the actual Bluetooth state
-            self.update_bluetooth_switch_state()
+            # Initialize if needed
+            if not self._tabs_initialized.get("Bluetooth", False):
+                self.update_bluetooth_switch_state()
+                self._tabs_initialized["Bluetooth"] = True
             
             # Initialize and refresh Bluetooth only when its tab is selected
             # and if Bluetooth is enabled
