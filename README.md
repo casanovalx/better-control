@@ -5,7 +5,6 @@ A GTK-themed control panel for Linux 🐧
 
 ## What's New
 - Complete UI overhaul
-- Integrated all volume controls into a single Volume tab
 - Configuration file now stored in the user config directory
 - Changed the way we manage power profiles
 - Added customizable tab ordering in settings

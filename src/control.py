@@ -975,9 +975,23 @@ class bettercontrol(Gtk.Window):
         status_box.set_margin_bottom(10)
         
         output_label = Gtk.Label(label="Output Device:")
+        output_label.set_size_request(120, -1)  # Set fixed width for the label
         status_box.pack_start(output_label, False, False, 0)
         
-        self.sink_dropdown = Gtk.ComboBoxText()
+        # Replace ComboBoxText with ComboBox for icons
+        self.sink_store = Gtk.ListStore(str, str, str)  # Device ID, Display Name, Icon Name
+        self.sink_dropdown = Gtk.ComboBox.new_with_model(self.sink_store)
+        
+        # Add icon renderer
+        icon_renderer = Gtk.CellRendererPixbuf()
+        self.sink_dropdown.pack_start(icon_renderer, False)
+        self.sink_dropdown.add_attribute(icon_renderer, "icon_name", 2)
+        
+        # Add text renderer
+        text_renderer = Gtk.CellRendererText()
+        self.sink_dropdown.pack_start(text_renderer, True)
+        self.sink_dropdown.add_attribute(text_renderer, "text", 1)
+        
         self.sink_dropdown.connect("changed", self.on_sink_selected)
         self.sink_dropdown.set_size_request(200, 30)
         status_box.pack_start(self.sink_dropdown, True, True, 0)
@@ -995,8 +1009,48 @@ class bettercontrol(Gtk.Window):
         
         volume_box.pack_start(status_box, False, False, 0)
         
+        # Add input device selection
+        input_status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        input_status_box.set_margin_bottom(10)
+        
+        input_label = Gtk.Label(label="Input Device:")
+        input_label.set_size_request(120, -1)  # Set fixed width for the label
+        input_status_box.pack_start(input_label, False, False, 0)
+        
+        # Replace ComboBoxText with ComboBox for icons
+        self.source_store = Gtk.ListStore(str, str, str)  # Device ID, Display Name, Icon Name
+        self.source_dropdown = Gtk.ComboBox.new_with_model(self.source_store)
+        
+        # Add icon renderer
+        source_icon_renderer = Gtk.CellRendererPixbuf()
+        self.source_dropdown.pack_start(source_icon_renderer, False)
+        self.source_dropdown.add_attribute(source_icon_renderer, "icon_name", 2)
+        
+        # Add text renderer
+        source_text_renderer = Gtk.CellRendererText()
+        self.source_dropdown.pack_start(source_text_renderer, True)
+        self.source_dropdown.add_attribute(source_text_renderer, "text", 1)
+        
+        self.source_dropdown.connect("changed", self.on_source_selected)
+        self.source_dropdown.set_size_request(200, 30)
+        input_status_box.pack_start(self.source_dropdown, True, True, 0)
+        
+        # Input refresh button
+        input_refresh_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        input_refresh_button = Gtk.Button()
+        input_refresh_button.set_tooltip_text("Refresh Input Devices")
+        input_refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        input_refresh_button.add(input_refresh_icon)
+        input_refresh_button.connect("clicked", self.update_source_list)
+        input_refresh_box.pack_end(input_refresh_button, False, False, 0)
+        
+        input_status_box.pack_end(input_refresh_box, False, False, 0)
+        
+        volume_box.pack_start(input_status_box, False, False, 0)
+        
         # Initialize the sink list
         self.update_sink_list()
+        self.update_source_list()
         GLib.timeout_add_seconds(3, self.update_sink_list_repeated)
         
         # Volume controls in scrollable area
@@ -1416,6 +1470,10 @@ class bettercontrol(Gtk.Window):
     def switch_audio_sink(self, button):
         """Cycle through available audio sinks."""
         try:
+            # First, update the sink list to ensure we have the latest data
+            # and friendly name mappings
+            self.update_sink_list()
+            
             output = subprocess.getoutput("pactl list short sinks")
             sinks = output.split("\n")
             if not sinks:
@@ -1423,7 +1481,7 @@ class bettercontrol(Gtk.Window):
                 return
 
             current_sink = subprocess.getoutput("pactl get-default-sink").strip()
-            sink_list = [sink.split("\t")[1] for sink in sinks]
+            sink_list = [sink.split("\t")[1] for sink in sinks if sink]
 
             if current_sink in sink_list:
                 next_index = (sink_list.index(current_sink) + 1) % len(sink_list)
@@ -1432,58 +1490,304 @@ class bettercontrol(Gtk.Window):
                 next_sink = sink_list[0]
 
             subprocess.run(["pactl", "set-default-sink", next_sink])
-            print(f"Switched to sink: {next_sink}")
+            
+            # Get the friendly name for display
+            friendly_name = self.friendly_sink_names.get(next_sink, next_sink)
+            
+            if friendly_name == next_sink:
+                # If we still don't have a friendly name, try to create one
+                if next_sink.startswith("alsa_output."):
+                    friendly_name = next_sink.replace("alsa_output.", "").replace("_", " ").replace(".", " ").title()
+                elif next_sink.startswith("bluez_sink."):
+                    friendly_name = next_sink.replace("bluez_sink.", "").replace("_", " ").replace(".", " ").title()
+            
+            print(f"Switched to sink: {friendly_name} ({next_sink})")
+            
+            # Also update the dropdown to show the current selection
+            if hasattr(self, 'sink_dropdown'):
+                self.update_sink_list()
 
         except Exception as e:
             print(f"Error switching sinks: {e}")
 
     def update_sink_list_repeated(self):
         """Update the dropdown list with available sinks and keep refreshing."""
-        try:
-            output = subprocess.getoutput("pactl list short sinks")
-            sinks = output.split("\n")
-            self.sink_list = [sink.split("\t")[1] for sink in sinks if sink]
-
-            self.sink_dropdown.remove_all()
-            for sink in self.sink_list:
-                self.sink_dropdown.append_text(sink)
-
-            current_sink = subprocess.getoutput("pactl get-default-sink").strip()
-            if current_sink in self.sink_list:
-                self.sink_dropdown.set_active(self.sink_list.index(current_sink))
-
-        except Exception as e:
-            print(f"Error updating sink list: {e}")
-
+        self.update_sink_list()
+        self.update_source_list()
         return True  
 
-    def update_sink_list(self):
+    def update_sink_list(self, button=None):
         """Update the dropdown list with available sinks."""
         try:
+            # Get detailed sink information
+            detailed_output = subprocess.getoutput("pactl list sinks")
+            sink_sections = detailed_output.split("Sink #")
+            
+            # Get the short list for sink IDs
             output = subprocess.getoutput("pactl list short sinks")
             sinks = output.split("\n")
             self.sink_list = [sink.split("\t")[1] for sink in sinks if sink]
-
-            self.sink_dropdown.remove_all()
+            
+            # First pass: Extract sink IDs and their indices
+            sink_indices = {}
+            for idx, section in enumerate(sink_sections[1:], 0):
+                lines = section.split("\n")
+                if lines and lines[0].strip():
+                    sink_id = lines[0].strip().split(':')[0].strip()
+                    sink_indices[sink_id] = idx
+            
+            # Create a mapping of sink IDs to friendly names
+            friendly_names = {}
+            
+            # Direct method: Use pactl list short sinks for proper matching
+            short_sinks_output = subprocess.getoutput("pactl list short sinks")
+            short_sinks = short_sinks_output.split("\n")
+            
+            for sink_line in short_sinks:
+                if not sink_line.strip():
+                    continue
+                    
+                parts = sink_line.split("\t")
+                if len(parts) >= 2:
+                    sink_id = parts[0].strip()
+                    sink_name = parts[1].strip()
+                    
+                    # Get the corresponding section from the detailed output
+                    if sink_id in sink_indices:
+                        section_idx = sink_indices[sink_id]
+                        section = sink_sections[section_idx + 1]  # +1 because we skipped the first empty section
+                        lines = section.split("\n")
+                        
+                        # Look for the description
+                        description = None
+                        
+                        # Try multiple potential description fields
+                        for line in lines:
+                            line = line.strip()
+                            
+                            # Primary pattern: Description field
+                            if line.startswith("Description:"):
+                                description = line.split("Description:")[1].strip()
+                                break
+                                
+                            # Properties patterns
+                            elif "device.description" in line and "=" in line:
+                                description = line.split("=")[1].strip().strip('"')
+                                break
+                            elif "alsa.card_name" in line and "=" in line:
+                                description = line.split("=")[1].strip().strip('"')
+                                break
+                            elif "device.product.name" in line and "=" in line:
+                                description = line.split("=")[1].strip().strip('"')
+                                break
+                            elif "bluez.alias" in line and "=" in line:
+                                description = line.split("=")[1].strip().strip('"')
+                                break
+                        
+                        # If we found a description, use it; otherwise fall back to the name
+                        if description:
+                            friendly_names[sink_name] = description
+                        else:
+                            # Fall back to a humanized version of the sink name
+                            if sink_name.startswith("alsa_output."):
+                                humanized = sink_name.replace("alsa_output.", "").replace("_", " ").replace(".", " ").title()
+                                friendly_names[sink_name] = humanized
+            
+            # Second fallback: direct mapping by index if no match was found
+            if not friendly_names:
+                for section in sink_sections[1:]:
+                    lines = section.split("\n")
+                    sink_id = None
+                    description = None
+                    
+                    if lines and lines[0].strip():
+                        sink_id = lines[0].strip().split(':')[0].strip()
+                    
+                    for line in lines:
+                        if "Description:" in line:
+                            description = line.split("Description:")[1].strip()
+                            break
+                    
+                    if sink_id is not None and description and len(self.sink_list) > int(sink_id):
+                        friendly_names[self.sink_list[int(sink_id)]] = description
+            
+            # Store the global mapping between sink IDs and friendly names for use elsewhere
+            self.friendly_sink_names = friendly_names
+            
+            # Populate the dropdown with friendly names
+            self.sink_store.clear()
+            
+            # Store the mapping between display name and actual sink ID
+            self.sink_display_map = {}
+            
             for sink in self.sink_list:
-                self.sink_dropdown.append_text(sink)
-
+                display_name = friendly_names.get(sink, sink)
+                self.sink_display_map[display_name] = sink
+                
+                # Determine the appropriate icon
+                icon_name = self.get_sink_icon_name(sink, display_name)
+                
+                # Add to the store: ID, Display Name, Icon Name
+                self.sink_store.append([sink, display_name, icon_name])
+            
+            # Select the current default sink
             current_sink = subprocess.getoutput("pactl get-default-sink").strip()
             if current_sink in self.sink_list:
-                self.sink_dropdown.set_active(self.sink_list.index(current_sink))
-
+                current_display_name = friendly_names.get(current_sink, current_sink)
+                for i, row in enumerate(self.sink_store):
+                    if row[1] == current_display_name:
+                        self.sink_dropdown.set_active(i)
+                        break
+                        
         except Exception as e:
             print(f"Error updating sink list: {e}")
+
+    def update_source_list(self, button=None):
+        """Update the dropdown list with available input sources."""
+        try:
+            # Get detailed source information
+            detailed_output = subprocess.getoutput("pactl list sources")
+            source_sections = detailed_output.split("Source #")
+            
+            # Get the short list for source IDs
+            output = subprocess.getoutput("pactl list short sources")
+            sources = output.split("\n")
+            self.source_list = [source.split("\t")[1] for source in sources if source]
+            
+            # First pass: Extract source IDs and their indices
+            source_indices = {}
+            for idx, section in enumerate(source_sections[1:], 0):
+                lines = section.split("\n")
+                if lines and lines[0].strip():
+                    source_id = lines[0].strip().split(':')[0].strip()
+                    source_indices[source_id] = idx
+            
+            # Create a mapping of source IDs to friendly names
+            friendly_names = {}
+            
+            # Direct method: Use pactl list short sources for proper matching
+            short_sources_output = subprocess.getoutput("pactl list short sources")
+            short_sources = short_sources_output.split("\n")
+            
+            for source_line in short_sources:
+                if not source_line.strip():
+                    continue
+                    
+                parts = source_line.split("\t")
+                if len(parts) >= 2:
+                    source_id = parts[0].strip()
+                    source_name = parts[1].strip()
+                    
+                    # Get the corresponding section from the detailed output
+                    if source_id in source_indices:
+                        section_idx = source_indices[source_id]
+                        section = source_sections[section_idx + 1]  # +1 because we skipped the first empty section
+                        lines = section.split("\n")
+                        
+                        # Look for the description
+                        description = None
+                        
+                        # Try multiple potential description fields
+                        for line in lines:
+                            line = line.strip()
+                            
+                            # Primary pattern: Description field
+                            if line.startswith("Description:"):
+                                description = line.split("Description:")[1].strip()
+                                break
+                                
+                            # Properties patterns
+                            elif "device.description" in line and "=" in line:
+                                description = line.split("=")[1].strip().strip('"')
+                                break
+                            elif "alsa.card_name" in line and "=" in line:
+                                description = line.split("=")[1].strip().strip('"')
+                                break
+                            elif "device.product.name" in line and "=" in line:
+                                description = line.split("=")[1].strip().strip('"')
+                                break
+                            elif "bluez.alias" in line and "=" in line:
+                                description = line.split("=")[1].strip().strip('"')
+                                break
+                        
+                        # Ignore monitor sources
+                        if "monitor" in source_name.lower() and not source_name.lower().startswith("monitor"):
+                            continue
+                            
+                        # If we found a description, use it; otherwise fall back to the name
+                        if description:
+                            # Add "Microphone: " prefix to distinguish if it's an input source
+                            if not "monitor" in description.lower():
+                                friendly_names[source_name] = description
+                            else:
+                                continue  # Skip monitor sources
+                        else:
+                            # Fall back to a humanized version of the source name
+                            if source_name.startswith("alsa_input."):
+                                humanized = source_name.replace("alsa_input.", "").replace("_", " ").replace(".", " ").title()
+                                friendly_names[source_name] = humanized
+            
+            # Store the global mapping between source IDs and friendly names for use elsewhere
+            self.friendly_source_names = friendly_names
+            
+            # Populate the dropdown with friendly names
+            self.source_store.clear()
+            
+            # Store the mapping between display name and actual source ID
+            self.source_display_map = {}
+            
+            for source in self.source_list:
+                # Skip monitor sources
+                if "monitor" in source.lower() and not source.lower().startswith("monitor"):
+                    continue
+                    
+                display_name = friendly_names.get(source, source)
+                if display_name in friendly_names.values():  # Only add if we have a friendly name
+                    self.source_display_map[display_name] = source
+                    
+                    # Determine the appropriate icon
+                    icon_name = self.get_source_icon_name(source, display_name)
+                    
+                    # Add to the store: ID, Display Name, Icon Name
+                    self.source_store.append([source, display_name, icon_name])
+            
+            # Select the current default source
+            current_source = subprocess.getoutput("pactl get-default-source").strip()
+            if current_source in self.source_list:
+                current_display_name = friendly_names.get(current_source, current_source)
+                for i, row in enumerate(self.source_store):
+                    if row[1] == current_display_name:
+                        self.source_dropdown.set_active(i)
+                        break
+                        
+        except Exception as e:
+            print(f"Error updating source list: {e}")
 
     def on_sink_selected(self, combo):
         """Change the default sink when a new one is selected."""
-        active_index = combo.get_active()
-        if active_index >= 0 and active_index < len(self.sink_list):
-            selected_sink = self.sink_list[active_index]
+        active_iter = combo.get_active_iter()
+        if active_iter is not None:
+            # Get data from model
+            sink_id = self.sink_store[active_iter][0]
+            display_name = self.sink_store[active_iter][1]
+            
             current_sink = subprocess.getoutput("pactl get-default-sink").strip()
-            if selected_sink != current_sink:
-                subprocess.run(["pactl", "set-default-sink", selected_sink])
-                print(f"Switched to sink: {selected_sink}")
+            if sink_id != current_sink:
+                subprocess.run(["pactl", "set-default-sink", sink_id])
+                print(f"Switched to sink: {display_name} ({sink_id})")
+
+    def on_source_selected(self, combo):
+        """Change the default source when a new one is selected."""
+        active_iter = combo.get_active_iter()
+        if active_iter is not None:
+            # Get data from model
+            source_id = self.source_store[active_iter][0]
+            display_name = self.source_store[active_iter][1]
+            
+            current_source = subprocess.getoutput("pactl get-default-source").strip()
+            if source_id != current_source:
+                subprocess.run(["pactl", "set-default-source", source_id])
+                print(f"Switched to source: {display_name} ({source_id})")
 
     def populate_settings_tab(self):
         """ Populate the Settings tab with toggle options for showing/hiding other tabs and reordering controls. """
@@ -3440,6 +3744,54 @@ class bettercontrol(Gtk.Window):
             
         # Fallback to the standard method for text-only labels
         return self.notebook.get_tab_label_text(tab)
+
+    def get_sink_icon_name(self, sink_name, description):
+        """Determine the appropriate icon for an audio output device."""
+        sink_name_lower = sink_name.lower()
+        description_lower = description.lower() if description else ""
+        
+        # Check for headphones
+        if any(term in sink_name_lower or term in description_lower for term in ["headphone", "headset", "earphone", "earbud"]):
+            return "audio-headphones-symbolic"
+        
+        # Check for Bluetooth devices
+        if "bluetooth" in sink_name_lower or "bluez" in sink_name_lower or "bt" in description_lower:
+            return "bluetooth-symbolic"
+            
+        # Check for HDMI/DisplayPort outputs (typically TV or monitors)
+        if any(term in sink_name_lower or term in description_lower for term in ["hdmi", "displayport", "dp", "tv"]):
+            return "video-display-symbolic"
+            
+        # Check for USB audio interfaces
+        if "usb" in sink_name_lower or "usb" in description_lower:
+            return "audio-card-symbolic"
+            
+        # Default to speaker
+        return "audio-speakers-symbolic"
+        
+    def get_source_icon_name(self, source_name, description):
+        """Determine the appropriate icon for an audio input device."""
+        source_name_lower = source_name.lower()
+        description_lower = description.lower() if description else ""
+        
+        # Check for webcam microphones
+        if "cam" in source_name_lower or "cam" in description_lower or "webcam" in description_lower:
+            return "camera-web-symbolic"
+            
+        # Check for headset microphones
+        if any(term in source_name_lower or term in description_lower for term in ["headset", "headphone"]):
+            return "audio-headset-symbolic"
+            
+        # Check for Bluetooth microphones
+        if "bluetooth" in source_name_lower or "bluez" in source_name_lower or "bt" in description_lower:
+            return "bluetooth-symbolic"
+            
+        # Check for USB microphones
+        if "usb" in source_name_lower or "usb" in description_lower:
+            return "audio-input-microphone-symbolic"
+            
+        # Default to generic microphone
+        return "audio-input-microphone-symbolic"
 
 class BluetoothDeviceRow(Gtk.ListBoxRow):
     def __init__(self, device_info):
