@@ -3,6 +3,8 @@ A GTK-themed control panel for Linux 🐧
 
 <img src="https://github.com/user-attachments/assets/b219415d-3dbf-4471-990d-bc8cd0f021c1" width="500">
 
+> **Note:** The application follows your system GTK theme for a native and integrated look.
+
 ## What's New
 - Complete UI overhaul
 - Configuration file now stored in the user config directory
