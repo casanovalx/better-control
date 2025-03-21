@@ -1791,35 +1791,16 @@ class bettercontrol(Gtk.Window):
 
     def populate_settings_tab(self):
         """Populate the settings tab with tabs management options."""
-        # Use lazy initialization
-        if hasattr(self, '_settings_populated') and self._settings_populated:
+        if not hasattr(self, 'settings_box'):
             return
             
-        self._settings_populated = True
-        
-        # Create the scrolled window if it doesn't exist
-        if not hasattr(self, 'settings_scroll'):
-            self.settings_scroll = Gtk.ScrolledWindow()
-            self.settings_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        
-        # Create the main container for settings if it doesn't exist  
-        if not hasattr(self, 'settings_box'):
-            self.settings_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
-            self.settings_box.set_margin_top(20)
-            self.settings_box.set_margin_bottom(20) 
-            self.settings_box.set_margin_start(20)
-            self.settings_box.set_margin_end(20)
-            self.settings_scroll.add(self.settings_box)
-        
-        # Rest of the method stays the same
-        settings_box = self.tabs["Settings"]
-
-        for child in settings_box.get_children():
-            settings_box.remove(child)
+        # Clear any existing content
+        for child in self.settings_box.get_children():
+            self.settings_box.remove(child)
 
         # Header with Settings title and icon
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        header_box.set_margin_bottom(10)
+        header_box.set_margin_bottom(20)
         
         settings_icon = Gtk.Image.new_from_icon_name("preferences-system-symbolic", Gtk.IconSize.DIALOG)
         header_box.pack_start(settings_icon, False, False, 0)
@@ -1828,19 +1809,7 @@ class bettercontrol(Gtk.Window):
         settings_label.get_style_context().add_class("wifi-header")
         header_box.pack_start(settings_label, False, False, 0)
         
-        settings_box.pack_start(header_box, False, False, 0)
-        
-        # Create a scrolled window for the settings content
-        scroll_window = Gtk.ScrolledWindow()
-        scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scroll_window.set_vexpand(True)
-        
-        # Container for all settings
-        settings_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        settings_container.set_margin_top(10)
-        settings_container.set_margin_bottom(10)
-        settings_container.set_margin_start(10)
-        settings_container.set_margin_end(10)
+        self.settings_box.pack_start(header_box, False, False, 0)
         
         # Tab visibility and order section
         tab_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -1926,18 +1895,13 @@ class bettercontrol(Gtk.Window):
             
             tab_section.pack_start(row_box, False, False, 0)
         
-        settings_container.pack_start(tab_section, False, False, 0)
+        self.settings_box.pack_start(tab_section, False, False, 0)
         
         # Add a separator
         separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
         separator.set_margin_top(5)
         separator.set_margin_bottom(15)
-        settings_container.pack_start(separator, False, False, 0)
-        
-        scroll_window.add(settings_container)
-        settings_box.pack_start(scroll_window, True, True, 0)
-        
-        settings_box.show_all()
+        self.settings_box.pack_start(separator, False, False, 0)
 
     def toggle_tab(self, button, tab_name):
         """ Show or hide a tab based on checkbox state """
@@ -3760,7 +3724,7 @@ class bettercontrol(Gtk.Window):
     
     def show_settings_panel(self):
         """Show the settings panel in a separate window"""
-        if not hasattr(self, 'settings_window'):
+        if not hasattr(self, 'settings_window') or self.settings_window is None:
             # Create settings window
             self.settings_window = Gtk.Window(title="Settings")
             self.settings_window.set_transient_for(self)
@@ -3768,19 +3732,29 @@ class bettercontrol(Gtk.Window):
             self.settings_window.set_default_size(400, 500)
             self.settings_window.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
             
-            # Create the settings box
+            # Create a scrolled window for content
+            scrolled_window = Gtk.ScrolledWindow()
+            scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+            
+            # Create settings container
             settings_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-            settings_box.set_margin_top(10)
-            settings_box.set_margin_bottom(10)
-            settings_box.set_margin_start(10)
-            settings_box.set_margin_end(10)
+            settings_box.set_margin_top(20)
+            settings_box.set_margin_bottom(20)
+            settings_box.set_margin_start(20)
+            settings_box.set_margin_end(20)
             settings_box.set_hexpand(True)
             settings_box.set_vexpand(True)
             
-            self.settings_window.add(settings_box)
-            self.tabs["Settings"] = settings_box
+            # Add settings box to scrolled window
+            scrolled_window.add(settings_box)
             
-            # Populate the settings content
+            # Add scrolled window to the settings window
+            self.settings_window.add(scrolled_window)
+            
+            # Store the settings box for later use
+            self.settings_box = settings_box
+            
+            # Populate settings content
             self.populate_settings_tab()
             
             # Connect the close event
