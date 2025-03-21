@@ -2440,18 +2440,23 @@ class bettercontrol(Gtk.Window):
                     
             return False  # To stop GLib.idle_add
         
-        def _update_bt_switch(self, is_active):
-            """Helper to update the bluetooth switch from the main thread."""
-            # Block signals during update
-            self.bt_status_switch.handler_block_by_func(self.on_bluetooth_switch_toggled)
-            
-            # Set the switch state
-            self.bt_status_switch.set_active(is_active)
-            
-            # Unblock signals
-            self.bt_status_switch.handler_unblock_by_func(self.on_bluetooth_switch_toggled)
-            
-            return False  # To stop GLib.idle_add
+        # Start the thread to check bluetooth status
+        thread = threading.Thread(target=check_bt_status)
+        thread.daemon = True
+        thread.start()
+        
+    def _update_bt_switch(self, is_active):
+        """Helper to update the bluetooth switch from the main thread."""
+        # Block signals during update
+        self.bt_status_switch.handler_block_by_func(self.on_bluetooth_switch_toggled)
+        
+        # Set the switch state
+        self.bt_status_switch.set_active(is_active)
+        
+        # Unblock signals
+        self.bt_status_switch.handler_unblock_by_func(self.on_bluetooth_switch_toggled)
+        
+        return False  # To stop GLib.idle_add
 
     def refresh_bluetooth(self, button):
         """Refreshes the list of Bluetooth devices with improved UI feedback."""
@@ -3446,13 +3451,14 @@ class bettercontrol(Gtk.Window):
                     self._tabs_initialized["Wi-Fi"] = True
                 self.refresh_wifi(None)
         elif tab_label == "Bluetooth":
-            # Initialize if needed
+            # Always update the Bluetooth switch state when switching to this tab
+            self.update_bluetooth_switch_state()
+            
+            # Mark as initialized if not already
             if not self._tabs_initialized.get("Bluetooth", False):
-                self.update_bluetooth_switch_state()
                 self._tabs_initialized["Bluetooth"] = True
             
-            # Initialize and refresh Bluetooth only when its tab is selected
-            # and if Bluetooth is enabled
+            # Only refresh the device list if Bluetooth is enabled
             if self.bt_status_switch.get_active():
                 self._bt_initialized = True
                 self.refresh_bluetooth(None)
