@@ -3066,11 +3066,14 @@ class bettercontrol(Gtk.Window):
 
                 app_name = "Unknown Application"
                 media_name = "Unknown Media"
-                volume_percent = 50  
+                volume_percent = 50
+                icon_name = ""  # Default empty
 
                 for line in lines:
                     if "application.name" in line:
                         app_name = line.split("=")[1].strip().strip('"')
+                    if "application.icon_name" in line:
+                        icon_name = line.split("=")[1].strip().strip('"')
                     if "media.name" in line:
                         media_name = line.split("=")[1].strip().strip('"')
                     if "Volume:" in line:
@@ -3078,12 +3081,19 @@ class bettercontrol(Gtk.Window):
                         if len(volume_parts) >= 2:
                             volume_percent = int(volume_parts[1].strip().strip("%"))
 
+                # Get the appropriate icon name
+                final_icon_name = self.get_app_icon_name(app_name, icon_name)
+
                 row = Gtk.ListBoxRow()
                 box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
                 box.set_margin_start(10)
                 box.set_margin_end(10)
                 box.set_margin_top(5)
                 box.set_margin_bottom(5)
+
+                # Add application icon
+                app_icon = Gtk.Image.new_from_icon_name(final_icon_name, Gtk.IconSize.LARGE_TOOLBAR)
+                box.pack_start(app_icon, False, False, 0)
 
                 label = Gtk.Label(label=f"{app_name} - {media_name}")
                 label.set_xalign(0)
@@ -3286,6 +3296,44 @@ class bettercontrol(Gtk.Window):
         # Make sure the notebook selects the first page
         if self.notebook.get_n_pages() > 0:
             self.notebook.set_current_page(0)
+
+    def get_app_icon_name(self, app_name, provided_icon_name):
+        """Map application names to appropriate icon names if needed"""
+        # First check if the provided icon name exists
+        if provided_icon_name and provided_icon_name != "":
+            return provided_icon_name
+            
+        # Map common application names to icons
+        icon_map = {
+            "Firefox": "firefox",
+            "firefox": "firefox",
+            "Brave": "brave-browser",
+            "brave": "brave-browser",
+            "Chromium": "chromium",
+            "chromium": "chromium",
+            "Google Chrome": "google-chrome",
+            "chrome": "google-chrome",
+            "Spotify": "spotify",
+            "spotify": "spotify",
+            "VLC": "vlc",
+            "vlc": "vlc",
+            "mpv": "mpv",
+            "MPV": "mpv",
+            "Discord": "discord",
+            "discord": "discord",
+            "Telegram": "telegram",
+            "telegram": "telegram",
+            "Zoom": "zoom",
+            "zoom": "zoom"
+        }
+        
+        # Check if the app name is in our mapping
+        for key in icon_map:
+            if key in app_name:
+                return icon_map[key]
+        
+        # Return a generic audio icon as fallback
+        return "audio-x-generic-symbolic"
 
 class BluetoothDeviceRow(Gtk.ListBoxRow):
     def __init__(self, device_info):
