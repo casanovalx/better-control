@@ -1688,7 +1688,8 @@ class bettercontrol(Gtk.Window):
             print("Initializing Display tab...")
             # Set a flag to indicate initialization is in progress to prevent infinite loops
             self._tabs_initialized["Display"] = True
-            self.refresh_display(None)  # Load Display content
+            # Call refresh_display to load the content
+            GLib.idle_add(self.refresh_display, None)  # Schedule refresh on the main thread
 
     def refresh_display(self, button=None):
         # Create a new scroll container for the display tab
@@ -1815,13 +1816,30 @@ class bettercontrol(Gtk.Window):
         
         display_container.pack_start(brightness_box, True, True, 0)
         
-        # Update the tab with our display content
+        # Find the Display tab and replace its content
+        for i in range(self.notebook.get_n_pages()):
+            page = self.notebook.get_nth_page(i)
+            if self.get_tab_name_from_label(page) == "Display":
+                # Remove old widgets
+                for child in page.get_children():
+                    page.remove(child)
+                # Add new content
+                page.pack_start(display_container, True, True, 0)
+                break
+        
+        # Store reference for future access
         self.tabs["Display"] = display_container
         
         # Don't auto-switch to this tab as it causes an infinite loop
         # self.notebook.set_current_page(self.notebook.page_num(display_container))
         
         display_container.show_all()
+        # Make sure the parent page shows all children
+        for i in range(self.notebook.get_n_pages()):
+            page = self.notebook.get_nth_page(i)
+            if self.get_tab_name_from_label(page) == "Display":
+                page.show_all()
+                break
 
     def on_sink_selected(self, combo):
         """Change the default sink when a new one is selected."""
