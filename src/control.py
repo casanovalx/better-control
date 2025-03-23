@@ -1190,133 +1190,11 @@ class bettercontrol(Gtk.Window):
         if self.tab_visibility.get("Volume", True):
             self.notebook.append_page(scrolled_volume, self.create_tab_label_with_icon("Volume"))
 
-        # Updated Display tab with new UI matching Bluetooth and WiFi tabs
-        brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        brightness_box.set_margin_top(15)
-        brightness_box.set_margin_bottom(15)
-        brightness_box.set_margin_start(15)
-        brightness_box.set_margin_end(15)
-        brightness_box.set_hexpand(True)
-        brightness_box.set_vexpand(True)
-        
-        # Header with Display title and icon
-        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        header_box.set_margin_bottom(10)
-        
-        display_icon = Gtk.Image.new_from_icon_name("video-display-symbolic", Gtk.IconSize.DIALOG)
-        header_box.pack_start(display_icon, False, False, 0)
-        
-        display_title = Gtk.Label(label="Display Settings")
-        display_title.get_style_context().add_class("wifi-header")
-        header_box.pack_start(display_title, False, False, 0)
-        
-        brightness_box.pack_start(header_box, False, False, 0)
-        
-        # Content area with scrolling
-        scroll_window = Gtk.ScrolledWindow()
-        scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scroll_window.set_vexpand(True)
-        
-        display_controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
-        display_controls.set_margin_top(10)
-        
-        # Brightness section
-        brightness_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        
-        brightness_label = Gtk.Label(label="Brightness")
-        brightness_label.set_xalign(0)
-        brightness_section.pack_start(brightness_label, False, False, 0)
-        
-        # Brightness slider
-        self.brightness_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
-        self.brightness_scale.set_hexpand(True)
-        self.brightness_scale.set_value(self.get_current_brightness())
-        self.brightness_scale.set_value_pos(Gtk.PositionType.RIGHT)
-        self.brightness_scale.connect("value-changed", self.set_brightness)
-        brightness_section.pack_start(self.brightness_scale, False, False, 0)
-        
-        # Quick brightness buttons
-        brightness_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        
-        self.brightness_zero = Gtk.Button(label="0%")
-        self.brightness_zero.connect("clicked", self.zero)
-        brightness_buttons.pack_start(self.brightness_zero, True, True, 0)
-        
-        self.brightness_tfive = Gtk.Button(label="25%")
-        self.brightness_tfive.connect("clicked", self.tfive)
-        brightness_buttons.pack_start(self.brightness_tfive, True, True, 0)
-        
-        self.brightness_fifty = Gtk.Button(label="50%")
-        self.brightness_fifty.connect("clicked", self.fifty)
-        brightness_buttons.pack_start(self.brightness_fifty, True, True, 0)
-        
-        self.brightness_sfive = Gtk.Button(label="75%")
-        self.brightness_sfive.connect("clicked", self.sfive)
-        brightness_buttons.pack_start(self.brightness_sfive, True, True, 0)
-        
-        self.brightness_hund = Gtk.Button(label="100%")
-        self.brightness_hund.connect("clicked", self.hund)
-        brightness_buttons.pack_start(self.brightness_hund, True, True, 0)
-        
-        brightness_section.pack_start(brightness_buttons, False, False, 0)
-        display_controls.pack_start(brightness_section, False, False, 0)
-        
-        # Blue light filter section
-        bluelight_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        bluelight_section.set_margin_top(15)
-        
-        blue_light_label = Gtk.Label(label="Blue Light Filter")
-        blue_light_label.set_xalign(0)
-        bluelight_section.pack_start(blue_light_label, False, False, 0)
-        
-        # Blue light slider
-        self.blue_light_slider = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 2500, 6500, 100)
-        self.blue_light_slider.set_hexpand(True)
-        self.blue_light_slider.set_value_pos(Gtk.PositionType.RIGHT)
-        
-        # Set initial value from settings
-        settings = load_settings()
-        saved_gamma = settings.get("gamma", 6500)
-        self.blue_light_slider.set_value(saved_gamma)
-        self.blue_light_slider.connect("value-changed", self.set_bluelight_filter)
-        bluelight_section.pack_start(self.blue_light_slider, False, False, 0)
-        
-        # Quick blue light buttons
-        bluelight_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        
-        self.blue_zero = Gtk.Button(label="0%")
-        self.blue_zero.connect("clicked", self.bzero)
-        bluelight_buttons.pack_start(self.blue_zero, True, True, 0)
-        
-        self.blue_tfive = Gtk.Button(label="25%")
-        self.blue_tfive.connect("clicked", self.btfive)
-        bluelight_buttons.pack_start(self.blue_tfive, True, True, 0)
-        
-        self.blue_fifty = Gtk.Button(label="50%")
-        self.blue_fifty.connect("clicked", self.bfifty)
-        bluelight_buttons.pack_start(self.blue_fifty, True, True, 0)
-        
-        self.blue_sfive = Gtk.Button(label="75%")
-        self.blue_sfive.connect("clicked", self.bsfive)
-        bluelight_buttons.pack_start(self.blue_sfive, True, True, 0)
-        
-        self.blue_hund = Gtk.Button(label="100%")
-        self.blue_hund.connect("clicked", self.bhund)
-        bluelight_buttons.pack_start(self.blue_hund, True, True, 0)
-        
-        bluelight_section.pack_start(bluelight_buttons, False, False, 0)
-        display_controls.pack_start(bluelight_section, False, False, 0)
-        
-        scroll_window.add(display_controls)
-        brightness_box.pack_start(scroll_window, True, True, 0)
-        
-        scrolled_display = Gtk.ScrolledWindow()
-        scrolled_display.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        scrolled_display.add(brightness_box)
-        
-        self.tabs["Display"] = scrolled_display
+        # Create a placeholder for the Display tab to be initialized later
+        display_placeholder = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.tabs["Display"] = display_placeholder
         if self.tab_visibility.get("Display", True):
-            self.notebook.append_page(scrolled_display, self.create_tab_label_with_icon("Display"))
+            self.notebook.append_page(display_placeholder, self.create_tab_label_with_icon("Display"))
 
         self.battery_tab = BatteryTab(self)
         self.tabs["Battery"] = self.battery_tab
@@ -1762,6 +1640,188 @@ class bettercontrol(Gtk.Window):
                         
         except Exception as e:
             print(f"Error updating source list: {e}")
+
+    def add_tabs(self):
+        # Define tab names and their corresponding initialization methods
+        tab_definitions = {
+            "Wi-Fi": self.initialize_wifi_tab,
+            "Bluetooth": self.initialize_bluetooth_tab,
+            "Volume": self.initialize_volume_tab,
+            "Battery": self.initialize_battery_tab,
+            "Display": self.initialize_display_tab,
+        }
+
+        # Add tabs to the notebook but don't initialize them yet
+        for tab_name, init_method in tab_definitions.items():
+            if self.tab_visibility.get(tab_name, True):
+                placeholder = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+                self.tabs[tab_name] = placeholder
+                self.notebook.append_page(placeholder, self.create_tab_label_with_icon(tab_name))
+
+    def initialize_wifi_tab(self):
+        if not self._tabs_initialized.get("Wi-Fi", False):
+            print("Initializing Wi-Fi tab...")
+            self.refresh_wifi(None)  # Load Wi-Fi content
+            self._tabs_initialized["Wi-Fi"] = True
+
+    def initialize_bluetooth_tab(self):
+        if not self._tabs_initialized.get("Bluetooth", False):
+            print("Initializing Bluetooth tab...")
+            self.refresh_bluetooth(None)  # Load Bluetooth content
+            self._tabs_initialized["Bluetooth"] = True
+
+    def initialize_volume_tab(self):
+        if not self._tabs_initialized.get("Volume", False):
+            print("Initializing Volume tab...")
+            self.refresh_app_volume(None)  # Load Volume content
+            self._tabs_initialized["Volume"] = True
+
+    def initialize_battery_tab(self):
+        if not self._tabs_initialized.get("Battery", False):
+            print("Initializing Battery tab...")
+            self.battery_tab = BatteryTab(self)  # Initialize Battery tab
+            self.tabs["Battery"] = self.battery_tab
+            self._tabs_initialized["Battery"] = True
+
+    def initialize_display_tab(self):
+        if not self._tabs_initialized.get("Display", False):
+            print("Initializing Display tab...")
+            # Set a flag to indicate initialization is in progress to prevent infinite loops
+            self._tabs_initialized["Display"] = True
+            self.refresh_display(None)  # Load Display content
+
+    def refresh_display(self, button=None):
+        # Create a new scroll container for the display tab
+        display_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        display_container.set_margin_start(10)
+        display_container.set_margin_end(10)
+        display_container.set_margin_top(10)
+        display_container.set_margin_bottom(10)
+        
+        # Create content for the display tab
+        brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        brightness_box.set_vexpand(True)
+        
+        # Header with Display title and icon
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        header_box.set_margin_bottom(10)
+        
+        display_icon = Gtk.Image.new_from_icon_name("video-display-symbolic", Gtk.IconSize.DIALOG)
+        header_box.pack_start(display_icon, False, False, 0)
+        
+        display_title = Gtk.Label(label="Display Settings")
+        display_title.get_style_context().add_class("wifi-header")
+        header_box.pack_start(display_title, False, False, 0)
+        
+        brightness_box.pack_start(header_box, False, False, 0)
+        
+        # Content area with scrolling
+        scroll_window = Gtk.ScrolledWindow()
+        scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll_window.set_vexpand(True)
+        
+        display_controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+        display_controls.set_margin_top(10)
+        
+        # Brightness section
+        brightness_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        
+        brightness_label = Gtk.Label(label="Brightness")
+        brightness_label.set_xalign(0)
+        brightness_section.pack_start(brightness_label, False, False, 0)
+        
+        # Brightness slider
+        self.brightness_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
+        self.brightness_scale.set_hexpand(True)
+        self.brightness_scale.set_value(self.get_current_brightness())
+        self.brightness_scale.set_value_pos(Gtk.PositionType.RIGHT)
+        self.brightness_scale.connect("value-changed", self.set_brightness)
+        brightness_section.pack_start(self.brightness_scale, False, False, 0)
+        
+        # Quick brightness buttons
+        brightness_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        
+        self.brightness_zero = Gtk.Button(label="0%")
+        self.brightness_zero.connect("clicked", self.zero)
+        brightness_buttons.pack_start(self.brightness_zero, True, True, 0)
+        
+        self.brightness_tfive = Gtk.Button(label="25%")
+        self.brightness_tfive.connect("clicked", self.tfive)
+        brightness_buttons.pack_start(self.brightness_tfive, True, True, 0)
+        
+        self.brightness_fifty = Gtk.Button(label="50%")
+        self.brightness_fifty.connect("clicked", self.fifty)
+        brightness_buttons.pack_start(self.brightness_fifty, True, True, 0)
+        
+        self.brightness_sfive = Gtk.Button(label="75%")
+        self.brightness_sfive.connect("clicked", self.sfive)
+        brightness_buttons.pack_start(self.brightness_sfive, True, True, 0)
+        
+        self.brightness_hund = Gtk.Button(label="100%")
+        self.brightness_hund.connect("clicked", self.hund)
+        brightness_buttons.pack_start(self.brightness_hund, True, True, 0)
+        
+        brightness_section.pack_start(brightness_buttons, False, False, 0)
+        display_controls.pack_start(brightness_section, False, False, 0)
+        
+        # Blue light filter section
+        bluelight_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        bluelight_section.set_margin_top(15)
+        
+        blue_light_label = Gtk.Label(label="Blue Light Filter")
+        blue_light_label.set_xalign(0)
+        bluelight_section.pack_start(blue_light_label, False, False, 0)
+        
+        # Blue light slider
+        self.blue_light_slider = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 2500, 6500, 100)
+        self.blue_light_slider.set_hexpand(True)
+        self.blue_light_slider.set_value_pos(Gtk.PositionType.RIGHT)
+        
+        # Set initial value from settings
+        settings = load_settings()
+        saved_gamma = settings.get("gamma", 6500)
+        self.blue_light_slider.set_value(saved_gamma)
+        self.blue_light_slider.connect("value-changed", self.set_bluelight_filter)
+        bluelight_section.pack_start(self.blue_light_slider, False, False, 0)
+        
+        # Quick blue light buttons
+        bluelight_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        
+        self.blue_zero = Gtk.Button(label="0%")
+        self.blue_zero.connect("clicked", self.bzero)
+        bluelight_buttons.pack_start(self.blue_zero, True, True, 0)
+        
+        self.blue_tfive = Gtk.Button(label="25%")
+        self.blue_tfive.connect("clicked", self.btfive)
+        bluelight_buttons.pack_start(self.blue_tfive, True, True, 0)
+        
+        self.blue_fifty = Gtk.Button(label="50%")
+        self.blue_fifty.connect("clicked", self.bfifty)
+        bluelight_buttons.pack_start(self.blue_fifty, True, True, 0)
+        
+        self.blue_sfive = Gtk.Button(label="75%")
+        self.blue_sfive.connect("clicked", self.bsfive)
+        bluelight_buttons.pack_start(self.blue_sfive, True, True, 0)
+        
+        self.blue_hund = Gtk.Button(label="100%")
+        self.blue_hund.connect("clicked", self.bhund)
+        bluelight_buttons.pack_start(self.blue_hund, True, True, 0)
+        
+        bluelight_section.pack_start(bluelight_buttons, False, False, 0)
+        display_controls.pack_start(bluelight_section, False, False, 0)
+        
+        scroll_window.add(display_controls)
+        brightness_box.pack_start(scroll_window, True, True, 0)
+        
+        display_container.pack_start(brightness_box, True, True, 0)
+        
+        # Update the tab with our display content
+        self.tabs["Display"] = display_container
+        
+        # Don't auto-switch to this tab as it causes an infinite loop
+        # self.notebook.set_current_page(self.notebook.page_num(display_container))
+        
+        display_container.show_all()
 
     def on_sink_selected(self, combo):
         """Change the default sink when a new one is selected."""
@@ -3406,26 +3466,18 @@ class bettercontrol(Gtk.Window):
         """Handle tab switching to refresh data when a tab is selected."""
         tab_page = notebook.get_nth_page(page_num)
         tab_label = self.get_tab_name_from_label(tab_page)
-        
-        if tab_label == "Wi-Fi":
-            # Only refresh if we're not already refreshing
-            if not getattr(self, '_is_refreshing', False):
-                # Initialize if needed
-                if not self._tabs_initialized.get("Wi-Fi", False):
-                    self._tabs_initialized["Wi-Fi"] = True
-                self.refresh_wifi(None)
-        elif tab_label == "Bluetooth":
-            # Always update the Bluetooth switch state when switching to this tab
-            self.update_bluetooth_switch_state()
-            
-            # Mark as initialized if not already
-            if not self._tabs_initialized.get("Bluetooth", False):
-                self._tabs_initialized["Bluetooth"] = True
-            
-            # Only refresh the device list if Bluetooth is enabled
-            if self.bt_status_switch.get_active():
-                self._bt_initialized = True
-                self.refresh_bluetooth(None)
+
+        # Initialize the tab if it hasn't been initialized yet
+        if tab_label == "Wi-Fi" and not self._tabs_initialized.get("Wi-Fi", False):
+            self.initialize_wifi_tab()
+        elif tab_label == "Bluetooth" and not self._tabs_initialized.get("Bluetooth", False):
+            self.initialize_bluetooth_tab()
+        elif tab_label == "Volume" and not self._tabs_initialized.get("Volume", False):
+            self.initialize_volume_tab()
+        elif tab_label == "Battery" and not self._tabs_initialized.get("Battery", False):
+            self.initialize_battery_tab()
+        elif tab_label == "Display" and not self._tabs_initialized.get("Display", False):
+            self.initialize_display_tab()
 
     def refresh_app_volume(self, button=None):
         """Refresh the list of applications playing audio and create sliders for them."""

@@ -43,22 +43,22 @@ yay -S better-control-git
 
 #### Debian-based Distributions
 ```
-sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python3 power-profiles-daemon python3-psutil gammastep
+sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python3 python3-pydbus power-profiles-daemon python3-psutil gammastep
 ```
 
 #### Fedora-based Distributions
 ```
-sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon python3-psutil gammastep
+sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python3 python3-pydbus power-profiles-daemon python3-psutil gammastep
 ```
 
 #### Void Linux
 ```
-sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon python3-psutil gammastep
+sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python3-pydbus python3 power-profiles-daemon python3-psutil gammastep
 ```
 
 #### Alpine Linux
 ```
-sudo apk add gtk3 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus python3 power-profiles-daemon py3-psutil gammastep
+sudo apk add gtk3 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus py3-pydbus python3 power-profiles-daemon py3-psutil gammastep
 ```
 
 ### Installation Steps
