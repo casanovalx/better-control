@@ -11,6 +11,7 @@ A GTK-themed control panel for Linux 🐧
 - Changed the way we manage power profiles
 - Added customizable tab ordering in settings
 - Fixed numerous bugs and optimized code
+- Fixed setting going blank error
 
 > **Note:** This project is under active development. Contributions, feature requests, ideas, and testers are welcome!
 
