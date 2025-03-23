@@ -1,4 +1,5 @@
-# Better-Control 🛠️
+# Better-Control 🛠️   
+							
 A GTK-themed control panel for Linux 🐧
 
 <img src="https://github.com/user-attachments/assets/b219415d-3dbf-4471-990d-bc8cd0f021c1" width="500">
@@ -96,3 +97,5 @@ Better-Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasm
 | **Display Protocol** | Wayland (recommended), X11 (partial functionality) |
 
 > If you test Better-Control on a different setup, please share your experience in the discussions or issues section.
+
+[![BetterControl](https://img.shields.io/badge/🐧-999999?style=for-the-badge&logo=BetterControl&label=BetterControl&labelColor=333333)](https://aur.archlinux.org/)
