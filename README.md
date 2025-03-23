@@ -36,6 +36,7 @@ Before installing, make sure you have `git` and `base-devel` installed.
 ### Installing Dependencies
 
 #### Arch-based Distributions
+> This will directly install dependencies and the app , no further steps required for arch based distros
 ```
 yay -S better-control-git
 ```
