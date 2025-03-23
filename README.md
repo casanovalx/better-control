@@ -42,7 +42,7 @@ sudo pacman -S gtk3 networkmanager bluez bluez-utils pipewire-pulse brightnessct
 
 #### Debian-based Distributions
 ```
-sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python3 power-profiles-daemon python3-psutil gammastep
+yay -S better-control-git
 ```
 
 #### Fedora-based Distributions
@@ -70,12 +70,16 @@ sudo rm -rf ~/better-control
 
 ## Uninstallation ❌
 
-### It's the same steps for every distro
+### It's the same steps for every distro except arch
 ```
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
 sudo make uninstall
 sudo rm -rf ~/better-control
+```
+### For arch based users 
+```
+yay -Rns better-control-git
 ```
 
 ## Compatibility 📄
