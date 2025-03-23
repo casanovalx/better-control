@@ -37,12 +37,12 @@ Before installing, make sure you have `git` and `base-devel` installed.
 
 #### Arch-based Distributions
 ```
-sudo pacman -S gtk3 networkmanager bluez bluez-utils pipewire-pulse brightnessctl python-gobject python-dbus python power-profiles-daemon python-psutil gammastep
+yay -S better-control-git
 ```
 
 #### Debian-based Distributions
 ```
-yay -S better-control-git
+sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python3 power-profiles-daemon python3-psutil gammastep
 ```
 
 #### Fedora-based Distributions
