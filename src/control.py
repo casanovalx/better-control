@@ -962,12 +962,6 @@ class bettercontrol(Gtk.Window):
         volume_title.get_style_context().add_class("wifi-header")
         header_box.pack_start(volume_title, False, False, 0)
         
-        # Mute button in header
-        self.volume_button = Gtk.Button(label="Mute/Unmute")
-        self.volume_button.set_valign(Gtk.Align.CENTER)
-        self.volume_button.connect("clicked", self.mute)
-        header_box.pack_end(self.volume_button, False, False, 0)
-        
         volume_box.pack_start(header_box, False, False, 0)
         
         # Status area with output device selection
@@ -1064,9 +1058,17 @@ class bettercontrol(Gtk.Window):
         # Speaker volume section
         speaker_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         
+        speaker_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        
         volume_label = Gtk.Label(label="Speaker Volume")
         volume_label.set_xalign(0)
-        speaker_section.pack_start(volume_label, False, False, 0)
+        speaker_header.pack_start(volume_label, True, True, 0)
+        
+        self.volume_button = Gtk.Button(label="Mute/Unmute")
+        self.volume_button.connect("clicked", self.mute)
+        speaker_header.pack_end(self.volume_button, False, False, 0)
+        
+        speaker_section.pack_start(speaker_header, False, False, 0)
         
         # Volume slider
         self.volume_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
