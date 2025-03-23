@@ -3580,72 +3580,59 @@ class bettercontrol(Gtk.Window):
         """Move a tab up in the order (lower position number)"""
         tab_widget = self.tabs[tab_name]
         current_position = self.notebook.page_num(tab_widget)
-        
-        # Can't move up if it's already at the top or not visible
+
         if current_position <= 0 or current_position == -1:
             return
-        
-        # Get the tab label
+
         tab_label = self.notebook.get_tab_label(tab_widget)
-        
-        # Remember the currently active tab
         current_active_tab = self.notebook.get_current_page()
-        
-        # Remove the tab and reinsert it at the new position
+
         self.notebook.remove_page(current_position)
         new_position = current_position - 1
         self.notebook.insert_page(tab_widget, tab_label, new_position)
-        
-        # Restore the previously active tab instead of switching to the moved tab
+
         self.notebook.set_current_page(current_active_tab if current_active_tab != current_position else new_position)
-        
-        # Update the original_tab_positions dictionary
+
         for name, pos in self.original_tab_positions.items():
             if pos == new_position:
                 self.original_tab_positions[name] = current_position
         self.original_tab_positions[tab_name] = new_position
-        
-        # Save the new order
+
         self.save_settings()
-        
-        # Update the settings tab to reflect the new order
         self.populate_settings_tab()
-        
+
+        self.settings_box.show_all()
+        self.queue_draw()
+
     def move_tab_down(self, button, tab_name):
         """Move a tab down in the order (higher position number)"""
         tab_widget = self.tabs[tab_name]
         current_position = self.notebook.page_num(tab_widget)
         last_position = self.notebook.get_n_pages() - 1
-        
-        # Can't move down if it's already at the bottom or not visible
+
         if current_position == last_position or current_position == -1:
             return
-            
-        # Get the tab label
+
         tab_label = self.notebook.get_tab_label(tab_widget)
-        
-        # Remember the currently active tab
         current_active_tab = self.notebook.get_current_page()
-        
-        # Remove the tab and reinsert it at the new position
+
         self.notebook.remove_page(current_position)
         new_position = current_position + 1
         self.notebook.insert_page(tab_widget, tab_label, new_position)
-        
-        # Restore the previously active tab instead of switching to the moved tab
+
         self.notebook.set_current_page(current_active_tab if current_active_tab != current_position else new_position)
-        
-        # Update the original_tab_positions dictionary
+
         for name, pos in self.original_tab_positions.items():
             if pos == new_position:
                 self.original_tab_positions[name] = current_position
         self.original_tab_positions[tab_name] = new_position
-        
-        # Save the new order
+
         self.save_settings()
-        
-        # Update the settings tab to reflect the new order
         self.populate_settings_tab()
+
+        self.settings_box.show_all()
+        self.queue_draw()
+
 
     def apply_saved_tab_order(self):
         """Apply the saved tab order from settings"""
