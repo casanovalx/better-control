@@ -98,4 +98,4 @@ Better-Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasm
 
 > If you test Better-Control on a different setup, please share your experience in the discussions or issues section.
 
-[![BetterControl](https://img.shields.io/badge/🐧-999999?style=for-the-badge&logo=BetterControl&label=BetterControl&labelColor=333333)](https://aur.archlinux.org/)
+[![BetterControl](https://img.shields.io/badge/🐧-999999?style=for-the-badge&logo=BetterControl&label=BetterControl&labelColor=333333)](https://aur.archlinux.org/packages/better-control-git)
