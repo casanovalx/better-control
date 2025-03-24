@@ -2836,27 +2836,48 @@ class bettercontrol(Gtk.Window):
             print("Error getting mic volume:", e)
             return 50  
 
+
     def refresh_wifi(self, button):
+        """Refresh the list of Wi-Fi networks."""
+        
         # Prevent multiple simultaneous refreshes
         if getattr(self, '_is_refreshing', False):
             return
-            
+
         self._is_refreshing = True
-        
-        # Get current tab to check if WiFi tab is active
+
+        # Clear existing entries
+        for child in self.wifi_listbox.get_children():
+            self.wifi_listbox.remove(child)
+
+        # Check if a Wi-Fi device exists
+        wifi_devices = subprocess.getoutput("nmcli device status | grep wifi")
+        if not wifi_devices:
+            error_label = Gtk.Label(label="No Wi-Fi device found")
+            error_label.get_style_context().add_class("error-label")
+            self.wifi_listbox.add(error_label)
+            error_label.show()
+            
+            self._is_refreshing = False  # Allow future refreshes
+            return  # Stop further execution
+
+        # Get current tab to check if Wi-Fi tab is active
         current_page = self.notebook.get_current_page()
         current_tab = self.notebook.get_nth_page(current_page)
         current_tab_name = self.get_tab_name_from_label(current_tab)
-        
-        # If we're not on the WiFi tab, just mark as not refreshing and return
-        # This prevents unnecessary scans when the WiFi tab isn't visible
+
+        # If we're not on the Wi-Fi tab, just mark as not refreshing and return
+        # This prevents unnecessary scans when the Wi-Fi tab isn't visible
         if current_tab_name != "Wi-Fi" and button is not None:  # Allow forced refresh
             self._is_refreshing = False
             return
-            
+
+        # Run the refresh in a separate thread
         thread = threading.Thread(target=self._refresh_wifi_thread)
         thread.daemon = True
         thread.start()
+
+
 
     def _refresh_wifi_thread(self):
         # We don't need the tabular format anymore as we'll use the standard output format
