@@ -8,6 +8,7 @@ A GTK-themed control panel for Linux 🐧
 
 ## What's New
 - now you can open directly into tabs with parameters like `control --volume` or `control --display` , you can use this to link to waybar modules or just easier access
+- if you have a wirless peripheral device on a desktop , they battery wont show as system battery
 
 > **Note:** This project is under active development. Contributions, feature requests, ideas, and testers are welcome!
 
