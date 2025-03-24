@@ -2039,8 +2039,14 @@ class bettercontrol(Gtk.Window):
 
     def initialize_bluetooth_tab(self):
         if not self._tabs_initialized.get("Bluetooth", False):
-            print("Initializing Bluetooth tab...")
-            self.refresh_bluetooth(None)  # Load Bluetooth content
+            print("Initializing Bluetooth tab with improved discovery...")
+            
+            # Update switch state to match actual Bluetooth state
+            self.update_bluetooth_switch_state()
+            
+            # Wait a moment to let UI update before scanning
+            GLib.timeout_add(500, self.refresh_bluetooth, None)
+            
             self._tabs_initialized["Bluetooth"] = True
 
     def initialize_volume_tab(self):
@@ -2885,70 +2891,165 @@ class bettercontrol(Gtk.Window):
         return False  # To stop GLib.idle_add
 
     def refresh_bluetooth(self, button):
-        """Refreshes the list of Bluetooth devices with improved UI feedback."""
+        """Refreshes the list of Bluetooth devices with improved reliability and feedback."""
         # Update status
-        self.bt_status_label.set_text("Scanning for devices...")
-
-        # Clear existing devices
-        self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
-
-        # Check if bluetooth is active
-        bt_status = subprocess.run(
-            ["systemctl", "is-active", "bluetooth"], capture_output=True, text=True
-        ).stdout.strip()
-
-        if bt_status != "active":
-            self.bt_status_label.set_text("Bluetooth is disabled.")
+        self.bt_status_label.set_text("Initializing Bluetooth scan...")
+        
+        # Prevent multiple concurrent scans
+        if hasattr(self, "_bt_scan_in_progress") and self._bt_scan_in_progress:
+            self.bt_status_label.set_text("Scan already in progress...")
             return
-
-        # Start a thread to handle scanning
+        
+        self._bt_scan_in_progress = True
+        
+        # Clear existing devices to show we're refreshing
+        self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
+        
+        # Show a spinner while scanning
+        spinner = Gtk.Spinner()
+        spinner.set_name("bt-scanning-spinner")
+        spinner.start()
+        self.bt_listbox.add(spinner)
+        self.bt_listbox.show_all()
+        
+        # Start scanning thread
+        self.bt_status_label.set_text("Scanning for devices...")
         thread = threading.Thread(target=self._refresh_bluetooth_thread)
         thread.daemon = True
         thread.start()
+        
+        # Set a timeout to clear the in-progress flag in case something goes wrong
+        def clear_scan_flag():
+            self._bt_scan_in_progress = False
+            return False
+        
+        # Auto-clear flag after 20 seconds max
+        GLib.timeout_add_seconds(20, clear_scan_flag)
 
     def _refresh_bluetooth_thread(self):
-        """Performs Bluetooth scanning in a background thread."""
-        # Run scan for 5 seconds
+        """Performs Bluetooth scanning in a background thread with improved discovery."""
         try:
+            # Make sure controller is powered on before scanning
             subprocess.run(
-                ["bluetoothctl", "scan", "on"],
-                timeout=5,
+                ["bluetoothctl", "power", "on"],
                 capture_output=True,
                 text=True,
             )
-        except subprocess.TimeoutExpired:
-            # This is normal - we're just scanning for a fixed duration
-            pass
-
-        # Turn off scanning
-        subprocess.run(["bluetoothctl", "scan", "off"], capture_output=True, text=True)
-
-        # Get all devices
-        output = subprocess.run(
-            ["bluetoothctl", "devices"], capture_output=True, text=True
-        ).stdout.strip()
-        devices = output.split("\n")
-
-        # Update the UI from the main thread
-        GLib.idle_add(self._update_bluetooth_list_with_rows, devices)
+            
+            # Set discoverable and pairable to improve device discovery
+            subprocess.run(
+                ["bluetoothctl", "discoverable", "on"],
+                capture_output=True,
+                text=True,
+            )
+            subprocess.run(
+                ["bluetoothctl", "pairable", "on"],
+                capture_output=True,
+                text=True,
+            )
+            
+            # Run longer scan (10 seconds) for better device discovery
+            print("Starting Bluetooth scan...")
+            try:
+                # Use timeout to prevent hanging
+                scan_process = subprocess.Popen(
+                    ["bluetoothctl", "scan", "on"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                
+                # Wait for 10 seconds
+                time.sleep(10)
+                
+                # Kill the process rather than letting it timeout
+                scan_process.terminate()
+                
+            except Exception as e:
+                print(f"Error during Bluetooth scan: {e}")
+            
+            # Turn off scanning explicitly
+            subprocess.run(["bluetoothctl", "scan", "off"], capture_output=True, text=True)
+            
+            # Filter out invalid devices (help text, menu instructions, etc.)
+            def is_valid_device(device_line):
+                # Skip empty lines
+                if not device_line or not device_line.strip():
+                    return False
+                    
+                # Valid device lines should start with "Device" followed by a MAC address
+                if not device_line.strip().startswith("Device"):
+                    return False
+                    
+                # Check for MAC address format - should contain colons
+                parts = device_line.split(" ", 2)
+                if len(parts) < 2:
+                    return False
+                    
+                mac_address = parts[1]
+                # Basic check for MAC address format (XX:XX:XX:XX:XX:XX)
+                if not ":" in mac_address or len(mac_address) < 17:
+                    return False
+                    
+                return True
+            
+            # Get paired devices first
+            paired_output = subprocess.run(
+                ["bluetoothctl", "paired-devices"], capture_output=True, text=True
+            ).stdout.strip()
+            paired_devices = paired_output.split("\n") if paired_output else []
+            
+            # Get all discovered devices
+            all_output = subprocess.run(
+                ["bluetoothctl", "devices"], capture_output=True, text=True
+            ).stdout.strip()
+            all_devices = all_output.split("\n") if all_output else []
+            
+            # Filter paired and all devices
+            filtered_paired = [d for d in paired_devices if is_valid_device(d)]
+            filtered_all = [d for d in all_devices if is_valid_device(d)]
+            
+            print(f"Found {len(filtered_paired)} paired devices and {len(filtered_all)} total devices")
+            
+            # Combine both lists, prioritizing paired devices
+            devices = filtered_paired.copy()
+            
+            # Add any devices from filtered_all that aren't in filtered_paired
+            for device in filtered_all:
+                if device and device not in devices:
+                    devices.append(device)
+                    
+            # Update the UI from the main thread with combined results
+            GLib.idle_add(self._update_bluetooth_list_with_rows, devices)
+            
+        except Exception as e:
+            print(f"Error in Bluetooth refresh thread: {e}")
+            GLib.idle_add(lambda: self.bt_status_label.set_text(f"Scan error: {str(e)}"))
 
     def _update_bluetooth_list_with_rows(self, devices):
         """Updates the Bluetooth listbox with the provided devices using our new row class."""
         # Clear any existing devices
         self.bt_listbox.foreach(lambda row: self.bt_listbox.remove(row))
+        
+        # Clear scan in progress flag
+        if hasattr(self, "_bt_scan_in_progress"):
+            self._bt_scan_in_progress = False
 
-        if not devices or devices == [""]:
+        if not devices or (len(devices) == 1 and devices[0] == ""):
             self.bt_status_label.set_text("No Bluetooth devices found.")
             return
 
         # Add each device
         for device in devices:
-            if device.strip():  # Skip empty lines
-                row = BluetoothDeviceRow(device)
-                self.bt_listbox.add(row)
+            if device and device.strip():  # Skip empty lines
+                try:
+                    row = BluetoothDeviceRow(device)
+                    self.bt_listbox.add(row)
+                except Exception as e:
+                    print(f"Error adding device row: {e}")
 
         self.bt_listbox.show_all()
-        self.bt_status_label.set_text("Scan complete")
+        self.bt_status_label.set_text(f"Found {len([d for d in devices if d and d.strip()])} devices")
         return False  # Don't repeat the timeout
 
     def show_error(self, message):
@@ -4599,9 +4700,8 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
         self.add(container)
 
         # Device icon based on type
-        icon_name = self.get_icon_name_for_device()
         device_icon = Gtk.Image.new_from_icon_name(
-            icon_name, Gtk.IconSize.LARGE_TOOLBAR
+            self.get_icon_name_for_device(), Gtk.IconSize.LARGE_TOOLBAR
         )
         container.pack_start(device_icon, False, False, 0)
 
@@ -4611,6 +4711,8 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
         name_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         name_label = Gtk.Label(label=self.device_name)
         name_label.set_halign(Gtk.Align.START)
+        name_label.set_ellipsize(Pango.EllipsizeMode.END)
+        name_label.set_max_width_chars(20)
         if self.is_connected:
             name_label.set_markup(f"<b>{self.device_name}</b>")
         name_box.pack_start(name_label, True, True, 0)
