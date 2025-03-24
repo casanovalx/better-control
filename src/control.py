@@ -2837,13 +2837,12 @@ class bettercontrol(Gtk.Window):
             return 50  
 
 
-    def refresh_wifi(self, button):
+    def refresh_wifi(self, button=None):
         """Refresh the list of Wi-Fi networks."""
-        
+
         # Prevent multiple simultaneous refreshes
         if getattr(self, '_is_refreshing', False):
             return
-
         self._is_refreshing = True
 
         # Clear existing entries
@@ -2857,17 +2856,22 @@ class bettercontrol(Gtk.Window):
             error_label.get_style_context().add_class("error-label")
             self.wifi_listbox.add(error_label)
             error_label.show()
-            
+
+            # Disable the Wi-Fi switch
+            self.wifi_status_switch.set_sensitive(False)
+
             self._is_refreshing = False  # Allow future refreshes
             return  # Stop further execution
+
+        # Enable the Wi-Fi switch if a device is found
+        self.wifi_status_switch.set_sensitive(True)
 
         # Get current tab to check if Wi-Fi tab is active
         current_page = self.notebook.get_current_page()
         current_tab = self.notebook.get_nth_page(current_page)
         current_tab_name = self.get_tab_name_from_label(current_tab)
 
-        # If we're not on the Wi-Fi tab, just mark as not refreshing and return
-        # This prevents unnecessary scans when the Wi-Fi tab isn't visible
+        # If Wi-Fi tab is not active, stop the refresh
         if current_tab_name != "Wi-Fi" and button is not None:  # Allow forced refresh
             self._is_refreshing = False
             return
@@ -2876,6 +2880,7 @@ class bettercontrol(Gtk.Window):
         thread = threading.Thread(target=self._refresh_wifi_thread)
         thread.daemon = True
         thread.start()
+
 
 
 
