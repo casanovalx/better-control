@@ -669,7 +669,7 @@ class BatteryTab(Gtk.Box):
                     battery_grid.set_row_spacing(10)
                     
                     title_label = Gtk.Label(xalign=0)
-                    title_label.set_markup("<span weight='bold'>System Battery</span>")
+                    title_label.set_markup("<span weight='bold'>Battery</span>")
                     battery_grid.attach(title_label, 0, 0, 2, 1)
                     
                     # Charge percentage
