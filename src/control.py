@@ -27,6 +27,18 @@ gi.require_version('Pango', '1.0')
 from gi.repository import Gtk, Pango
 import threading
 
+import argparse
+
+# Add this at the beginning of the file, before the bettercontrol class definition
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Better Control - A system control center.")
+    parser.add_argument('--volume', action='store_true', help='Start with the Volume tab open.')
+    parser.add_argument('--wifi', action='store_true', help='Start with the Wi-Fi tab open.')
+    parser.add_argument('--bluetooth', action='store_true', help='Start with the Bluetooth tab open.')
+    parser.add_argument('--battery', action='store_true', help='Start with the Battery tab open.')
+    parser.add_argument('--display', action='store_true', help='Start with the Display tab open.')
+    return parser.parse_args()
+
 # Get configuration directory from XDG standard or fallback to ~/.config
 CONFIG_DIR = os.environ.get('XDG_CONFIG_HOME', os.path.expanduser('~/.config'))
 CONFIG_PATH = os.path.join(CONFIG_DIR, 'better-control')
@@ -658,25 +670,37 @@ class BatteryTab(Gtk.Box):
         return True  # Keep the timer active
 
 class bettercontrol(Gtk.Window):
-    _is_connecting = False
-    _tabs_initialized = {}  # Track which tabs have been initialized
-    
-    def __init__(self):
+    def __init__(self, args):
         Gtk.Window.__init__(self, title="Control Center")
         self.set_type_hint(Gdk.WindowTypeHint.DIALOG)
         self.set_default_size(900, 600)
         self.set_resizable(True)
+
+        self._tabs_initialized = {}
 
         if "hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
             subprocess.run(["hyprctl", "keyword", "windowrulev2", "float,class:^(control)$"])
 
         self.tabs = {}  
         self.tab_visibility = self.load_settings()
+        
+        # Override tab visibility based on command-line arguments
+        if args.volume:
+            self.tab_visibility["Volume"] = True
+        if args.wifi:
+            self.tab_visibility["Wi-Fi"] = True
+        if args.bluetooth:
+            self.tab_visibility["Bluetooth"] = True
+        if args.battery:
+            self.tab_visibility["Battery"] = True
+        if args.display:
+            self.tab_visibility["Display"] = True
+
         # Dictionary to store original tab positions
         self.original_tab_positions = self.original_tab_positions if hasattr(self, 'original_tab_positions') else {}
         self.main_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.add(self.main_container)
-
+    
         self.notebook = Gtk.Notebook()
         self.notebook.set_scrollable(True)
         self.main_container.pack_start(self.notebook, True, True, 0)
@@ -834,6 +858,7 @@ class bettercontrol(Gtk.Window):
         if self.tab_visibility.get("Wi-Fi", True):
             self.notebook.append_page(wifi_box, self.create_tab_label_with_icon("Wi-Fi"))
             # Don't scan WiFi on startup - will be scanned when tab is selected
+            self._tabs_initialized = {}  # Initialize dictionary before using it
             self._tabs_initialized["Wi-Fi"] = False
             
             # Add signal for tab change to refresh WiFi when tab is selected
@@ -1203,7 +1228,6 @@ class bettercontrol(Gtk.Window):
         if self.tab_visibility.get("Battery", True):  
             self.notebook.append_page(self.battery_tab, self.create_tab_label_with_icon("Battery"))
 
-        GLib.idle_add(self.notebook.set_current_page, 0)
 
         # Create the settings box but don't add it to the notebook
         settings_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -1222,7 +1246,26 @@ class bettercontrol(Gtk.Window):
         # Apply the saved tab order if available
         self.apply_saved_tab_order()
 
-        GLib.idle_add(self.notebook.set_current_page, 0)
+        # Set the initial tab based on the command-line arguments
+        if args.volume:
+            initial_tab = "Volume"
+        elif args.wifi:
+            initial_tab = "Wi-Fi"
+        elif args.bluetooth:
+            initial_tab = "Bluetooth"
+        elif args.battery:
+            initial_tab = "Battery"
+        elif args.display:
+            initial_tab = "Display"
+        else:
+             initial_tab = next(iter(self.tabs))  # Default to Volume if no argument is provided
+
+        # Find the index of the initial tab
+        for index, (tab_name, tab) in enumerate(self.tabs.items()):
+            if tab_name == initial_tab:
+                GLib.idle_add(self.notebook.set_current_page, index)
+                break
+
 
         self.update_button_labels()
         
@@ -4024,7 +4067,8 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
         return self.is_connected
 
 if __name__ == "__main__":
-    win = bettercontrol()
+    args = parse_arguments()
+    win = bettercontrol(args)
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
     Gtk.main()
