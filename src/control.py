@@ -44,6 +44,65 @@ CONFIG_DIR = os.environ.get('XDG_CONFIG_HOME', os.path.expanduser('~/.config'))
 CONFIG_PATH = os.path.join(CONFIG_DIR, 'better-control')
 SETTINGS_FILE = os.path.join(CONFIG_PATH, 'settings.json')
 
+
+def get_battery_devices():
+    try:
+        devices = subprocess.getoutput("upower -e").split("\n")
+        return [d for d in devices if "battery" in d]
+    except Exception as e:
+        print(f"Error retrieving battery devices: {e}")
+        return []
+
+def get_battery_info(device):
+    try:
+        info = subprocess.getoutput(f"upower -i {device}")
+        return info
+    except Exception as e:
+        print(f"Error retrieving battery info for {device}: {e}")
+        return ""
+
+
+
+def get_system_battery_info():
+    battery = psutil.sensors_battery()
+    if battery:
+        return {
+            "Charge": f"{battery.percent}%",
+            "State": "Charging" if battery.power_plugged else "Discharging",
+            "Time Left": "Unlimited" if battery.secsleft == psutil.POWER_TIME_UNLIMITED else f"{battery.secsleft // 3600}h {battery.secsleft % 3600 // 60}m"
+        }
+    return None
+
+def detect_peripheral_battery():
+    for device in get_battery_devices():
+        info = get_battery_info(device)
+        if "mouse" in info.lower():
+            return device, "Wireless Mouse Battery"
+        elif "keyboard" in info.lower():
+            return device, "Wireless Keyboard Battery"
+    return None, None
+
+def get_battery_status():
+    peripheral_battery, label = detect_peripheral_battery()
+    if peripheral_battery:
+        info = get_battery_info(peripheral_battery)
+        percentage = next((line.split(":")[1].strip() for line in info.split("\n") if "percentage" in line.lower()), "Unknown")
+        return {"Device": label, "Charge": percentage}
+
+    system_battery = get_system_battery_info()
+    if system_battery:
+        system_battery["Device"] = "System Battery"
+        return system_battery
+
+    return {"Device": "No Battery Detected"}
+
+
+# Example usage
+battery_status = get_battery_status()
+
+
+
+
 def check_dependency(command, name, install_instructions):
     if not shutil.which(command):
         logging.error(f"{name} is required but not installed!\n\nInstall it using:\n{install_instructions}")
@@ -346,6 +405,8 @@ class BatteryTab(Gtk.Box):
         # Initial refresh
         self.refresh_battery_info()
         GLib.timeout_add_seconds(10, self.refresh_battery_info)
+
+    
 
     def set_power_mode_from_string(self, mode_string):
         """
