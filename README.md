@@ -7,12 +7,7 @@ A GTK-themed control panel for Linux 🐧
 > **Note:** The application follows your system GTK theme for a native and integrated look.
 
 ## What's New
-- Complete UI overhaul
-- Configuration file now stored in the user config directory
-- Changed the way we manage power profiles
-- Added customizable tab ordering in settings
-- Fixed numerous bugs and optimized code
-- Fixed setting going blank error
+- now you can open directly into tabs with parameters like `control --volume` or `control --display` , you can use this to link to waybar modules or just easier access
 
 > **Note:** This project is under active development. Contributions, feature requests, ideas, and testers are welcome!
 
