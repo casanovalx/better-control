@@ -39,6 +39,12 @@ Before installing, make sure you have `git` and `base-devel` installed.
 yay -S better-control-git
 ```
 
+#### Nix (Unofficial)
+> This is an unofficial Nix flake maintained by the community.
+
+https://github.com/Rishabh5321/better-control-flake
+
+
 #### Debian-based Distributions
 ```
 sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python3 python3-pydbus power-profiles-daemon python3-psutil gammastep
