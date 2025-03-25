@@ -59,6 +59,8 @@ class BluetoothTab(Gtk.Box):
         self.scan_button.set_image(scan_icon)
         self.scan_button.set_tooltip_text("Scan for Devices")
         self.scan_button.connect("clicked", self.on_scan_clicked)
+        # Set initial visibility based on Bluetooth status
+        self.scan_button.set_visible(get_bluetooth_status())
         header_box.pack_end(self.scan_button, False, False, 0)
 
         self.pack_start(header_box, False, False, 0)
@@ -122,13 +124,15 @@ class BluetoothTab(Gtk.Box):
         for child in self.devices_box.get_children():
             self.devices_box.remove(child)
 
-        # Add devices
-        devices = get_devices()
-        for device in devices:
-            device_row = BluetoothDeviceRow(device)
-            device_row.connect_button.connect("clicked", self.on_connect_clicked, device["path"])
-            device_row.disconnect_button.connect("clicked", self.on_disconnect_clicked, device["path"])
-            self.devices_box.pack_start(device_row, False, True, 0)
+        # Only add devices if Bluetooth is enabled
+        if get_bluetooth_status():
+            # Add devices
+            devices = get_devices()
+            for device in devices:
+                device_row = BluetoothDeviceRow(device)
+                device_row.connect_button.connect("clicked", self.on_connect_clicked, device["path"])
+                device_row.disconnect_button.connect("clicked", self.on_disconnect_clicked, device["path"])
+                self.devices_box.pack_start(device_row, False, True, 0)
 
         self.devices_box.show_all()
 
@@ -144,7 +148,26 @@ class BluetoothTab(Gtk.Box):
             switch (Gtk.Switch): The power switch widget
             gparam: GObject parameter
         """
-        set_bluetooth_power(switch.get_active())
+        is_enabled = switch.get_active()
+        set_bluetooth_power(is_enabled)
+        
+        # Update UI based on Bluetooth state
+        if is_enabled:
+            # Bluetooth enabled - show scan button
+            self.scan_button.set_visible(True)
+            # Update device list
+            self.update_device_list()
+        else:
+            # Bluetooth disabled - hide scan button
+            self.scan_button.set_visible(False)
+            # Clear all devices from the list
+            for child in self.devices_box.get_children():
+                self.devices_box.remove(child)
+            self.devices_box.show_all()
+            
+            # If we're discovering, stop it
+            if self.is_discovering:
+                self.stop_scan(self.scan_button)
 
     def on_scan_clicked(self, button):
         """Handle scan button clicks
