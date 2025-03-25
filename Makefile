@@ -1,17 +1,52 @@
-PREFIX ?= /usr
-BIN_DIR := $(PREFIX)/bin
-DESKTOP_DIR := $(PREFIX)/share/applications
-APP_NAME := control
-SRC := src/control.py
+# Makefile for Better Control
+# This Makefile installs the application to /usr/share/better-control
+# and creates launcher scripts in /usr/bin
 
-install: build
-	install -Dm755 $(SRC) $(BIN_DIR)/$(APP_NAME)
-	install -Dm644 src/control.desktop $(DESKTOP_DIR)/control.desktop
-	@echo "Better Control installed successfully!"
+PREFIX ?= /usr
+INSTALL_DIR = $(DESTDIR)$(PREFIX)/share/better-control
+BIN_DIR = $(DESTDIR)$(PREFIX)/bin
+
+.PHONY: all install uninstall clean
+
+all:
+	@echo "Run 'make install' to install Better Control"
+
+install:
+	@echo "Installing Better Control..."
+	# Create installation directories
+	mkdir -p $(INSTALL_DIR)
+	mkdir -p $(BIN_DIR)
+	
+	# Copy all project files to installation directory
+	cp -r src/* $(INSTALL_DIR)/
+	
+	# Create and install the better-control executable script
+	@echo "#!/bin/bash" > better-control
+	@echo "python3 $(PREFIX)/share/better-control/better_control.py \$$@" >> better-control
+	chmod +x better-control
+	cp better-control $(BIN_DIR)/better-control
+	
+	# Create and install the control executable script
+	cp better-control control
+	cp control $(BIN_DIR)/control
+	
+	# Cleanup temporary files
+	rm better-control control
+	
+	# Install desktop file
+	mkdir -p $(DESTDIR)$(PREFIX)/share/applications
+	sed 's|Exec=/usr/bin/control|Exec=/usr/bin/better-control|' \
+		src/control.desktop > $(DESTDIR)$(PREFIX)/share/applications/better-control.desktop
+	
+	@echo "Installation complete!"
 
 uninstall:
-	rm -f $(BIN_DIR)/$(APP_NAME)
-	rm -f $(DESKTOP_DIR)/control.desktop
-	@echo "Better Control uninstalled successfully!"
+	@echo "Uninstalling Better Control..."
+	rm -rf $(INSTALL_DIR)
+	rm -f $(BIN_DIR)/better-control
+	rm -f $(BIN_DIR)/control
+	rm -f $(DESTDIR)$(PREFIX)/share/applications/better-control.desktop
+	@echo "Uninstallation complete!"
 
-.PHONY: install uninstall build
+clean:
+	@echo "Nothing to clean."	

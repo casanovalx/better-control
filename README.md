@@ -7,9 +7,8 @@ A GTK-themed control panel for Linux 🐧
 > **Note:** The application follows your system GTK theme for a native and integrated look.
 
 ## What's New
-- now you can open directly into tabs with parameters like `control --volume` or `control --display` , you can use this to link to waybar modules or just easier access.
-- if you have a wirless peripheral device on a desktop , their battery wont show as system battery.
-- fixed wifi devices for desktop with no wifi device
+- Complete refactor of the code
+- A lot of bug fixes and optimization
 
 > **Note:** This project is under active development. Contributions, feature requests, ideas, and testers are welcome!
 
@@ -21,20 +20,20 @@ Before installing, make sure you have `git` and `base-devel` installed.
 ### Dependencies
 
 - **GTK 3** - UI framework
-- **NetworkManager** - Wi-Fi & Ethernet management
+- **NetworkManager** - Wi-Fi management
 - **BlueZ & BlueZ Utils** - Bluetooth support
-- **PipeWire Pulse** - Audio control
-- **Brightnessctl** - Screen brightness control
-- **Power-profiles-daemon** - Battery management
-- **Gammastep** - Blue light filter
-- **Python Libraries** - python-gobject, python-pydbus, python3, psutil
+- **PipeWire or PulseAudio** - Audio control
+- **brightnessctl** - Screen brightness control
+- **power-profiles-daemon** - Power management
+- **gammastep** - Blue light filter
+- **Python Libraries** - python-gobject, python-dbus, python3
 
 > **Tip:** If you don't need a specific feature, you can safely omit its corresponding dependency and hide its tab in the settings.
 
 ### Installing Dependencies
 
 #### Arch-based Distributions
-> This will directly install dependencies and the app , no further steps required for arch based distros.
+> This will directly install dependencies and the app, no further steps required for arch based distros.
 ```
 yay -S better-control-git
 ```
@@ -44,25 +43,24 @@ yay -S better-control-git
 
 https://github.com/Rishabh5321/better-control-flake
 
-
 #### Debian-based Distributions
 ```
-sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pipewire-pulse brightnessctl python3-gi python3-dbus python3 python3-pydbus power-profiles-daemon python3-psutil gammastep
+sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep
 ```
 
 #### Fedora-based Distributions
 ```
-sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python3 python3-pydbus power-profiles-daemon python3-psutil gammastep
+sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep
 ```
 
 #### Void Linux
 ```
-sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pipewire-pulse brightnessctl python3-gobject python3-dbus python3-pydbus python3 power-profiles-daemon python3-psutil gammastep
+sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep
 ```
 
 #### Alpine Linux
 ```
-sudo apk add gtk3 networkmanager bluez bluez-utils pipewire-pulse brightnessctl py3-gobject py3-dbus py3-pydbus python3 power-profiles-daemon py3-psutil gammastep
+sudo apk add gtk3 networkmanager bluez bluez-utils pulseaudio brightnessctl py3-gobject py3-dbus python3 power-profiles-daemon gammastep
 ```
 
 ### Installation Steps
