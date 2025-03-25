@@ -2,9 +2,10 @@
 
 import gi
 import logging
+import threading
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 
 from ui.tabs.battery_tab import BatteryTab
 from ui.tabs.bluetooth_tab import BluetoothTab
@@ -34,47 +35,127 @@ class BetterControl(Gtk.Window):
         # Track tabs for visibility management
         self.tabs = {}
         self.tab_pages = {}
-
-        # Create tabs
-        self.create_tabs()
+        
+        # Add loading indicator
+        self.loading_spinner = Gtk.Spinner()
+        self.loading_spinner.start()
+        
+        self.loading_label = Gtk.Label(label="Loading tabs...")
+        loading_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        loading_box.set_halign(Gtk.Align.CENTER)
+        loading_box.set_valign(Gtk.Align.CENTER)
+        loading_box.pack_start(self.loading_spinner, False, False, 0)
+        loading_box.pack_start(self.loading_label, False, False, 0)
+        
+        self.loading_page = self.notebook.append_page(
+            loading_box,
+            Gtk.Label(label="Loading...")
+        )
+        
+        # Start async tab creation
+        self.create_tabs_async()
         
         # Add settings button to the notebook action area
         self.create_settings_button()
-
-        # Apply initial tab visibility and order
-        self.apply_tab_visibility()
-        self.apply_tab_order()
-
+        
         # Set active tab based on command line arguments
-        if args.volume:
-            self.notebook.set_current_page(0)
-        elif args.wifi:
-            self.notebook.set_current_page(1)
-        elif args.bluetooth:
-            self.notebook.set_current_page(2)
-        elif args.battery:
-            self.notebook.set_current_page(3)
-        elif args.display:
-            self.notebook.set_current_page(4)
-        else:
-            # Use last active tab from settings
-            last_tab = self.settings.get("last_active_tab", 0)
-            self.notebook.set_current_page(last_tab)
+        self.args = args
 
         # Connect signals
         self.connect("destroy", self.on_destroy)
         self.notebook.connect("switch-page", self.on_tab_switched)
 
-    def create_tabs(self):
-        """Create all tabs"""
-        logging.info("Creating application tabs")
-        # Create tab instances
-        self.tabs["Volume"] = VolumeTab()
-        self.tabs["Wi-Fi"] = WiFiTab()
-        self.tabs["Bluetooth"] = BluetoothTab()
-        self.tabs["Battery"] = BatteryTab()
-        self.tabs["Display"] = DisplayTab()
-        logging.info("All tabs created successfully")
+    def create_tabs_async(self):
+        """Create all tabs asynchronously"""
+        logging.info("Starting asynchronous tab creation")
+        
+        # Start a thread to create tabs in the background
+        thread = threading.Thread(target=self._create_tabs_thread)
+        thread.daemon = True
+        thread.start()
+    
+    def _create_tabs_thread(self):
+        """Thread function to create tabs"""
+        # Create all tabs
+        tab_classes = {
+            "Volume": VolumeTab,
+            "Wi-Fi": WiFiTab, 
+            "Bluetooth": BluetoothTab,
+            "Battery": BatteryTab,
+            "Display": DisplayTab
+        }
+        
+        # Create tabs one by one
+        for tab_name, tab_class in tab_classes.items():
+            try:
+                # Create the tab
+                tab = tab_class()
+                
+                # Update UI from main thread
+                GLib.idle_add(self._add_tab_to_ui, tab_name, tab)
+                
+                # Small delay to avoid blocking the UI
+                GLib.usleep(10000)  # 10ms delay
+                
+            except Exception as e:
+                logging.error(f"Error creating {tab_name} tab: {e}")
+        
+        # Complete initialization on main thread
+        GLib.idle_add(self._finish_tab_loading)
+    
+    def _add_tab_to_ui(self, tab_name, tab):
+        """Add a tab to the UI (called from main thread)"""
+        self.tabs[tab_name] = tab
+        
+        # Make sure tab is visible
+        tab.show_all()
+        
+        # Check visibility settings
+        visibility = self.settings.get("visibility", {})
+        should_show = visibility.get(tab_name, True)
+        
+        if should_show:
+            # Add tab to notebook with proper label
+            page_num = self.notebook.append_page(
+                tab,
+                self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
+            )
+            self.tab_pages[tab_name] = page_num
+            
+        logging.info(f"Created {tab_name} tab")
+        return False  # Required for GLib.idle_add
+    
+    def _finish_tab_loading(self):
+        """Finish tab loading by applying visibility and order (on main thread)"""
+        logging.info("All tabs created, finalizing UI")
+        
+        # Apply tab order (visibility is already applied)
+        self.apply_tab_order()
+        
+        # Remove loading tab
+        self.notebook.remove_page(self.loading_page)
+        
+        # Show all tabs to ensure content is visible
+        self.show_all()
+        
+        # Set active tab based on command line arguments
+        if self.args.volume and "Volume" in self.tab_pages:
+            self.notebook.set_current_page(self.tab_pages["Volume"])
+        elif self.args.wifi and "Wi-Fi" in self.tab_pages:
+            self.notebook.set_current_page(self.tab_pages["Wi-Fi"])
+        elif self.args.bluetooth and "Bluetooth" in self.tab_pages:
+            self.notebook.set_current_page(self.tab_pages["Bluetooth"]) 
+        elif self.args.battery and "Battery" in self.tab_pages:
+            self.notebook.set_current_page(self.tab_pages["Battery"])
+        elif self.args.display and "Display" in self.tab_pages:
+            self.notebook.set_current_page(self.tab_pages["Display"])
+        else:
+            # Use last active tab from settings
+            last_tab = self.settings.get("last_active_tab", 0)
+            if last_tab < self.notebook.get_n_pages():
+                self.notebook.set_current_page(last_tab)
+        
+        return False  # Required for GLib.idle_add
 
     def apply_tab_visibility(self):
         """Apply tab visibility settings"""
@@ -95,11 +176,13 @@ class BetterControl(Gtk.Window):
             # Apply visibility
             if should_show and page_num == -1:
                 # Need to add the tab
+                tab.show_all()  # Ensure tab is visible
                 page_num = self.notebook.append_page(
                     tab, 
                     self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
                 )
                 self.tab_pages[tab_name] = page_num
+                self.notebook.show_all()  # Ensure notebook updates
             elif not should_show and page_num != -1:
                 # Need to remove the tab
                 self.notebook.remove_page(page_num)
@@ -107,6 +190,10 @@ class BetterControl(Gtk.Window):
                 for name, num in self.tab_pages.items():
                     if num > page_num:
                         self.tab_pages[name] = num - 1
+                        
+                # Remove from tab_pages
+                if tab_name in self.tab_pages:
+                    del self.tab_pages[tab_name]
 
     def apply_tab_order(self):
         """Apply tab order settings"""
@@ -221,11 +308,13 @@ class BetterControl(Gtk.Window):
                     
             if visible and page_num == -1:
                 # Need to add the tab
+                tab.show_all()  # Ensure tab is visible
                 page_num = self.notebook.append_page(
                     tab, 
                     self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
                 )
                 self.tab_pages[tab_name] = page_num
+                self.notebook.show_all()  # Ensure notebook updates
             elif not visible and page_num != -1:
                 # Need to remove the tab
                 self.notebook.remove_page(page_num)
@@ -233,6 +322,9 @@ class BetterControl(Gtk.Window):
                 for name, num in self.tab_pages.items():
                     if num > page_num:
                         self.tab_pages[name] = num - 1
+                # Remove from tab_pages
+                if tab_name in self.tab_pages:
+                    del self.tab_pages[tab_name]
 
     def on_tab_order_changed(self, widget, tab_order):
         """Handle tab order changed signal from settings tab"""
