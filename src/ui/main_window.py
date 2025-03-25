@@ -138,6 +138,10 @@ class BetterControl(Gtk.Window):
         # Show all tabs to ensure content is visible
         self.show_all()
         
+        # Load WiFi networks after all tabs are loaded
+        if "Wi-Fi" in self.tabs:
+            self.tabs["Wi-Fi"].load_networks()
+        
         # Set active tab based on command line arguments
         if self.args.volume and "Volume" in self.tab_pages:
             self.notebook.set_current_page(self.tab_pages["Volume"])
