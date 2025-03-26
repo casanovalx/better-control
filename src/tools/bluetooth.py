@@ -138,6 +138,15 @@ class BluetoothManager:
             import time
             time.sleep(2)
 
+            # Fetch device name
+            device_name = "Bluetooth Device"
+
+            properties = dbus.Interface(
+                self.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
+                DBUS_PROP_IFACE
+            )
+            device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Alias")
+
             # Find Bluetooth sink
             output = subprocess.getoutput("pactl list short sinks")
             bt_sink = None
@@ -148,7 +157,6 @@ class BluetoothManager:
 
             if bt_sink:
                 subprocess.run(["pactl", "set-default-sink", bt_sink], check=True)
-                subprocess.run(["notify-send", "Bluetooth", f"Audio switched to {bt_sink}"])
 
                 # Save the Bluetooth sink
                 with open("/tmp/last_sink.txt", "w") as f:
@@ -160,6 +168,10 @@ class BluetoothManager:
                     if line.strip():
                         app_id = line.split()[0]
                         subprocess.run(["pactl", "move-sink-input", app_id, bt_sink], check=True)
+
+            # Send notification with battery percentage
+            subprocess.run(["notify-send", "Control Center",
+                            f"{device_name} Connected"])
 
             return True
         except Exception as e:
@@ -183,8 +195,6 @@ class BluetoothManager:
             device.Disconnect()
 
             subprocess.run(["notify-send", "Control Center", f"{device_name} Disconnected"])
-
-            subprocess.run(["notify-send", "Control Center", "Bluetooth Device Disconnected"])
 
             return True
         except Exception as e:
@@ -223,8 +233,6 @@ def restore_last_sink():
             for _ in range(3):  # Repeat 3 times to fight auto-switching
                 subprocess.run(["pactl", "set-default-sink", last_sink], check=True)
                 time.sleep(1)
-
-            subprocess.run(["notify-send", "Audio", f"Restored last used sink: {last_sink}"])
 
             # Verify if the change was successful
             time.sleep(1)
