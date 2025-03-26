@@ -43,7 +43,7 @@ yay -S better-control-git
 
 #### Nix (Unofficial)
 > [!NOTE]
-
+> This is an unofficial Nix flake mantained by the community. All issues and problems should be directed to their repository.
 https://github.com/Rishabh5321/better-control-flake
 
 #### Debian-based Distributions
