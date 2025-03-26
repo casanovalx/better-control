@@ -16,6 +16,11 @@ from gi.repository import Gtk  # type: ignore
 from ui.main_window import BetterControl
 from utils.dependencies import check_all_dependencies
 
+from tools.bluetooth import restore_last_sink
+
+restore_last_sink()  # Restore Bluetooth audio when app starts
+
+
 if __name__ == "__main__":
     arg_parser = ArgParse(sys.argv)
 
@@ -52,7 +57,7 @@ if __name__ == "__main__":
         # Ensure Hyprland floating works
         if "hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
             subprocess.run(
-                ["hyprctl", "keyword", "windowrulev2", "float,class:^(better_control.py)$"]
+                ["hyprctl", "keyword", "windowrule", "float,class:^(better_control.py)$"]
             )
 
         Gtk.main()

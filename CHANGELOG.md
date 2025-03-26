@@ -3,8 +3,13 @@
 ####     '# Change: <version>'
 ####     '- <changes>'
 
-
+# Change 5.2.6
+- Fixed application volume
+- Changed `windowrulev2` to `windowrule`
+  
 # Change 5.2.5
+- Fixed Bluetooth auto sink switch 
+- Fixed app close sink change bug #24
 - Removed a lot of whitespaces from the files
 - Fixed float (again)
 - Removed all 'print' statements, and changed them into logs

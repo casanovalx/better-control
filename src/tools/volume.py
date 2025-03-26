@@ -4,6 +4,8 @@ import subprocess
 from typing import List, Dict
 import logging
 import re
+import subprocess
+from typing import List, Dict
 
 def get_volume() -> int:
     """Get current volume level
@@ -50,37 +52,6 @@ def toggle_mute() -> None:
     except subprocess.CalledProcessError as e:
         logging.error(f"Error toggling mute: {e}")
 
-def get_sinks() -> List[Dict[str, str]]:
-    """Get list of audio sinks (output devices)
-
-    Returns:
-        List[Dict[str, str]]: List of sink dictionaries
-    """
-    try:
-        output = subprocess.getoutput("pactl list sinks")
-        sinks = []
-        current_sink = {}
-        for line in output.split("\n"):
-            if line.startswith("Sink #"):
-                if current_sink:
-                    sinks.append(current_sink)
-                current_sink = {"id": line.split("#")[1].strip()}
-            elif ":" in line and current_sink:
-                key, value = line.split(":", 1)
-                key = key.strip()
-                value = value.strip()
-                if key == "Name":
-                    current_sink["name"] = value
-                elif key == "Description":
-                    current_sink["description"] = value
-
-        if current_sink:
-            sinks.append(current_sink)
-
-        return sinks
-    except Exception as e:
-        logging.error(f"Error getting sinks: {e}")
-        return []
 
 def get_sources() -> List[Dict[str, str]]:
     """Get list of audio sources (input devices)
@@ -114,57 +85,60 @@ def get_sources() -> List[Dict[str, str]]:
         logging.error(f"Error getting sources: {e}")
         return []
 
+
 def get_applications() -> List[Dict[str, str]]:
-    """Get list of applications playing audio
+    output = subprocess.getoutput("pactl list sink-inputs")
+    apps = []
+    current_app = {}
 
-    Returns:
-        List[Dict[str, str]]: List of application dictionaries
-    """
-    try:
-        output = subprocess.getoutput("pactl list sink-inputs")
-        apps = []
-        current_app = {}
-        for line in output.split("\n"):
-            line = line.strip()
-            if line.startswith("Sink Input #"):
-                if current_app:
-                    # Only add apps that have a name and volume
-                    if "name" in current_app and "volume" in current_app:
-                        apps.append(current_app)
-                current_app = {"id": line.split("#")[1].strip()}
-            elif ":" in line and current_app:
-                key, value = [x.strip() for x in line.split(":", 1)]
-                # Application name
-                if "application.name" in key:
-                    current_app["name"] = value.strip('"')
-                elif "media.name" in key and "name" not in current_app:
-                    # Fallback to media.name if application.name is not available
-                    current_app["name"] = value.strip('"')
-                elif "application.process.binary" in key and "name" not in current_app:
-                    # Fallback to process name if no other name is available
-                    current_app["name"] = value.strip('"')
-                # Application icon
-                elif "application.icon_name" in key:
-                    current_app["icon"] = value.strip('"')
-                # Volume
-                elif "Volume:" in key:
-                    try:
-                        # Extract volume percentage from format like "front-left: 65536 / 100% / -0.00 dB,   front-right: 65536 / 100% / -0.00 dB"
-                        volume_match = re.search(r"(\d+)%", value)
-                        if volume_match:
-                            current_app["volume"] = int(volume_match.group(1)) # type: ignore
-                    except (ValueError, IndexError) as e:
-                        logging.warning(f"Error parsing volume from '{value}': {e}")
-                        current_app["volume"] = 100  # Default to 100% if parsing fails # type: ignore
+    for line in output.split("\n"):
+        line = line.strip()
+        print(f"Parsing Line: {line}")  # Debugging
 
-        # Add the last app if it exists and has required fields
-        if current_app and "name" in current_app and "volume" in current_app:
+        if line.startswith("Sink Input #"):
+            if current_app:  # Finalize previous app before moving to a new one
+                print("Finalizing previous app:", current_app)  
+                if "name" in current_app and "volume" in current_app:
+                    apps.append(current_app)  
+                else:
+                    print("Skipping app due to missing name or volume!", current_app)
+            
+            current_app = {"id": line.split("#")[1].strip()}  # New app entry
+            print("New app detected with ID:", current_app["id"])
+
+        elif "application.name" in line:
+            current_app["name"] = line.split("=", 1)[1].strip().strip('"')
+            print("Detected & Stored App Name:", current_app["name"])
+
+        elif "media.name" in line and "name" not in current_app:
+            current_app["name"] = line.split("=", 1)[1].strip().strip('"')
+            print("Using Media Name:", current_app["name"])
+
+        elif "application.process.binary" in line and "name" not in current_app:
+            current_app["name"] = line.split("=", 1)[1].strip().strip('"')
+            print("Using Process Binary Name:", current_app["name"])
+
+        elif "Volume:" in line:
+            print("Found Volume Line:", line)
+            match = re.search(r"(\d+)%", line)
+            if match:
+                current_app["volume"] = int(match.group(1))
+                print("Detected & Stored Volume:", current_app["volume"])
+            else:
+                print("Failed to parse volume from:", line)
+
+    # Final app processing
+    if current_app:
+        print("Finalizing last app:", current_app)
+        if "name" in current_app and "volume" in current_app:
             apps.append(current_app)
+        else:
+            print("Skipping last app due to missing name or volume!", current_app)
 
-        return apps
-    except Exception as e:
-        logging.error(f"Error getting applications: {e}")
-        return []
+    print("Parsed Applications:", apps)
+    return apps
+
+
 
 def set_application_volume(app_id: str, value: int) -> None:
     """Set volume for a specific application
@@ -179,15 +153,49 @@ def set_application_volume(app_id: str, value: int) -> None:
         logging.error(f"Error setting application volume: {e}")
 
 def set_default_sink(sink_name: str) -> None:
-    """Set default audio output device
-
-    Args:
-        sink_name (str): Sink name
-    """
     try:
         subprocess.run(["pactl", "set-default-sink", sink_name], check=True)
+        
+        # Move all running apps to the new sink
+        output = subprocess.getoutput("pactl list short sink-inputs")
+        for line in output.split("\n"):
+            if line.strip():
+                app_id = line.split()[0]
+                subprocess.run(["pactl", "move-sink-input", app_id, sink_name], check=True)
+
     except subprocess.CalledProcessError as e:
         logging.error(f"Error setting default sink: {e}")
+
+def get_sinks() -> List[Dict[str, str]]:
+    """Get list of audio sinks (output devices)."""
+    try:
+        output = subprocess.getoutput("pactl list sinks")
+        sinks = []
+        current_sink = {}
+
+        for line in output.split("\n"):
+            if line.startswith("Sink #"):
+                if current_sink:
+                    sinks.append(current_sink)
+                current_sink = {"id": line.split("#")[1].strip()}
+            elif ":" in line and current_sink:
+                key, value = line.split(":", 1)
+                key = key.strip()
+                value = value.strip()
+                if key == "Name":
+                    current_sink["name"] = value
+                elif key == "Description":
+                    current_sink["description"] = value  # ✅ Fix: Ensure description is included
+
+        if current_sink:
+            sinks.append(current_sink)
+
+        return sinks
+    except Exception as e:
+        logging.error(f"Error getting sinks: {e}")
+        return []
+
+
 
 def set_default_source(source_name: str) -> None:
     """Set default audio input device

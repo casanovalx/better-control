@@ -125,8 +125,6 @@ class DisplayTab(Gtk.Box):
         self.bluelight_scale.set_value(saved_gamma)
         self.bluelight_scale.set_value_pos(Gtk.PositionType.RIGHT)
         self.bluelight_scale.connect("value-changed", self.on_bluelight_changed)
-        # Invert the scale direction (high value on left, low value on right)
-        self.bluelight_scale.set_inverted(True)
         bluelight_box.pack_start(self.bluelight_scale, True, True, 0)
 
         # Quick blue light buttons
