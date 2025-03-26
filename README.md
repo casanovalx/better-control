@@ -10,6 +10,7 @@ A GTK-themed control panel for Linux 🐧
 - Complete refactor of the code.
 - A lot of bug fixes and optimization.
 - Fixed broken AUR.
+- Fixed window not floating.
 
 > **Note:** This project is under active development. Contributions, feature requests, ideas, and testers are welcome!
 
