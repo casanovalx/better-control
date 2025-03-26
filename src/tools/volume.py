@@ -83,9 +83,6 @@ def get_sources() -> List[Dict[str, str]]:
         logging.error(f"Error getting sources: {e}")
         return []
 
-import subprocess
-import re
-from typing import List, Dict
 
 def get_applications() -> List[Dict[str, str]]:
     output = subprocess.getoutput("pactl list sink-inputs")
