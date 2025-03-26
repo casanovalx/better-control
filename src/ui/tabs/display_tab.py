@@ -128,11 +128,13 @@ class DisplayTab(Gtk.Box):
 
         # Blue light scale
         self.bluelight_scale = Gtk.Scale.new_with_range(
-            Gtk.Orientation.HORIZONTAL, 2500, 6500, 100
+            Gtk.Orientation.HORIZONTAL, 0, 100, 1
         )
         settings = load_settings(self.logging)
         saved_gamma = settings.get("gamma", 6500)
-        self.bluelight_scale.set_value(saved_gamma)
+        # Convert temperature to percentage
+        percentage = (saved_gamma - 2500) / 40  # (6500-2500)/100 = 40
+        self.bluelight_scale.set_value(percentage)
         self.bluelight_scale.set_value_pos(Gtk.PositionType.RIGHT)
         self.bluelight_scale.connect("value-changed", self.on_bluelight_changed)
         bluelight_box.pack_start(self.bluelight_scale, True, True, 0)
@@ -140,11 +142,9 @@ class DisplayTab(Gtk.Box):
         # Quick blue light buttons
         bluelight_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
 
-        # Map percentage to temperature values (inverted: 0% = off = 6500K, 100% = max = 2500K)
-        temp_values = {"0%": 6500, "25%": 5500, "50%": 4500, "75%": 3500, "100%": 2500}
-
-        for label, value in temp_values.items():
-            button = Gtk.Button(label=label)
+        # Map percentage to temperature values
+        for value in [0, 25, 50, 75, 100]:
+            button = Gtk.Button(label=f"{value}%")
             button.connect("clicked", self.on_bluelight_button_clicked, value)
             bluelight_buttons.pack_start(button, True, True, 0)
 
@@ -206,13 +206,16 @@ class DisplayTab(Gtk.Box):
 
     def on_bluelight_changed(self, scale):
         """Handle blue light scale changes"""
-        temperature = int(scale.get_value())
+        percentage = int(scale.get_value())
+        temperature = int(2500 + (percentage * 40))
         self.set_bluelight(temperature)
 
     def on_bluelight_button_clicked(self, button, value):
         """Handle blue light button clicks"""
         self.bluelight_scale.set_value(value)
-        self.set_bluelight(value)
+        # Convert percentage to temperature
+        temperature = int(2500 + (value * 40))
+        self.set_bluelight(temperature)
 
     def refresh_display_settings(self):
         """Refresh display settings"""
@@ -231,7 +234,9 @@ class DisplayTab(Gtk.Box):
         # Reload settings from file
         settings = load_settings(self.logging)
         saved_gamma = settings.get("gamma", 6500)
-        self.bluelight_scale.set_value(saved_gamma)
+        # Convert temperature to percentage (non-inverted: 2500K = 0%, 6500K = 100%)
+        percentage = (saved_gamma - 2500) / 40  # (6500-2500)/100 = 40
+        self.bluelight_scale.set_value(percentage)
 
         self.logging.log(LogLevel.Info,
             f"Display settings refreshed - Brightness: {current_brightness}%, Blue light: {saved_gamma}K"
