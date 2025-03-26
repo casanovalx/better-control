@@ -27,6 +27,11 @@ from tools.volume import (
     get_sink_name_by_id,
     get_application_mute_state,
     toggle_application_mute,
+    get_source_outputs,
+    get_application_mic_mute_state,
+    toggle_application_mic_mute,
+    get_application_mic_volume,
+    set_application_mic_volume,
 )
 
 class VolumeTab(Gtk.Box):
@@ -117,18 +122,24 @@ class VolumeTab(Gtk.Box):
         volume_title.set_halign(Gtk.Align.START)
         volume_box.pack_start(volume_title, False, True, 0)
 
+        # Volume control (slider + mute button) in horizontal box
+        volume_control_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        
         # Volume slider
         self.volume_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL, 0, 100, 1
         )
         self.volume_scale.set_value(get_volume(self.logging))
         self.volume_scale.connect("value-changed", self.on_volume_changed)
-        volume_box.pack_start(self.volume_scale, True, True, 0)
+        volume_control_box.pack_start(self.volume_scale, True, True, 0)
 
         # Mute button
         self.mute_button = Gtk.Button()
+        self.update_mute_button()
         self.mute_button.connect("clicked", self.on_mute_clicked)
-        volume_box.pack_start(self.mute_button, False, True, 0)
+        volume_control_box.pack_start(self.mute_button, False, False, 0)
+        
+        volume_box.pack_start(volume_control_box, True, True, 0)
 
         # Quick volume buttons
         quick_volume_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
@@ -174,18 +185,24 @@ class VolumeTab(Gtk.Box):
         mic_title.set_halign(Gtk.Align.START)
         mic_box.pack_start(mic_title, False, True, 0)
 
+        # Mic control (slider + mute button) in horizontal box
+        mic_control_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        
         # Mic slider
         self.mic_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL, 0, 100, 1
         )
         self.mic_scale.set_value(get_mic_volume(self.logging))
         self.mic_scale.connect("value-changed", self.on_mic_volume_changed)
-        mic_box.pack_start(self.mic_scale, True, True, 0)
+        mic_control_box.pack_start(self.mic_scale, True, True, 0)
 
         # Mic mute button
         self.mic_mute_button = Gtk.Button()
+        self.update_mic_mute_button()
         self.mic_mute_button.connect("clicked", self.on_mic_mute_clicked)
-        mic_box.pack_start(self.mic_mute_button, False, True, 0)
+        mic_control_box.pack_start(self.mic_mute_button, False, False, 0)
+        
+        mic_box.pack_start(mic_control_box, True, True, 0)
 
         # Quick mic volume buttons
         quick_mic_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
@@ -200,7 +217,7 @@ class VolumeTab(Gtk.Box):
 
         # Application volumes
         app_label = Gtk.Label()
-        app_label.set_markup("<b>Application Volumes</b>")
+        app_label.set_markup("<b>Applications Output Volume</b>")
         app_label.set_halign(Gtk.Align.START)
         app_label.set_margin_top(15)
         content_box.pack_start(app_label, False, True, 0)
@@ -216,6 +233,24 @@ class VolumeTab(Gtk.Box):
         app_frame.add(self.app_box)
         content_box.pack_start(app_frame, True, True, 0)
 
+        # Applications using microphone
+        mic_app_label = Gtk.Label()
+        mic_app_label.set_markup("<b>Applications Input Volume</b>")
+        mic_app_label.set_halign(Gtk.Align.START)
+        mic_app_label.set_margin_top(15)
+        content_box.pack_start(mic_app_label, False, True, 0)
+
+        mic_app_frame = Gtk.Frame()
+        mic_app_frame.set_shadow_type(Gtk.ShadowType.IN)
+        mic_app_frame.set_margin_top(5)
+        self.mic_app_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        self.mic_app_box.set_margin_start(10)
+        self.mic_app_box.set_margin_end(10)
+        self.mic_app_box.set_margin_top(10)
+        self.mic_app_box.set_margin_bottom(10)
+        mic_app_frame.add(self.mic_app_box)
+        content_box.pack_start(mic_app_frame, True, True, 0)
+
         scroll_window.add(content_box)
         self.pack_start(scroll_window, True, True, 0)
 
@@ -223,6 +258,7 @@ class VolumeTab(Gtk.Box):
         self.update_device_lists()
         self.update_mute_buttons()
         self.update_application_list()
+        self.update_mic_application_list()
 
     def update_device_lists(self):
         """Update output and input device lists and sync dropdown with the actual default sink."""
@@ -286,11 +322,21 @@ class VolumeTab(Gtk.Box):
 
     def update_mute_buttons(self):
         """Update mute button labels"""
-        speaker_muted = get_mute_state(self.logging)
-        self.mute_button.set_label("Unmute" if speaker_muted else "Mute")
+        self.update_mute_button()
 
-        mic_muted = get_mic_mute_state(self.logging)
-        self.mic_mute_button.set_label("Unmute Mic" if mic_muted else "Mute Mic")
+        # Update mic mute button
+        self.update_mic_mute_button()
+
+    def update_mute_button(self):
+        """Update speaker mute button icon"""
+        speaker_muted = get_mute_state(self.logging)
+        if speaker_muted:
+            mute_icon = Gtk.Image.new_from_icon_name("audio-volume-muted-symbolic", Gtk.IconSize.BUTTON)
+            self.mute_button.set_tooltip_text("Unmute Speakers")
+        else:
+            mute_icon = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic", Gtk.IconSize.BUTTON)
+            self.mute_button.set_tooltip_text("Mute Speakers")
+        self.mute_button.set_image(mute_icon)
 
     def update_application_list(self):
         """Update application volume controls"""
@@ -381,6 +427,9 @@ class VolumeTab(Gtk.Box):
                 name_label.set_halign(Gtk.Align.START)
                 box.pack_start(name_label, True, True, 0)
 
+                # Volume control container (slider + mute button)
+                volume_control_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                
                 # Volume slider
                 scale = Gtk.Scale.new_with_range(
                     Gtk.Orientation.HORIZONTAL, 0, 100, 1
@@ -388,20 +437,23 @@ class VolumeTab(Gtk.Box):
                 scale.set_size_request(150, -1)  # Set minimum width
                 scale.set_value(app["volume"])
                 scale.connect("value-changed", self.on_app_volume_changed, app["id"])
-                box.pack_start(scale, False, True, 0)
+                volume_control_box.pack_start(scale, True, True, 0)
                 
-                # App mute button
+                # App mute button - positioned right after the slider
                 app_muted = get_application_mute_state(app["id"], self.logging)
                 app_mute_button = Gtk.Button()
                 if app_muted:
-                    mute_icon = Gtk.Image.new_from_icon_name("audio-volume-muted-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+                    mute_icon = Gtk.Image.new_from_icon_name("audio-volume-muted-symbolic", Gtk.IconSize.BUTTON)
                     app_mute_button.set_tooltip_text("Unmute")
                 else:
-                    mute_icon = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+                    mute_icon = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic", Gtk.IconSize.BUTTON)
                     app_mute_button.set_tooltip_text("Mute")
                 app_mute_button.set_image(mute_icon)
                 app_mute_button.connect("clicked", self.on_app_mute_clicked, app["id"])
-                box.pack_start(app_mute_button, False, False, 0)
+                volume_control_box.pack_start(app_mute_button, False, False, 0)
+                
+                # Add volume control box to main box
+                box.pack_start(volume_control_box, False, True, 0)
                 
                 # Output device selector
                 output_combo = Gtk.ComboBoxText()
@@ -478,10 +530,10 @@ class VolumeTab(Gtk.Box):
         value = int(scale.get_value())
         set_mic_volume(value, self.logging)
 
-    def on_mic_mute_clicked(self):
+    def on_mic_mute_clicked(self, button):
         """Handle microphone mute button clicks"""
         toggle_mic_mute(self.logging)
-        self.update_mute_buttons()
+        self.update_mic_mute_button()
 
     def on_quick_mic_volume_clicked(self, button, volume):
         """Handle quick microphone volume button clicks"""
@@ -517,11 +569,22 @@ class VolumeTab(Gtk.Box):
         toggle_application_mute(app_id, self.logging)
         self.update_application_list()
 
+    def on_app_mic_volume_changed(self, scale, app_id):
+        """Handle application microphone volume changes"""
+        value = int(scale.get_value())
+        set_application_mic_volume(app_id, value, self.logging)
+
+    def on_app_mic_mute_clicked(self, button, app_id):
+        """Handle application microphone mute button clicks"""
+        toggle_application_mic_mute(app_id, self.logging)
+        self.update_mic_application_list()
+
     def on_refresh_clicked(self, button=None):
         """Handle refresh button click"""
         self.logging.log(LogLevel.Info, "Manual refresh of audio devices requested")
         self.update_device_lists()
         self.update_application_list()
+        self.update_mic_application_list()
         self.update_mute_buttons()
         self.update_volumes()
 
@@ -530,6 +593,7 @@ class VolumeTab(Gtk.Box):
         self.logging.log(LogLevel.Info, "Auto-refreshing audio settings...")
         self.update_device_lists()
         self.update_application_list()
+        self.update_mic_application_list()
         self.update_mute_buttons()
         self.update_volumes()
 
@@ -538,3 +602,97 @@ class VolumeTab(Gtk.Box):
     def icon_exists(self, icon_name):
         """Check if an icon exists in the icon theme"""
         return self.icon_theme.has_icon(icon_name)
+
+    def update_mic_mute_button(self):
+        """Update microphone mute button"""
+        mic_muted = get_mic_mute_state(self.logging)
+        if mic_muted:
+            mute_icon = Gtk.Image.new_from_icon_name("microphone-disabled-symbolic", Gtk.IconSize.BUTTON)
+            self.mic_mute_button.set_tooltip_text("Unmute Microphone")
+        else:
+            mute_icon = Gtk.Image.new_from_icon_name("microphone-sensitivity-high-symbolic", Gtk.IconSize.BUTTON)
+            self.mic_mute_button.set_tooltip_text("Mute Microphone")
+        self.mic_mute_button.set_image(mute_icon)
+
+    def update_mic_application_list(self):
+        """Update microphone application list"""
+        # Remove existing controls
+        for child in self.mic_app_box.get_children():
+            self.mic_app_box.remove(child)
+
+        # Add controls for each application using microphone
+        mic_apps = get_source_outputs(self.logging)
+        if not mic_apps:
+            # Show "No applications using microphone" message
+            no_mic_apps_label = Gtk.Label()
+            no_mic_apps_label.set_markup("<i>No applications using microphone</i>")
+            no_mic_apps_label.set_halign(Gtk.Align.START)
+            no_mic_apps_label.set_margin_top(5)
+            no_mic_apps_label.set_margin_bottom(5)
+            self.mic_app_box.pack_start(no_mic_apps_label, False, True, 0)
+        else:
+            for app in mic_apps:
+                box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+                box.set_margin_bottom(5)
+
+                # App icon
+                icon = None
+                
+                # Try icon from app info first
+                if "icon" in app:
+                    icon_name = app["icon"]
+                    self.logging.log(LogLevel.Debug, f"Trying app icon: {icon_name}")
+                    if self.icon_exists(icon_name):
+                        icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.MENU)
+                    
+                # If icon is not valid or not found, try binary name as icon
+                if not icon:
+                    if "binary" in app:
+                        binary_name = app["binary"].lower()
+                        self.logging.log(LogLevel.Debug, f"Trying binary icon: {binary_name}")
+                        if self.icon_exists(binary_name):
+                            icon = Gtk.Image.new_from_icon_name(binary_name, Gtk.IconSize.MENU)
+                
+                # Last resort: fallback to generic audio icon
+                if not icon:
+                    icon = Gtk.Image.new_from_icon_name("audio-input-microphone-symbolic", Gtk.IconSize.MENU)
+                
+                box.pack_start(icon, False, False, 0)
+
+                # App name
+                name_label = Gtk.Label(label=app["name"])
+                name_label.set_halign(Gtk.Align.START)
+                box.pack_start(name_label, True, True, 0)
+                
+                # Mic control container
+                mic_control_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                
+                # Volume slider
+                volume = get_application_mic_volume(app["id"], self.logging)
+                scale = Gtk.Scale.new_with_range(
+                    Gtk.Orientation.HORIZONTAL, 0, 100, 1
+                )
+                scale.set_size_request(150, -1)  # Set minimum width
+                scale.set_value(volume)
+                scale.connect("value-changed", self.on_app_mic_volume_changed, app["id"])
+                mic_control_box.pack_start(scale, True, True, 0)
+                
+                # Mic mute button
+                app_mic_muted = get_application_mic_mute_state(app["id"], self.logging)
+                app_mic_mute_button = Gtk.Button()
+                if app_mic_muted:
+                    mute_icon = Gtk.Image.new_from_icon_name("microphone-disabled-symbolic", Gtk.IconSize.BUTTON)
+                    app_mic_mute_button.set_tooltip_text("Unmute Microphone for this application")
+                else:
+                    mute_icon = Gtk.Image.new_from_icon_name("microphone-sensitivity-high-symbolic", Gtk.IconSize.BUTTON)
+                    app_mic_mute_button.set_tooltip_text("Mute Microphone for this application")
+                app_mic_mute_button.set_image(mute_icon)
+                app_mic_mute_button.connect("clicked", self.on_app_mic_mute_clicked, app["id"])
+                mic_control_box.pack_start(app_mic_mute_button, False, False, 0)
+                
+                # Add mic control box to main box
+                box.pack_start(mic_control_box, False, False, 0)
+
+                self.mic_app_box.pack_start(box, False, True, 0)
+
+        self.mic_app_box.show_all()

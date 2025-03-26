@@ -334,3 +334,180 @@ def toggle_application_mute(app_id: str, logging: Logger) -> None:
         subprocess.run(["pactl", "set-sink-input-mute", app_id, "toggle"], check=True)
     except subprocess.CalledProcessError as e:
         logging.log(LogLevel.Error, f"Failed toggling application mute: {e}")
+
+def get_source_outputs(logging: Logger) -> List[Dict[str, str]]:
+    """Get list of source outputs (applications using microphone)
+
+    Returns:
+        List[Dict[str, str]]: List of source output dictionaries
+    """
+    try:
+        output = subprocess.getoutput("pactl list source-outputs")
+        outputs = []
+        current_output = {}
+        
+        # Track seen applications and instance counters
+        seen_apps = {}
+
+        for line in output.split("\n"):
+            line = line.strip()
+            logging.log(LogLevel.Debug, f"Parsing source output line: {line}")
+
+            if line.startswith("Source Output #"):
+                if current_output:
+                    logging.log(LogLevel.Debug, f"Finalizing source output: {current_output}")
+                    if "id" in current_output and "name" in current_output:
+                        # Add current output to the list
+                        outputs.append(current_output)
+                    else:
+                        logging.log(LogLevel.Debug, f"Skipping source output due to missing id or name: {current_output}")
+
+                current_output = {"id": line.split("#")[1].strip()}
+                logging.log(LogLevel.Debug, f"New source output detected with ID: {current_output["id"]}")
+
+            elif "application.name" in line:
+                app_name = line.split("=", 1)[1].strip().strip('"')
+                
+                # Track instances of the same application
+                if app_name in seen_apps:
+                    seen_apps[app_name] += 1
+                    # For additional instances, append instance number
+                    current_output["name"] = f"{app_name} ({seen_apps[app_name]})"
+                    logging.log(LogLevel.Debug, f"Multiple instances detected, renamed to: {current_output['name']}")
+                else:
+                    seen_apps[app_name] = 1
+                    current_output["name"] = app_name
+                
+                logging.log(LogLevel.Debug, f"Detected & Stored Source Output Name: {current_output['name']}")
+                # Store original name for icon lookup
+                current_output["original_name"] = app_name
+
+            elif "media.name" in line and "name" not in current_output:
+                media_name = line.split("=", 1)[1].strip().strip('"')
+                
+                # Track instances of the same application
+                if media_name in seen_apps:
+                    seen_apps[media_name] += 1
+                    # For additional instances, append instance number
+                    current_output["name"] = f"{media_name} ({seen_apps[media_name]})"
+                    logging.log(LogLevel.Debug, f"Multiple instances detected, renamed to: {current_output['name']}")
+                else:
+                    seen_apps[media_name] = 1
+                    current_output["name"] = media_name
+                
+                logging.log(LogLevel.Debug, f"Using Media Name for Source Output: {current_output['name']}")
+                # Store original name for icon lookup
+                current_output["original_name"] = media_name
+
+            elif "application.process.binary" in line:
+                current_output["binary"] = line.split("=", 1)[1].strip().strip('"')
+                logging.log(LogLevel.Debug, f"Detected & Stored Source Output Process Binary: {current_output["binary"]}")
+                
+                # Try to determine an appropriate icon name based on the binary
+                binary_name = current_output["binary"].lower()
+                if binary_name:
+                    current_output["icon"] = binary_name
+                
+            elif "application.icon_name" in line:
+                current_output["icon"] = line.split("=", 1)[1].strip().strip('"')
+                logging.log(LogLevel.Debug, f"Detected & Stored Source Output Icon: {current_output["icon"]}")
+                
+            elif "Mute:" in line:
+                current_output["muted"] = "yes" in line.lower()
+                logging.log(LogLevel.Debug, f"Detected & Stored Source Output Mute State: {current_output["muted"]}")
+                
+            elif "Source:" in line:
+                source_id = line.split(":")[1].strip()
+                current_output["source"] = source_id
+                logging.log(LogLevel.Debug, f"Detected & Stored Source ID: {current_output["source"]}")
+
+        # Final source output processing
+        if current_output:
+            logging.log(LogLevel.Debug, f"Finalizing last source output: {current_output}")
+            if "id" in current_output and "name" in current_output:
+                outputs.append(current_output)
+            else:
+                logging.log(LogLevel.Debug, f"Skipping last source output due to missing id or name: {current_output}")
+
+        # Post-process to ensure they have icon information
+        for output in outputs:
+            if "icon" not in output and "binary" in output:
+                output["icon"] = output["binary"].lower()
+                
+            if "icon" not in output and "original_name" in output:
+                # Create icon name from original app name (lowercase, remove spaces)
+                output["icon"] = output["original_name"].lower().replace(" ", "-")
+            elif "icon" not in output and "name" in output:
+                # Fall back to modified name if original name not available
+                output["icon"] = output["name"].lower().replace(" ", "-").split(" (")[0]
+
+        logging.log(LogLevel.Debug, f"Parsed Source Outputs: {outputs}")
+        return outputs
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Failed getting source outputs: {e}")
+        return []
+
+def get_application_mic_mute_state(app_id: str, logging: Logger) -> bool:
+    """Get microphone mute state for a specific application
+
+    Args:
+        app_id (str): Application source output ID
+
+    Returns:
+        bool: True if muted, False otherwise
+    """
+    try:
+        output = subprocess.getoutput(f"pactl list source-outputs | grep -A 15 'Source Output #{app_id}'")
+        return "Mute: yes" in output
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Failed getting application mic mute state: {e}")
+        return False
+
+def toggle_application_mic_mute(app_id: str, logging: Logger) -> None:
+    """Toggle microphone mute state for a specific application
+
+    Args:
+        app_id (str): Application source output ID
+    """
+    try:
+        subprocess.run(["pactl", "set-source-output-mute", app_id, "toggle"], check=True)
+    except subprocess.CalledProcessError as e:
+        logging.log(LogLevel.Error, f"Failed toggling application mic mute: {e}")
+
+def get_application_mic_volume(app_id: str, logging: Logger) -> int:
+    """Get microphone volume level for a specific application
+
+    Args:
+        app_id (str): Application source output ID
+
+    Returns:
+        int: Volume percentage
+    """
+    try:
+        output = subprocess.getoutput(f"pactl list source-outputs | grep -A 15 'Source Output #{app_id}'")
+        
+        # Find volume line
+        for line in output.split('\n'):
+            if "Volume:" in line:
+                # Parse volume percentage
+                match = re.search(r"(\d+)%", line)
+                if match:
+                    return int(match.group(1))
+        
+        # Default return if volume not found
+        return 100
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Failed getting application mic volume: {e}")
+        return 100
+
+def set_application_mic_volume(app_id: str, value: int, logging: Logger) -> None:
+    """Set microphone volume level for a specific application
+
+    Args:
+        app_id (str): Application source output ID
+        value (int): Volume percentage
+    """
+    try:
+        subprocess.run(["pactl", "set-source-output-volume", app_id, f"{value}%"], check=True)
+    except subprocess.CalledProcessError as e:
+        logging.log(LogLevel.Error, f"Failed setting application mic volume: {e}")
