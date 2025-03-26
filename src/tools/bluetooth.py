@@ -124,6 +124,7 @@ class BluetoothManager:
         except Exception as e:
             logging.error(f"Error stopping discovery: {e}")
 
+
     def connect_device(self, device_path: str) -> bool:
         """Connect to a Bluetooth device and set it as default audio sink."""
         try:
@@ -165,7 +166,6 @@ class BluetoothManager:
             logging.error(f"Error connecting to device: {e}")
             return False
 
-
     def disconnect_device(self, device_path: str) -> bool:
         """Disconnect from a Bluetooth device"""
         try:
@@ -173,8 +173,19 @@ class BluetoothManager:
                 self.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
                 BLUEZ_DEVICE_INTERFACE
             )
+            properties = dbus.Interface(
+                self.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
+                DBUS_PROP_IFACE
+            )
+            # Fetch device name
+            device_name = "Bluetooth Device"
+            device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Name")
             device.Disconnect()
+
+            subprocess.run(["notify-send", "Control Center", f"{device_name} Disconnected"])
+
             subprocess.run(["notify-send", "Control Center", "Bluetooth Device Disconnected"])
+
             return True
         except Exception as e:
             logging.error(f"Error disconnecting from device: {e}")
