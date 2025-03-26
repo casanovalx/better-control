@@ -132,9 +132,6 @@ class BetterControl(Gtk.Window):
         # Apply tab order (visibility is already applied)
         self.apply_tab_order()
         
-        # Remove loading tab
-        self.notebook.remove_page(self.loading_page)
-        
         # Show all tabs to ensure content is visible
         self.show_all()
         
@@ -159,6 +156,9 @@ class BetterControl(Gtk.Window):
             if last_tab < self.notebook.get_n_pages():
                 self.notebook.set_current_page(last_tab)
         
+        # Remove loading tab
+        self.notebook.remove_page(self.loading_page)
+
         return False  # Required for GLib.idle_add
 
     def apply_tab_visibility(self):
