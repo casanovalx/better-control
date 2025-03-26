@@ -5,6 +5,7 @@ import dbus.mainloop.glib
 from gi.repository import GLib
 import typing
 import logging
+import subprocess
 
 BLUEZ_SERVICE_NAME = 'org.bluez'
 BLUEZ_ADAPTER_INTERFACE = 'org.bluez.Adapter1'
@@ -143,7 +144,7 @@ class BluetoothManager:
             logging.error(f"Error stopping discovery: {e}")
 
     def connect_device(self, device_path: str) -> bool:
-        """Connect to a Bluetooth device
+        """Connect to a Bluetooth device and display a notification with battery percentage.
 
         Args:
             device_path (str): DBus path of the device
@@ -157,10 +158,27 @@ class BluetoothManager:
                 BLUEZ_DEVICE_INTERFACE
             )
             device.Connect()
+
+            # Fetch battery percentage
+            battery_level = "Unknown"
+            try:
+                properties = dbus.Interface(
+                    self.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
+                    DBUS_PROP_IFACE
+                )
+                battery_level = properties.Get(BLUEZ_DEVICE_INTERFACE, "BatteryPercentage")
+            except Exception:
+                logging.warning(f"Battery percentage not available for device: {device_path}")
+
+            # Send notification with battery percentage
+            subprocess.run(["notify-send", "Control Center",
+                            f"Bluetooth Device Connected\nBattery: {battery_level}%"])
+
             return True
         except Exception as e:
             logging.error(f"Error connecting to device: {e}")
             return False
+
 
     def disconnect_device(self, device_path: str) -> bool:
         """Disconnect from a Bluetooth device
@@ -177,6 +195,7 @@ class BluetoothManager:
                 BLUEZ_DEVICE_INTERFACE
             )
             device.Disconnect()
+            subprocess.run(["notify-send", "Control Center","Bluetooth Device Disconnected"])
             return True
         except Exception as e:
             logging.error(f"Error disconnecting from device: {e}")
