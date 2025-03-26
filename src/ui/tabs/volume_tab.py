@@ -2,6 +2,7 @@
 
 import gi # type: ignore
 import subprocess
+import threading
 
 from utils.logger import LogLevel, Logger
 
@@ -68,14 +69,6 @@ class VolumeTab(Gtk.Box):
         title_box.pack_start(volume_label, False, False, 0)
 
         header_box.pack_start(title_box, True, True, 0)
-
-        # Add refresh button
-        refresh_button = Gtk.Button()
-        refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
-        refresh_button.set_image(refresh_icon)
-        refresh_button.set_tooltip_text("Refresh Audio Devices")
-        refresh_button.connect("clicked", self.on_refresh_clicked)
-        header_box.pack_end(refresh_button, False, False, 0)
 
         self.pack_start(header_box, False, False, 0)
 
@@ -259,6 +252,133 @@ class VolumeTab(Gtk.Box):
         self.update_mute_buttons()
         self.update_application_list()
         self.update_mic_application_list()
+        
+        # Start real-time pulse audio monitoring
+        self.pulse_thread = None
+        self.should_monitor = True
+        self.start_pulse_monitoring()
+        
+        # Connect destroy signal for proper cleanup
+        self.connect_destroy_signal()
+
+    def start_pulse_monitoring(self):
+        """Start the PulseAudio monitoring thread for real-time updates"""
+        self.should_monitor = True
+        self.pulse_thread = threading.Thread(target=self.monitor_pulse_events, daemon=True)
+        self.pulse_thread.start()
+        self.logging.log(LogLevel.Info, "Started real-time PulseAudio monitoring")
+    
+    def stop_pulse_monitoring(self):
+        """Stop the PulseAudio monitoring thread"""
+        self.should_monitor = False
+        if self.pulse_thread and self.pulse_thread.is_alive():
+            self.pulse_thread.join(1.0)  # Wait for the thread to terminate with timeout
+        self.logging.log(LogLevel.Info, "Stopped PulseAudio monitoring")
+    
+    def monitor_pulse_events(self):
+        """Monitor PulseAudio events using pactl subscribe and update UI in real-time"""
+        try:
+            # Open pactl subscribe process to monitor audio events
+            proc = subprocess.Popen(
+                ["pactl", "subscribe"],
+                stdout=subprocess.PIPE,
+                text=True,
+                bufsize=1
+            )
+            
+            self.logging.log(LogLevel.Info, "Subscribed to PulseAudio events")
+            
+            # Process events as they occur
+            for line in iter(proc.stdout.readline, ''):
+                if not self.should_monitor:
+                    break
+                    
+                self.logging.log(LogLevel.Debug, f"PulseAudio event: {line.strip()}")
+                
+                try:
+                    # Update UI on main thread with a smaller delay to make updates more responsive
+                    # while still avoiding excessive updates
+                    GLib.timeout_add(10, self.update_on_pulse_event, line)
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Failed to schedule UI update: {e}")
+                
+            proc.terminate()
+            self.logging.log(LogLevel.Info, "PulseAudio monitoring stopped")
+            
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Error in PulseAudio monitor: {e}")
+            # Attempt to restart the monitoring after a short delay
+            if self.should_monitor:
+                GLib.timeout_add(5000, self.restart_pulse_monitoring)
+    
+    def restart_pulse_monitoring(self):
+        """Restart the pulse monitoring if it crashed"""
+        if self.should_monitor and (not self.pulse_thread or not self.pulse_thread.is_alive()):
+            self.logging.log(LogLevel.Info, "Restarting PulseAudio monitoring")
+            self.start_pulse_monitoring()
+        return False  # Don't repeat this timeout
+    
+    def update_on_pulse_event(self, event_line):
+        """Update UI based on PulseAudio event type"""
+        try:
+            # Avoid processing too many events in rapid succession
+            # This helps prevent crash loops and excessive CPU usage
+            if hasattr(self, '_last_event_time'):
+                now = GLib.get_monotonic_time()
+                if now - self._last_event_time < 20000:  # Less than 20ms
+                    return False
+            self._last_event_time = GLib.get_monotonic_time()
+            
+            # Handle different event types
+            if "sink" in event_line:
+                # Sink events (output devices, main volume changes)
+                try:
+                    self.volume_scale.set_value(get_volume(self.logging))
+                    self.update_mute_button()
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Error updating sink UI: {e}")
+                
+                # If there was a change or removal, update device list
+                if "remove" in event_line or "change" in event_line:
+                    try:
+                        self.update_device_lists()
+                    except Exception as e:
+                        self.logging.log(LogLevel.Error, f"Error updating device lists: {e}")
+                    
+            if "source" in event_line:
+                # Source events (input devices, mic changes)
+                try:
+                    self.mic_scale.set_value(get_mic_volume(self.logging))
+                    self.update_mic_mute_button()
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Error updating source UI: {e}")
+                
+                # If there was a change or removal, update device list
+                if "remove" in event_line or "change" in event_line:
+                    try:
+                        self.update_device_lists()
+                    except Exception as e:
+                        self.logging.log(LogLevel.Error, f"Error updating device lists: {e}")
+                
+            if "sink-input" in event_line:
+                # Application audio events
+                try:
+                    self.update_application_list()
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Error updating application list: {e}")
+                
+            if "source-output" in event_line:
+                # Application using microphone events
+                try:
+                    self.update_mic_application_list()
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Error updating mic application list: {e}")
+                
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Error handling PulseAudio event: {e}")
+        
+        # Return False to not repeat this callback
+        return False
 
     def update_device_lists(self):
         """Update output and input device lists and sync dropdown with the actual default sink."""
@@ -320,7 +440,6 @@ class VolumeTab(Gtk.Box):
 
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Failed updating device lists: {e}")
-
 
     def update_mute_buttons(self):
         """Update mute button labels"""
@@ -522,7 +641,7 @@ class VolumeTab(Gtk.Box):
         toggle_mute(self.logging)
         self.update_mute_buttons()
 
-    def on_quick_volume_clicked(self, volume):
+    def on_quick_volume_clicked(self, button, volume):
         """Handle quick volume button clicks"""
         set_volume(volume, self.logging)
         self.volume_scale.set_value(volume)
@@ -563,8 +682,26 @@ class VolumeTab(Gtk.Box):
         """Handle application output device changes"""
         device_id = combo.get_active_id()
         if device_id:
-            move_application_to_sink(app_id, device_id, self.logging)
-            self.logging.log(LogLevel.Info, f"Moving application {app_id} to sink {device_id}")
+            try:
+                # First check if the application still exists
+                app_exists = False
+                apps = get_applications(self.logging)
+                for app in apps:
+                    if app["id"] == app_id:
+                        app_exists = True
+                        break
+                
+                if app_exists:
+                    move_application_to_sink(app_id, device_id, self.logging)
+                    self.logging.log(LogLevel.Info, f"Moving application {app_id} to sink {device_id}")
+                else:
+                    self.logging.log(LogLevel.Warn, f"Cannot move application {app_id}, it no longer exists")
+                    # Force refresh to remove stale apps
+                    self.update_application_list()
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"Failed moving application to sink: {e}")
+                # Force refresh to ensure UI is in sync with actual state
+                self.update_application_list()
 
     def on_app_mute_clicked(self, button, app_id):
         """Handle application mute button clicks"""
@@ -580,26 +717,6 @@ class VolumeTab(Gtk.Box):
         """Handle application microphone mute button clicks"""
         toggle_application_mic_mute(app_id, self.logging)
         self.update_mic_application_list()
-
-    def on_refresh_clicked(self, button=None):
-        """Handle refresh button click"""
-        self.logging.log(LogLevel.Info, "Manual refresh of audio devices requested")
-        self.update_device_lists()
-        self.update_application_list()
-        self.update_mic_application_list()
-        self.update_mute_buttons()
-        self.update_volumes()
-
-    def on_auto_refresh(self):
-        """Automatically refresh audio device lists and UI every 3 seconds."""
-        self.logging.log(LogLevel.Info, "Auto-refreshing audio settings...")
-        self.update_device_lists()
-        self.update_application_list()
-        self.update_mic_application_list()
-        self.update_mute_buttons()
-        self.update_volumes()
-
-        GLib.timeout_add(3000, self.on_auto_refresh)
 
     def icon_exists(self, icon_name):
         """Check if an icon exists in the icon theme"""
@@ -698,3 +815,17 @@ class VolumeTab(Gtk.Box):
                 self.mic_app_box.pack_start(box, False, True, 0)
 
         self.mic_app_box.show_all()
+
+    def connect_destroy_signal(self):
+        """Connect to the destroy signal to clean up resources when the widget is destroyed"""
+        def on_destroy(*args):
+            self.stop_pulse_monitoring()
+        
+        self.connect("destroy", on_destroy)
+        
+    def __del__(self):
+        """Ensure resources are cleaned up when the object is garbage collected"""
+        try:
+            self.stop_pulse_monitoring()
+        except:
+            pass
