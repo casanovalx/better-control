@@ -50,37 +50,6 @@ def toggle_mute() -> None:
     except subprocess.CalledProcessError as e:
         logging.error(f"Error toggling mute: {e}")
 
-def get_sinks() -> List[Dict[str, str]]:
-    """Get list of audio sinks (output devices)
-
-    Returns:
-        List[Dict[str, str]]: List of sink dictionaries
-    """
-    try:
-        output = subprocess.getoutput("pactl list sinks")
-        sinks = []
-        current_sink = {}
-        for line in output.split("\n"):
-            if line.startswith("Sink #"):
-                if current_sink:
-                    sinks.append(current_sink)
-                current_sink = {"id": line.split("#")[1].strip()}
-            elif ":" in line and current_sink:
-                key, value = line.split(":", 1)
-                key = key.strip()
-                value = value.strip()
-                if key == "Name":
-                    current_sink["name"] = value
-                elif key == "Description":
-                    current_sink["description"] = value
-
-        if current_sink:
-            sinks.append(current_sink)
-
-        return sinks
-    except Exception as e:
-        logging.error(f"Error getting sinks: {e}")
-        return []
 
 def get_sources() -> List[Dict[str, str]]:
     """Get list of audio sources (input devices)
@@ -185,15 +154,49 @@ def set_application_volume(app_id: str, value: int) -> None:
         logging.error(f"Error setting application volume: {e}")
 
 def set_default_sink(sink_name: str) -> None:
-    """Set default audio output device
-
-    Args:
-        sink_name (str): Sink name
-    """
     try:
         subprocess.run(["pactl", "set-default-sink", sink_name], check=True)
+        
+        # Move all running apps to the new sink
+        output = subprocess.getoutput("pactl list short sink-inputs")
+        for line in output.split("\n"):
+            if line.strip():
+                app_id = line.split()[0]
+                subprocess.run(["pactl", "move-sink-input", app_id, sink_name], check=True)
+
     except subprocess.CalledProcessError as e:
         logging.error(f"Error setting default sink: {e}")
+
+def get_sinks() -> List[Dict[str, str]]:
+    """Get list of audio sinks (output devices)."""
+    try:
+        output = subprocess.getoutput("pactl list sinks")
+        sinks = []
+        current_sink = {}
+
+        for line in output.split("\n"):
+            if line.startswith("Sink #"):
+                if current_sink:
+                    sinks.append(current_sink)
+                current_sink = {"id": line.split("#")[1].strip()}
+            elif ":" in line and current_sink:
+                key, value = line.split(":", 1)
+                key = key.strip()
+                value = value.strip()
+                if key == "Name":
+                    current_sink["name"] = value
+                elif key == "Description":
+                    current_sink["description"] = value  # ✅ Fix: Ensure description is included
+
+        if current_sink:
+            sinks.append(current_sink)
+
+        return sinks
+    except Exception as e:
+        logging.error(f"Error getting sinks: {e}")
+        return []
+
+
 
 def set_default_source(source_name: str) -> None:
     """Set default audio input device
