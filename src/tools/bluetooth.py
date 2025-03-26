@@ -168,9 +168,9 @@ class BluetoothManager:
             )
             device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Alias")
 
-            # Fetch battery percentage using self
+            # Fetch battery percentage
             battery_percentage = self.get_device_battery(device_path)
-            battery_info = f"Battery: {battery_percentage}%" if battery_percentage >= 0 else "Battery info unavailable"
+            battery_info = f"Battery: {battery_percentage}%" if isinstance(battery_percentage, int) and battery_percentage >= 0 else ""
 
             # Send notification
             subprocess.run(["notify-send", "Bluetooth Device Connected",
