@@ -29,7 +29,7 @@ def set_brightness(value: int, logging: Logger) -> None:
         value (int): brightness percentage to set
     """
     try:
-        subprocess.run(["brightnessctl", "s", f"{value}%"], check=True)
+        subprocess.run(["brightnessctl", "s", f"{value}%"], check=True, stdout=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
         logging.log(LogLevel.Error, f"Failed setting brightness: {e}")
 

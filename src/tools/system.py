@@ -152,8 +152,9 @@ def get_current_brightness(logging: Logger) -> int:
     try:
         return int((int(output) / int(max_brightness)) * 100)
     except ValueError:
-        logging.log(LogLevel.Error,
-            f"Unexpected output from brightnessctl: {output}, {max_brightness}"
+        logging.log(
+            LogLevel.Error,
+            f"Unexpected output from brightnessctl: {output}, {max_brightness}",
         )
         return 50
 
@@ -168,8 +169,11 @@ def set_brightness_level(value: int, logging: Logger) -> None:
         max_brightness = int(subprocess.getoutput("brightnessctl max"))
         # Convert percentage to actual brightness value
         actual_value = int((value / 100) * max_brightness)
-        subprocess.run(["brightnessctl", "s", f"{actual_value}"])
+        subprocess.run(
+            ["brightnessctl", "s", f"{actual_value}"], stdout=subprocess.DEVNULL
+        )
     else:
-        logging.log(LogLevel.Error,
-            "brightnessctl is missing. Please check our GitHub page to see all dependencies and install them"
+        logging.log(
+            LogLevel.Error,
+            "brightnessctl is missing. Please check our GitHub page to see all dependencies and install them",
         )

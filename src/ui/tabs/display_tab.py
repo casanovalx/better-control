@@ -170,7 +170,9 @@ class DisplayTab(Gtk.Box):
         try:
             max_brightness = int(subprocess.getoutput("brightnessctl max"))
             actual_value = int((value / 100) * max_brightness)
-            subprocess.run(["brightnessctl", "s", f"{actual_value}"])
+            subprocess.run(
+                ["brightnessctl", "s", f"{actual_value}"], stdout=subprocess.DEVNULL
+            )
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Failed setting brightness: {e}")
 
@@ -238,6 +240,7 @@ class DisplayTab(Gtk.Box):
         percentage = (saved_gamma - 2500) / 40  # (6500-2500)/100 = 40
         self.bluelight_scale.set_value(percentage)
 
-        self.logging.log(LogLevel.Info,
-            f"Display settings refreshed - Brightness: {current_brightness}%, Blue light: {saved_gamma}K"
+        self.logging.log(
+            LogLevel.Info,
+            f"Display settings refreshed - Brightness: {current_brightness}%, Blue light: {saved_gamma}K",
         )

@@ -2,7 +2,6 @@
 
 import os
 import subprocess
-from typing import Optional
 import gi  # type: ignore
 import sys
 from utils.arg_parser import ArgParse, eprint
@@ -23,7 +22,7 @@ if __name__ == "__main__":
         arg_parser.print_help_msg(sys.stdout)
 
     if arg_parser.find_arg(("-v", "--version")):
-        eprint(sys.stdout, "5.3")
+        eprint(sys.stdout, "5.7")
         exit(0)
 
     logging = Logger(arg_parser)
