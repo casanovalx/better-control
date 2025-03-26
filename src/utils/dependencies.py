@@ -33,6 +33,11 @@ DEPENDENCIES = [
         "Blue Light Filter",
         "- Debian/Ubuntu: sudo apt install gammastep\n- Arch Linux: sudo pacman -S gammastep\n- Fedora: sudo dnf install gammastep",
     ),
+    (
+        "upower",
+        "Battery Information",
+        "- Debian/Ubuntu: sudo apt install upower\n- Arch Linux: sudo pacman -S upower\n- Fedora: sudo dnf install upower"
+    )
 ]
 
 
