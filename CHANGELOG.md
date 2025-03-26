@@ -7,7 +7,7 @@
 - Fixed application volume
 - Changed `windowrulev2` to `windowrule`
 - Fixed #34
-- and some other issues which i forgot
+- and some other issues which i forgot what i fixed
   
 # Change 5.2.5
 - Fixed Bluetooth auto sink switch 
