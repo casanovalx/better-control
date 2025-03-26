@@ -304,12 +304,14 @@ class VolumeTab(Gtk.Box):
                 self.input_combo.set_active(0)
             else:
                 active_index = -1
+                source_count = 0  # Track actual position in dropdown
                 for i, source in enumerate(sources):
                     if "monitor" not in source["name"].lower():  # Skip monitor sources
                         self.logging.log(LogLevel.Info, f"Adding input source: {source['name']} ({source['description']})")
                         self.input_combo.append(source["name"], source["description"])
                         if source["name"] == current_source:
-                            active_index = i
+                            active_index = source_count
+                        source_count += 1
 
                 if active_index != -1:
                     self.input_combo.set_active(active_index)
