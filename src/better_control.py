@@ -8,11 +8,10 @@ import logging
 import argparse
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # type: ignore
+from gi.repository import Gtk, Gdk  # type: ignore
 
 from ui.main_window import BetterControl
 from utils.dependencies import check_all_dependencies
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -66,24 +65,15 @@ if __name__ == "__main__":
     try:
         # Create the main window
         win = BetterControl(args)
-        win.set_default_size(1000, 700)  # <-- Move this here
+        win.set_default_size(1000, 700)
         win.connect("destroy", Gtk.main_quit)
+
+        # Enable window resizing
+        screen = Gdk.Screen.get_default()
+        width, height = screen.get_width(), screen.get_height()
+        win.set_size_request(min(1000, width), min(700, height))
+
         win.show_all()
-
-        # Ensure Hyprland floating works
-        if "hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
-            subprocess.run(
-                ["hyprctl", "keyword", "windowrulev2", "float,class:^(BetterControl)$"]
-            )
-            subprocess.run(
-                [
-                    "hyprctl",
-                    "keyword",
-                    "windowrulev2",
-                    "size 1900 700,class:^(BetterControl)$",
-                ]
-            )
-
         Gtk.main()
     except Exception as e:
         logging.error(f"Error starting application: {e}")
