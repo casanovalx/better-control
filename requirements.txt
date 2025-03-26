@@ -1,3 +1,5 @@
 pygobject
 dbus-python
 psutil
+setuptools
+wheel
