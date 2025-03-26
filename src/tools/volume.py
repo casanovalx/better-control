@@ -4,6 +4,8 @@ import subprocess
 from typing import List, Dict
 import logging
 import re
+import subprocess
+from typing import List, Dict
 
 def get_volume() -> int:
     """Get current volume level
