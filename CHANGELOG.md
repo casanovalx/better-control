@@ -1,7 +1,7 @@
 #### All changes starting from the code refactor should be put here
 #### Format:
-#### '# Change: <version>'
-#### '- <changes>'
+####     '# Change: <version>'
+####     '- <changes>'
 
 # Change 5.2.5
 - Removed a lot of whitespaces from the files
