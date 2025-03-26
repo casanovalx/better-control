@@ -13,6 +13,11 @@ from gi.repository import Gtk  # type: ignore
 from ui.main_window import BetterControl
 from utils.dependencies import check_all_dependencies
 
+from tools.bluetooth import restore_last_sink
+
+restore_last_sink()  # Restore Bluetooth audio when app starts
+
+
 if __name__ == "__main__":
     arg_parser = ArgParse(sys.argv)
 

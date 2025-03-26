@@ -2,6 +2,7 @@
 
 import gi # type: ignore
 import logging
+import subprocess
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib # type: ignore
@@ -215,29 +216,64 @@ class VolumeTab(Gtk.Box):
         self.update_application_list()
 
     def update_device_lists(self):
-        """Update output and input device lists"""
-        # Output devices
-        active_id = self.output_combo.get_active_id()
-        self.output_combo.remove_all()
-        for sink in get_sinks():
-            self.output_combo.append(sink["name"], sink["description"])
-            if sink["name"] == active_id:
-                self.output_combo.set_active_id(sink["name"])
+        """Update output and input device lists and sync dropdown with the actual default sink."""
+        try:
+            logging.info("Updating audio device lists...")
 
-        if self.output_combo.get_active() == -1:
-            self.output_combo.set_active(0)
+            # Get the currently active sink
+            current_sink = subprocess.getoutput("pactl get-default-sink").strip()
+            logging.info(f"Current active output sink: {current_sink}")
 
-        # Input devices
-        active_id = self.input_combo.get_active_id()
-        self.input_combo.remove_all()
-        for source in get_sources():
-            if not "monitor" in source["name"].lower():  # Skip monitor sources
-                self.input_combo.append(source["name"], source["description"])
-                if source["name"] == active_id:
-                    self.input_combo.set_active_id(source["name"])
+            # Output devices (speakers/headphones)
+            self.output_combo.remove_all()
+            sinks = get_sinks()
 
-        if self.input_combo.get_active() == -1:
-            self.input_combo.set_active(0)
+            if not sinks:
+                logging.warning("No output sinks found!")
+                self.output_combo.append("no-sink", "No Output Devices Found")
+                self.output_combo.set_active(0)
+            else:
+                active_index = -1
+                for i, sink in enumerate(sinks):
+                    logging.info(f"Adding output sink: {sink['name']} ({sink['description']})")
+                    self.output_combo.append(sink["name"], sink["description"])
+                    if sink["name"] == current_sink:
+                        active_index = i
+
+                if active_index != -1:
+                    self.output_combo.set_active(active_index)
+                else:
+                    self.output_combo.set_active(0)  # Default to first item
+
+            # Get the currently active input source (microphone)
+            current_source = subprocess.getoutput("pactl get-default-source").strip()
+            logging.info(f"Current active input source: {current_source}")
+
+            # Input devices (microphones)
+            self.input_combo.remove_all()
+            sources = get_sources()
+
+            if not sources:
+                logging.warning("No input sources found!")
+                self.input_combo.append("no-source", "No Input Devices Found")
+                self.input_combo.set_active(0)
+            else:
+                active_index = -1
+                for i, source in enumerate(sources):
+                    if "monitor" not in source["name"].lower():  # Skip monitor sources
+                        logging.info(f"Adding input source: {source['name']} ({source['description']})")
+                        self.input_combo.append(source["name"], source["description"])
+                        if source["name"] == current_source:
+                            active_index = i
+
+                if active_index != -1:
+                    self.input_combo.set_active(active_index)
+                else:
+                    self.input_combo.set_active(0)  # Default to first item
+
+        except Exception as e:
+            logging.error(f"Error updating device lists: {e}")
+
 
     def update_mute_buttons(self):
         """Update mute button labels"""
