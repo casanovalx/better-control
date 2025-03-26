@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3 
 
 import os
 import subprocess
@@ -13,7 +13,6 @@ from gi.repository import Gtk  # type: ignore
 from ui.main_window import BetterControl
 from utils.dependencies import check_all_dependencies
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Better Control - A system control center."
@@ -22,26 +21,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--volume", "-v", action="store_true", help="Start with the Volume tab open."
     )
-
     parser.add_argument(
         "--wifi", "-w", action="store_true", help="Start with the Wi-Fi tab open."
     )
-
     parser.add_argument(
-        "--bluetooth",
-        "-b",
-        action="store_true",
-        help="Start with the Bluetooth tab open.",
+        "--bluetooth", "-b", action="store_true", help="Start with the Bluetooth tab open."
     )
-
     parser.add_argument(
         "--battery", "-B", action="store_true", help="Start with the Battery tab open."
     )
-
     parser.add_argument(
         "--display", "-d", action="store_true", help="Start with the Display tab open."
     )
-
     parser.add_argument(
         "--force",
         "-f",
@@ -58,30 +49,21 @@ if __name__ == "__main__":
 
     # Check dependencies if --force is used
     if args.force and not check_all_dependencies():
-        logging.error(
-            "Missing required dependencies. Please install them and try again."
-        )
+        logging.error("Missing required dependencies. Please install them and try again.")
         sys.exit(1)
 
     try:
         # Create the main window
         win = BetterControl(args)
-        win.set_default_size(1000, 700)  # <-- Move this here
+        win.set_default_size(1000, 700)
+        win.resize(1000, 700)  # Ensure correct placement
         win.connect("destroy", Gtk.main_quit)
         win.show_all()
 
         # Ensure Hyprland floating works
         if "hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
             subprocess.run(
-                ["hyprctl", "keyword", "windowrulev2", "float,class:^(BetterControl)$"]
-            )
-            subprocess.run(
-                [
-                    "hyprctl",
-                    "keyword",
-                    "windowrulev2",
-                    "size 1900 700,class:^(BetterControl)$",
-                ]
+                ["hyprctl", "keyword", "windowrulev2", "float,class:^(better_control.py)$"]
             )
 
         Gtk.main()
