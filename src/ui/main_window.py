@@ -5,6 +5,8 @@ import gi # type: ignore
 import logging
 import threading
 
+from utils import arg_parser
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib # type: ignore
 
@@ -19,7 +21,7 @@ from utils.settings import load_settings, save_settings
 class BetterControl(Gtk.Window):
     """Main application window"""
 
-    def __init__(self, args):
+    def __init__(self, arg_parser: arg_parser.ArgParse):
         super().__init__(title="Better Control")
         self.set_default_size(600, 400)
         logging.info("Initializing Better Control application")
@@ -58,7 +60,7 @@ class BetterControl(Gtk.Window):
         self.create_settings_button()
 
         # Set active tab based on command line arguments
-        self.args = args
+        self.arg_parser = arg_parser
 
         # Connect signals
         self.connect("destroy", self.on_destroy)
@@ -136,15 +138,15 @@ class BetterControl(Gtk.Window):
             self.tabs["Wi-Fi"].load_networks()
 
         # Set active tab based on command line arguments
-        if self.args.volume and "Volume" in self.tab_pages:
+        if self.arg_parser.find_arg(("-V", "--volume")) and "Volume" in self.tab_pages:
             self.notebook.set_current_page(self.tab_pages["Volume"])
-        elif self.args.wifi and "Wi-Fi" in self.tab_pages:
+        elif self.arg_parser.find_arg(("-w", "--wifi")) and "Wi-Fi" in self.tab_pages:
             self.notebook.set_current_page(self.tab_pages["Wi-Fi"])
-        elif self.args.bluetooth and "Bluetooth" in self.tab_pages:
+        elif self.arg_parser.find_arg(("-b", "--bluetooth")) and "Bluetooth" in self.tab_pages:
             self.notebook.set_current_page(self.tab_pages["Bluetooth"])
-        elif self.args.battery and "Battery" in self.tab_pages:
+        elif self.arg_parser.find_arg(("-B", "--battery")) and "Battery" in self.tab_pages:
             self.notebook.set_current_page(self.tab_pages["Battery"])
-        elif self.args.display and "Display" in self.tab_pages:
+        elif self.arg_parser.find_arg(("-d", "--display")) and "Display" in self.tab_pages:
             self.notebook.set_current_page(self.tab_pages["Display"])
         else:
             # Use last active tab from settings
