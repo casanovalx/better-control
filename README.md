@@ -3,8 +3,6 @@ A GTK-themed control panel for Linux 🐧
 
 <img src="https://github.com/user-attachments/assets/b219415d-3dbf-4471-990d-bc8cd0f021c1" width="500">
 
-<video src="https://github.com/quantumvoid0/better-control/readme_src/recording.mp4>" width="500/>
-
 > [!NOTE]
 > The application follows your system GTK theme for a native and integrated look.
 
