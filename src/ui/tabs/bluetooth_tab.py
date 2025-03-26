@@ -6,7 +6,7 @@ import logging
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib # type: ignore
 
-from utils.bluetooth import (
+from tools.bluetooth import (
     get_bluetooth_status,
     set_bluetooth_power,
     get_devices,

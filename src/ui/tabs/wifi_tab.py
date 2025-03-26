@@ -7,7 +7,7 @@ import logging
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib # type: ignore
 
-from utils.wifi import (
+from tools.wifi import (
     get_wifi_status,
     set_wifi_power,
     get_wifi_networks,

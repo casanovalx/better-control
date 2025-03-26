@@ -6,7 +6,7 @@ import logging
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib # type: ignore
 
-from utils.volume import (
+from tools.volume import (
     get_volume,
     set_volume,
     get_mute_state,

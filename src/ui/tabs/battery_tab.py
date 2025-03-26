@@ -6,8 +6,6 @@ import os
 import logging
 from gi.repository import Gtk, GLib # type: ignore
 
-from utils.system import get_battery_status
-
 class BatteryTab(Gtk.Box):
     def __init__(self, parent=None):
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=10)
