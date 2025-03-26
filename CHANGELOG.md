@@ -3,7 +3,10 @@
 ####     '# Change: <version>'
 ####     '- <changes>'
 
-
+# Change 5.2.6
+- Fixed application volume
+- Changed `windowrulev2` to `windowrule`
+  
 # Change 5.2.5
 - Removed a lot of whitespaces from the files
 - Fixed float (again)
