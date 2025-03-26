@@ -4,7 +4,7 @@ import dbus
 import dbus.mainloop.glib
 from gi.repository import GLib  # type: ignore
 import subprocess
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from utils.logger import LogLevel, Logger
 
@@ -40,7 +40,7 @@ class BluetoothManager:
 
     BATTERY_INTERFACE = "org.bluez.Battery1"
 
-    def get_device_battery(self, device_path: str) -> int:
+    def get_device_battery(self, device_path: str) -> Optional[int]:
         """Retrieve battery percentage for a Bluetooth device using busctl."""
         try:
             cmd = [
@@ -54,12 +54,13 @@ class BluetoothManager:
 
             # Run the command and capture the output
             output = subprocess.run(
-                cmd, capture_output=True, text=True, check=True
-            ).stdout.strip()
+                cmd, capture_output=True, text=True
+            )
 
-            # Extract the battery percentage (e.g., "y 100" -> 100)
-            battery_value = int(output.split()[-1])
-            return battery_value
+            if output.returncode != 0:
+                return None
+            else:
+                return int(output.stdout.strip().split()[-1])
 
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Failed retrieving battery info: {e}")
@@ -179,15 +180,14 @@ class BluetoothManager:
             )
             device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Alias")
 
-            # Fetch battery percentage
-            battery_percentage = self.get_device_battery(device_path)
-            battery_info = (
-                f"Battery: {battery_percentage}%"
-                if isinstance(battery_percentage, int) and battery_percentage >= 0
-                else ""
-            )
+            battery_percentage: Optional[int] = self.get_device_battery(device_path)
+            battery_info: str = ''
 
-            # Send notification
+            if battery_percentage is None:
+                battery_info = ""
+            else:
+                battery_info = f"Battery: {battery_percentage}%"
+
             subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT,
                             f"{device_name} connected.\n{battery_info}"])
 

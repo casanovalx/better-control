@@ -2,7 +2,6 @@
 
 import traceback
 import gi  # type: ignore
-import logging
 import threading
 
 from utils.arg_parser import ArgParse
@@ -21,13 +20,13 @@ from utils.logger import LogLevel, Logger
 
 
 class BetterControl(Gtk.Window):
-    """Main application window"""
 
-    def __init__(self, arg_parser: ArgParse, logging: Logger):
+    def __init__(self, arg_parser: ArgParse, logging: Logger) -> None:
         super().__init__(title="Better Control")
+
         self.logging = logging
         self.set_default_size(600, 400)
-        self.logging.log(LogLevel.Info, "Initializing Better Control application")
+        self.logging.log(LogLevel.Info, "Initializing application")
 
         self.settings = load_settings(logging)
         self.logging.log(LogLevel.Info, "Settings loaded")
