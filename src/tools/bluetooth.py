@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from math import log
 import dbus
 import dbus.mainloop.glib
 from gi.repository import GLib  # type: ignore
@@ -32,6 +31,33 @@ class BluetoothManager:
             self.logging.log(LogLevel.Error, f"Failed initializing Bluetooth: {e}")
             self.adapter = None
             self.adapter_path = None
+
+    BATTERY_INTERFACE = "org.bluez.Battery1"
+
+    def get_device_battery(self, device_path: str) -> int:
+        """Retrieve battery percentage for a Bluetooth device using busctl."""
+        try:
+            cmd = [
+                "busctl",
+                "get-property",
+                "org.bluez",
+                device_path,
+                "org.bluez.Battery1",
+                "Percentage",
+            ]
+
+            # Run the command and capture the output
+            output = subprocess.run(
+                cmd, capture_output=True, text=True, check=True
+            ).stdout.strip()
+
+            # Extract the battery percentage (e.g., "y 100" -> 100)
+            battery_value = int(output.split()[-1])
+            return battery_value
+
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Failed retrieving battery info: {e}")
+            return -1  # Indicate battery info is unavailable
 
     def find_adapter(self) -> str:
         """Find the first available Bluetooth adapter"""
@@ -128,7 +154,7 @@ class BluetoothManager:
             self.logging.log(LogLevel.Error, f"Failed stopping discovery: {e}")
 
     def connect_device(self, device_path: str) -> bool:
-        """Connect to a Bluetooth device and set it as default audio sink."""
+        """Connect to a Bluetooth device, set it as the default audio sink, and fetch battery info."""
         try:
             device = dbus.Interface(
                 self.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
@@ -136,46 +162,32 @@ class BluetoothManager:
             )
             device.Connect()
 
-            # Wait for PulseAudio to register the device
+            # Wait for the device to register
             import time
 
             time.sleep(2)
 
             # Fetch device name
-            device_name = "Bluetooth Device"
-
             properties = dbus.Interface(
                 self.bus.get_object(BLUEZ_SERVICE_NAME, device_path), DBUS_PROP_IFACE
             )
             device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Alias")
 
-            # Find Bluetooth sink
-            output = subprocess.getoutput("pactl list short sinks")
-            bt_sink = None
-            for line in output.split("\n"):
-                if "bluez_output" in line:
-                    bt_sink = line.split()[1]
-                    break
+            # Fetch battery percentage
+            battery_percentage = self.get_device_battery(device_path)
+            battery_info = (
+                f"Battery: {battery_percentage}%"
+                if isinstance(battery_percentage, int) and battery_percentage >= 0
+                else ""
+            )
 
-            if bt_sink:
-                subprocess.run(["pactl", "set-default-sink", bt_sink], check=True)
-
-                # Save the Bluetooth sink
-                with open("/tmp/last_sink.txt", "w") as f:
-                    f.write(bt_sink)
-
-                # Move all running apps to new sink
-                output = subprocess.getoutput("pactl list short sink-inputs")
-                for line in output.split("\n"):
-                    if line.strip():
-                        app_id = line.split()[0]
-                        subprocess.run(
-                            ["pactl", "move-sink-input", app_id, bt_sink], check=True
-                        )
-
-            # Send notification with battery percentage
+            # Send notification
             subprocess.run(
-                ["notify-send", "Control Center", f"{device_name} Connected"]
+                [
+                    "notify-send",
+                    "Bluetooth Device Connected",
+                    f"{device_name} is connected\n{battery_info}",
+                ]
             )
 
             return True

@@ -38,8 +38,6 @@ class VolumeTab(Gtk.Box):
         self.set_hexpand(True)
         self.set_vexpand(True)
 
-        GLib.timeout_add(3000, self.on_auto_refresh)
-
         # Create header box with title and refresh button
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         header_box.set_hexpand(True)

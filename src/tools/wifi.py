@@ -12,8 +12,10 @@ def get_wifi_status(logging: Logger) -> bool:
         bool: True if WiFi is enabled, False otherwise
     """
     try:
-        output = subprocess.getoutput("nmcli radio wifi")
-        return output.strip().lower() == "enabled"
+        result = subprocess.run(
+            ["nmcli", "radio", "wifi"], capture_output=True, text=True
+        )
+        return result.stdout.strip().lower() == "enabled"
     except Exception as e:
         logging.log(LogLevel.Error, f"Failed getting WiFi status: {e}")
         return False
@@ -39,10 +41,32 @@ def get_wifi_networks(logging: Logger) -> List[Dict[str, str]]:
         List[Dict[str, str]]: List of network dictionaries
     """
     try:
-        # Use --terse mode and specific fields for more reliable parsing
-        output = subprocess.getoutput(
-            "nmcli -t -f IN-USE,SSID,SIGNAL,SECURITY device wifi list"
+        # Check if WiFi is supported on this system
+        result = subprocess.run(
+            ["nmcli", "-t", "-f", "DEVICE,TYPE", "device"],
+            capture_output=True,
+            text=True,
         )
+        wifi_interfaces = [line for line in result.stdout.split("\n") if "wifi" in line]
+        if not wifi_interfaces:
+            logging.log(LogLevel.Warn, "WiFi is not supported on this machine")
+            return []
+
+        # Use --terse mode and specific fields for more reliable parsing
+        result = subprocess.run(
+            [
+                "nmcli",
+                "-t",
+                "-f",
+                "IN-USE,SSID,SIGNAL,SECURITY",
+                "device",
+                "wifi",
+                "list",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        output = result.stdout
         networks = []
         for line in output.split("\n"):
             if not line.strip():
@@ -80,7 +104,10 @@ def get_connection_info(ssid: str, logging: Logger) -> Dict[str, str]:
         Dict[str, str]: Dictionary containing connection information
     """
     try:
-        output = subprocess.getoutput(f"nmcli -t connection show '{ssid}'")
+        result = subprocess.run(
+            ["nmcli", "-t", "connection", "show", ssid], capture_output=True, text=True
+        )
+        output = result.stdout
         info = {}
         for line in output.split("\n"):
             if ":" in line:
@@ -92,7 +119,9 @@ def get_connection_info(ssid: str, logging: Logger) -> Dict[str, str]:
         return {}
 
 
-def connect_network(ssid: str, logging: Logger, password: str = "", remember: bool = True) -> bool:
+def connect_network(
+    ssid: str, logging: Logger, password: str = "", remember: bool = True
+) -> bool:
     """Connect to a WiFi network
 
     Args:
@@ -164,18 +193,27 @@ def get_network_speed(logging: Logger) -> Dict[str, float]:
     """
     try:
         # Get WiFi interface name
-        output = subprocess.getoutput("nmcli -t -f DEVICE,TYPE device | grep wifi")
-        if not output:
-            return {"upload": 0.0, "download": 0.0}
+        result = subprocess.run(
+            ["nmcli", "-t", "-f", "DEVICE,TYPE", "device"],
+            capture_output=True,
+            text=True,
+        )
+        output = result.stdout
+        wifi_lines = [line for line in output.split("\n") if "wifi" in line]
 
-        interface = output.split(":")[0]
+        if not wifi_lines:
+            # Return zeros with the expected keys when WiFi is not supported
+            logging.log(LogLevel.Warn, "WiFi is not supported on this machine")
+            return {"rx_bytes": 0, "tx_bytes": 0, "wifi_supported": False}
+
+        interface = wifi_lines[0].split(":")[0]
 
         # Get current bytes
         with open(f"/sys/class/net/{interface}/statistics/rx_bytes") as f:
             rx_bytes = int(f.read())
         with open(f"/sys/class/net/{interface}/statistics/tx_bytes") as f:
             tx_bytes = int(f.read())
-        return {"rx_bytes": rx_bytes, "tx_bytes": tx_bytes}
+        return {"rx_bytes": rx_bytes, "tx_bytes": tx_bytes, "wifi_supported": True}
     except Exception as e:
         logging.log(LogLevel.Error, f"Failed getting network speed: {e}")
-        return {"rx_bytes": 0, "tx_bytes": 0}
+        return {"rx_bytes": 0, "tx_bytes": 0, "wifi_supported": False}

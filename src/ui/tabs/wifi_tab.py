@@ -4,6 +4,7 @@ import gi # type: ignore
 import threading
 
 from utils.logger import LogLevel, Logger
+import subprocess
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib # type: ignore
@@ -34,6 +35,14 @@ class WiFiTab(Gtk.Box):
         self.set_hexpand(True)
         self.set_vexpand(True)
 
+        # Check if WiFi is supported
+        result = subprocess.run(["nmcli", "-t", "-f", "DEVICE,TYPE", "device"], capture_output=True, text=True)
+        wifi_interfaces = [line for line in result.stdout.split('\n') if "wifi" in line]
+        self.wifi_supported = bool(wifi_interfaces)
+
+        if not self.wifi_supported:
+            self.logging.log(LogLevel.Warn, "WiFi is not supported on this machine")
+
         # Create header box with title and refresh button
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         header_box.set_hexpand(True)
@@ -59,6 +68,11 @@ class WiFiTab(Gtk.Box):
         refresh_button.set_image(refresh_icon)
         refresh_button.set_tooltip_text("Refresh Networks")
         refresh_button.connect("clicked", self.on_refresh_clicked)
+
+        # Disable refresh button if WiFi is not supported
+        if not self.wifi_supported:
+            refresh_button.set_sensitive(False)
+
         header_box.pack_end(refresh_button, False, False, 0)
 
         self.pack_start(header_box, False, False, 0)
@@ -81,8 +95,13 @@ class WiFiTab(Gtk.Box):
         power_label.set_markup("<b>Wi-Fi</b>")
         power_label.set_halign(Gtk.Align.START)
         self.power_switch = Gtk.Switch()
-        self.power_switch.set_active(get_wifi_status(self.logging))
-        self.power_switch.connect("notify::active", self.on_power_switched)
+
+        if self.wifi_supported:
+            self.power_switch.set_active(get_wifi_status(self.logging))
+            self.power_switch.connect("notify::active", self.on_power_switched)
+        else:
+            self.power_switch.set_sensitive(False)
+
         power_box.pack_start(power_label, False, True, 0)
         power_box.pack_end(self.power_switch, False, True, 0)
         content_box.pack_start(power_box, False, True, 0)
@@ -203,7 +222,17 @@ class WiFiTab(Gtk.Box):
                 box.set_margin_top(10)
                 box.set_margin_bottom(10)
 
-                label = Gtk.Label(label="No networks found")
+                # Check if WiFi is supported by looking at the interfaces
+                result = subprocess.run(["nmcli", "-t", "-f", "DEVICE,TYPE", "device"], capture_output=True, text=True)
+                wifi_interfaces = [line for line in result.stdout.split('\n') if "wifi" in line]
+                if not wifi_interfaces:
+                    # WiFi not supported
+                    error_icon = Gtk.Image.new_from_icon_name("dialog-error-symbolic", Gtk.IconSize.MENU)
+                    box.pack_start(error_icon, False, False, 0)
+                    label = Gtk.Label(label="WiFi is not supported on this machine")
+                else:
+                    label = Gtk.Label(label="No networks found")
+
                 label.set_halign(Gtk.Align.START)
                 box.pack_start(label, True, True, 0)
 
@@ -351,6 +380,13 @@ class WiFiTab(Gtk.Box):
     def update_network_speed(self):
         """Update network speed display"""
         speed = get_network_speed(self.logging)
+
+        # Check if WiFi is supported
+        if "wifi_supported" in speed and not speed["wifi_supported"]:
+            self.download_label.set_text("Download: N/A")
+            self.upload_label.set_text("Upload: N/A")
+            return True  # Continue the timer
+
         rx_bytes = speed["rx_bytes"]
         tx_bytes = speed["tx_bytes"]
 
@@ -365,7 +401,7 @@ class WiFiTab(Gtk.Box):
 
         return True  # Continue the timer
 
-    def on_power_switched(self, switch, gparam):
+    def on_power_switched(self, switch):
         """Handle WiFi power switch toggle"""
         state = switch.get_active()
         self.logging.log(LogLevel.Info, f"Setting WiFi power: {'ON' if state else 'OFF'}")
@@ -383,12 +419,12 @@ class WiFiTab(Gtk.Box):
         thread.daemon = True
         thread.start()
 
-    def on_refresh_clicked(self, button):
+    def on_refresh_clicked(self):
         """Handle refresh button click"""
         self.logging.log(LogLevel.Info, "Manual refresh of WiFi networks requested")
         self.update_network_list()
 
-    def on_connect_clicked(self, button):
+    def on_connect_clicked(self):
         """Handle connect button click"""
         row = self.networks_box.get_selected_row()
         if row is None:
@@ -511,7 +547,7 @@ class WiFiTab(Gtk.Box):
             self.update_network_list()
         return False  # Required for GLib.idle_add
 
-    def on_disconnect_clicked(self, button):
+    def on_disconnect_clicked(self):
         """Handle disconnect button click"""
         row = self.networks_box.get_selected_row()
         if row is None:
@@ -557,7 +593,7 @@ class WiFiTab(Gtk.Box):
         thread.daemon = True
         thread.start()
 
-    def on_forget_clicked(self, button):
+    def on_forget_clicked(self):
         """Handle forget button click"""
         row = self.networks_box.get_selected_row()
         if row is None:
