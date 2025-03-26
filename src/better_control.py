@@ -63,7 +63,7 @@ if __name__ == "__main__":
         # Ensure Hyprland floating works
         if "hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
             subprocess.run(
-                ["hyprctl", "keyword", "windowrulev2", "float,class:^(BetterControl)$"]
+                ["hyprctl", "keyword", "windowrulev2", "float,class:^(better_control.py)$"]
             )
 
         Gtk.main()
