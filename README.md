@@ -36,7 +36,7 @@ Before installing, make sure you have `git` and `base-devel` installed.
 ### Installing Dependencies
 
 #### Arch-based Distributions
-> [!INFO]
+> [!NOTE]
 > This will directly install dependencies and the app, no further steps required for arch based distros.
 ```
 yay -S better-control-git
@@ -101,7 +101,7 @@ Better-Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasm
 | **Window Managers** | Hyprland (tested), Sway, i3, Openbox, Fluxbox |
 | **Display Protocol** | Wayland (recommended), X11 (partial functionality) |
 
-> [!INFO]
+> [!NOTE]
 > If you test Better-Control on a different setup, please share your experience in the discussions or issues section.
 
 [![BetterControl](https://img.shields.io/badge/🐧-999999?style=for-the-badge&logo=BetterControl&label=BetterControl&labelColor=333333)](https://aur.archlinux.org/packages/better-control-git)
