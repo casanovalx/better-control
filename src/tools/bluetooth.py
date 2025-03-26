@@ -165,7 +165,7 @@ class BluetoothManager:
                     self.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
                     DBUS_PROP_IFACE
                 )
-                device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Name")
+                device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Alias")
                 battery_level = properties.Get(BLUEZ_DEVICE_INTERFACE, "BatteryPercentage")
             except Exception:
                 logging.warning(f"Battery percentage not available for device: {device_path}")
