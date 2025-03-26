@@ -78,6 +78,22 @@ class Logger:
             else:
                 self.log(LogLevel.Error, "Invalid option for argument log")
 
+    def get_level(self) -> int:
+        """Get the current log level
+        
+        Returns:
+            int: The current log level value
+        """
+        return self.__log_level
+    
+    def set_level(self, level: int) -> None:
+        """Set the log level
+        
+        Args:
+            level (int): New log level value
+        """
+        self.__log_level = level
+
     def __del__(self):
         if hasattr(self, '_Logger__log_file') and self.__log_file is not None:
             self.__log_file.close()

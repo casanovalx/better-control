@@ -92,33 +92,46 @@ def get_applications(logging: Logger) -> List[Dict[str, str]]:
     output = subprocess.getoutput("pactl list sink-inputs")
     apps = []
     current_app = {}
+    
+    # Only log details if log level is Debug or lower
+    # Handle both int and enum values for comparison
+    current_level = logging.get_level()
+    debug_level = LogLevel.Debug.value if hasattr(LogLevel.Debug, 'value') else LogLevel.Debug
+    show_debug = current_level <= debug_level
 
     for line in output.split("\n"):
         line = line.strip()
-        logging.log(LogLevel.Debug, f"Parsing Line: {line}")  # Debugging
+        if show_debug:
+            logging.log(LogLevel.Debug, f"Parsing Line: {line}")  # Debugging
 
         if line.startswith("Sink Input #"):
             if current_app:  # Finalize previous app before moving to a new one
-                logging.log(LogLevel.Debug, f"Finalizing previous app: {current_app}")
+                if show_debug:
+                    logging.log(LogLevel.Debug, f"Finalizing previous app: {current_app}")
                 if "name" in current_app and "volume" in current_app:
                     apps.append(current_app)
                 else:
-                    logging.log(LogLevel.Debug, f"Skipping app due to missing name or volume: {current_app}")
+                    if show_debug:
+                        logging.log(LogLevel.Debug, f"Skipping app due to missing name or volume: {current_app}")
 
             current_app = {"id": line.split("#")[1].strip()}  # New app entry
-            logging.log(LogLevel.Debug, f"New app detected with ID: {current_app["id"]}")
+            if show_debug:
+                logging.log(LogLevel.Debug, f"New app detected with ID: {current_app["id"]}")
 
         elif "application.name" in line:
             current_app["name"] = line.split("=", 1)[1].strip().strip('"')
-            logging.log(LogLevel.Debug, f"Detected & Stored App Name: {current_app["name"]}")
+            if show_debug:
+                logging.log(LogLevel.Debug, f"Detected & Stored App Name: {current_app["name"]}")
 
         elif "media.name" in line and "name" not in current_app:
             current_app["name"] = line.split("=", 1)[1].strip().strip('"')
-            logging.log(LogLevel.Debug, f"Using Media Name: {current_app["name"]}")
+            if show_debug:
+                logging.log(LogLevel.Debug, f"Using Media Name: {current_app["name"]}")
 
         elif "application.process.binary" in line:
             current_app["binary"] = line.split("=", 1)[1].strip().strip('"')
-            logging.log(LogLevel.Debug, f"Detected & Stored Process Binary: {current_app["binary"]}")
+            if show_debug:
+                logging.log(LogLevel.Debug, f"Detected & Stored Process Binary: {current_app["binary"]}")
             
             # Try to determine an appropriate icon name based on the binary
             binary_name = current_app["binary"].lower()
@@ -127,29 +140,36 @@ def get_applications(logging: Logger) -> List[Dict[str, str]]:
             
         elif "application.icon_name" in line:
             current_app["icon"] = line.split("=", 1)[1].strip().strip('"')
-            logging.log(LogLevel.Debug, f"Detected & Stored App Icon: {current_app["icon"]}")
+            if show_debug:
+                logging.log(LogLevel.Debug, f"Detected & Stored App Icon: {current_app["icon"]}")
 
         elif "Volume:" in line:
-            logging.log(LogLevel.Debug, f"Found Volume Line: {line}")
+            if show_debug:
+                logging.log(LogLevel.Debug, f"Found Volume Line: {line}")
             match = re.search(r"(\d+)%", line)
             if match:
                 current_app["volume"] = int(match.group(1)) # type: ignore
-                logging.log(LogLevel.Debug, f"Detected & Stored Volume: {current_app["volume"]}")
+                if show_debug:
+                    logging.log(LogLevel.Debug, f"Detected & Stored Volume: {current_app["volume"]}")
             else:
-                logging.log(LogLevel.Debug, f"Failed to parse volume from: {line}")
+                if show_debug:
+                    logging.log(LogLevel.Debug, f"Failed to parse volume from: {line}")
                 
         elif "Sink:" in line:
             sink_id = line.split(":")[1].strip()
             current_app["sink"] = sink_id
-            logging.log(LogLevel.Debug, f"Detected & Stored Sink ID: {current_app["sink"]}")
+            if show_debug:
+                logging.log(LogLevel.Debug, f"Detected & Stored Sink ID: {current_app["sink"]}")
 
     # Final app processing
     if current_app:
-        logging.log(LogLevel.Debug, "Finalizing last app: {current_app}")
+        if show_debug:
+            logging.log(LogLevel.Debug, "Finalizing last app: {current_app}")
         if "name" in current_app and "volume" in current_app:
             apps.append(current_app)
         else:
-            logging.log(LogLevel.Debug, "Skipping last app due to missing name or volume: {current_app}")
+            if show_debug:
+                logging.log(LogLevel.Debug, "Skipping last app due to missing name or volume: {current_app}")
 
     # Post-process applications to ensure they have icon information
     for app in apps:
@@ -160,7 +180,8 @@ def get_applications(logging: Logger) -> List[Dict[str, str]]:
             # Create icon name from app name (lowercase, remove spaces)
             app["icon"] = app["name"].lower().replace(" ", "-")
 
-    logging.log(LogLevel.Debug, f"Parsed Applications: {apps}", )
+    if show_debug:
+        logging.log(LogLevel.Debug, f"Parsed Applications: {apps}", )
     return apps
 
 def get_sink_name_by_id(sink_id: str, logging: Logger) -> str:
@@ -348,22 +369,32 @@ def get_source_outputs(logging: Logger) -> List[Dict[str, str]]:
         
         # Track seen applications and instance counters
         seen_apps = {}
+        
+        # Only log details if log level is Debug or lower
+        # Handle both int and enum values for comparison
+        current_level = logging.get_level()
+        debug_level = LogLevel.Debug.value if hasattr(LogLevel.Debug, 'value') else LogLevel.Debug
+        show_debug = current_level <= debug_level
 
         for line in output.split("\n"):
             line = line.strip()
-            logging.log(LogLevel.Debug, f"Parsing source output line: {line}")
+            if show_debug:
+                logging.log(LogLevel.Debug, f"Parsing source output line: {line}")
 
             if line.startswith("Source Output #"):
                 if current_output:
-                    logging.log(LogLevel.Debug, f"Finalizing source output: {current_output}")
+                    if show_debug:
+                        logging.log(LogLevel.Debug, f"Finalizing source output: {current_output}")
                     if "id" in current_output and "name" in current_output:
                         # Add current output to the list
                         outputs.append(current_output)
                     else:
-                        logging.log(LogLevel.Debug, f"Skipping source output due to missing id or name: {current_output}")
+                        if show_debug:
+                            logging.log(LogLevel.Debug, f"Skipping source output due to missing id or name: {current_output}")
 
                 current_output = {"id": line.split("#")[1].strip()}
-                logging.log(LogLevel.Debug, f"New source output detected with ID: {current_output["id"]}")
+                if show_debug:
+                    logging.log(LogLevel.Debug, f"New source output detected with ID: {current_output["id"]}")
 
             elif "application.name" in line:
                 app_name = line.split("=", 1)[1].strip().strip('"')
@@ -373,14 +404,16 @@ def get_source_outputs(logging: Logger) -> List[Dict[str, str]]:
                     seen_apps[app_name] += 1
                     # For additional instances, append instance number
                     current_output["name"] = f"{app_name} ({seen_apps[app_name]})"
-                    logging.log(LogLevel.Debug, f"Multiple instances detected, renamed to: {current_output['name']}")
+                    if show_debug:
+                        logging.log(LogLevel.Debug, f"Multiple instances detected, renamed to: {current_output['name']}")
                 else:
                     seen_apps[app_name] = 1
                     current_output["name"] = app_name
                 
-                logging.log(LogLevel.Debug, f"Detected & Stored Source Output Name: {current_output['name']}")
-                # Store original name for icon lookup
-                current_output["original_name"] = app_name
+                if show_debug:
+                    logging.log(LogLevel.Debug, f"Detected & Stored Source Output Name: {current_output['name']}")
+                    # Store original name for icon lookup
+                    current_output["original_name"] = app_name
 
             elif "media.name" in line and "name" not in current_output:
                 media_name = line.split("=", 1)[1].strip().strip('"')
@@ -390,18 +423,21 @@ def get_source_outputs(logging: Logger) -> List[Dict[str, str]]:
                     seen_apps[media_name] += 1
                     # For additional instances, append instance number
                     current_output["name"] = f"{media_name} ({seen_apps[media_name]})"
-                    logging.log(LogLevel.Debug, f"Multiple instances detected, renamed to: {current_output['name']}")
+                    if show_debug:
+                        logging.log(LogLevel.Debug, f"Multiple instances detected, renamed to: {current_output['name']}")
                 else:
                     seen_apps[media_name] = 1
                     current_output["name"] = media_name
                 
-                logging.log(LogLevel.Debug, f"Using Media Name for Source Output: {current_output['name']}")
-                # Store original name for icon lookup
-                current_output["original_name"] = media_name
+                if show_debug:
+                    logging.log(LogLevel.Debug, f"Using Media Name for Source Output: {current_output['name']}")
+                    # Store original name for icon lookup
+                    current_output["original_name"] = media_name
 
             elif "application.process.binary" in line:
                 current_output["binary"] = line.split("=", 1)[1].strip().strip('"')
-                logging.log(LogLevel.Debug, f"Detected & Stored Source Output Process Binary: {current_output["binary"]}")
+                if show_debug:
+                    logging.log(LogLevel.Debug, f"Detected & Stored Source Output Process Binary: {current_output["binary"]}")
                 
                 # Try to determine an appropriate icon name based on the binary
                 binary_name = current_output["binary"].lower()
@@ -410,24 +446,29 @@ def get_source_outputs(logging: Logger) -> List[Dict[str, str]]:
                 
             elif "application.icon_name" in line:
                 current_output["icon"] = line.split("=", 1)[1].strip().strip('"')
-                logging.log(LogLevel.Debug, f"Detected & Stored Source Output Icon: {current_output["icon"]}")
+                if show_debug:
+                    logging.log(LogLevel.Debug, f"Detected & Stored Source Output Icon: {current_output["icon"]}")
                 
             elif "Mute:" in line:
                 current_output["muted"] = "yes" in line.lower()
-                logging.log(LogLevel.Debug, f"Detected & Stored Source Output Mute State: {current_output["muted"]}")
+                if show_debug:
+                    logging.log(LogLevel.Debug, f"Detected & Stored Source Output Mute State: {current_output["muted"]}")
                 
             elif "Source:" in line:
                 source_id = line.split(":")[1].strip()
                 current_output["source"] = source_id
-                logging.log(LogLevel.Debug, f"Detected & Stored Source ID: {current_output["source"]}")
+                if show_debug:
+                    logging.log(LogLevel.Debug, f"Detected & Stored Source ID: {current_output["source"]}")
 
         # Final source output processing
         if current_output:
-            logging.log(LogLevel.Debug, f"Finalizing last source output: {current_output}")
+            if show_debug:
+                logging.log(LogLevel.Debug, f"Finalizing last source output: {current_output}")
             if "id" in current_output and "name" in current_output:
                 outputs.append(current_output)
             else:
-                logging.log(LogLevel.Debug, f"Skipping last source output due to missing id or name: {current_output}")
+                if show_debug:
+                    logging.log(LogLevel.Debug, f"Skipping last source output due to missing id or name: {current_output}")
 
         # Post-process to ensure they have icon information
         for output in outputs:
@@ -441,7 +482,8 @@ def get_source_outputs(logging: Logger) -> List[Dict[str, str]]:
                 # Fall back to modified name if original name not available
                 output["icon"] = output["name"].lower().replace(" ", "-").split(" (")[0]
 
-        logging.log(LogLevel.Debug, f"Parsed Source Outputs: {outputs}")
+        if show_debug:
+            logging.log(LogLevel.Debug, f"Parsed Source Outputs: {outputs}")
         return outputs
     except Exception as e:
         logging.log(LogLevel.Error, f"Failed getting source outputs: {e}")

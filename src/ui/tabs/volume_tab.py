@@ -48,6 +48,12 @@ class VolumeTab(Gtk.Box):
         self.set_hexpand(True)
         self.set_vexpand(True)
         
+        # Store original debug level and turn off debug logs initially
+        # Use getattr to safely check if the method exists
+        self.original_debug_level = getattr(self.logging, 'get_level', lambda: LogLevel.Info)()
+        self.is_visible = False  # Track tab visibility
+        self.set_debug_logging(False)  # Disable debug by default
+        
         # Get the default icon theme
         self.icon_theme = Gtk.IconTheme.get_default()
 
@@ -253,26 +259,93 @@ class VolumeTab(Gtk.Box):
         self.update_application_list()
         self.update_mic_application_list()
         
-        # Start real-time pulse audio monitoring
+        # Initialize pulse audio monitoring variables
         self.pulse_thread = None
+        self.should_monitor = False  # Don't start monitoring until tab is visible
+        
+        # Start with initial data refresh
+        self.update_volumes()
+        
+        # Always start monitoring on initialization to ensure the app works
+        # even if map signal doesn't fire correctly
         self.should_monitor = True
         self.start_pulse_monitoring()
+        
+        # Connect map/unmap signals for smart monitoring when tab becomes visible/hidden
+        self.connect("map", self.on_tab_shown)
+        self.connect("unmap", self.on_tab_hidden)
         
         # Connect destroy signal for proper cleanup
         self.connect_destroy_signal()
 
+    def set_debug_logging(self, enabled):
+        """Enable or disable debug logging based on tab visibility"""
+        # Check if the Logger class has the required methods
+        has_get_level = hasattr(self.logging, 'get_level')
+        has_set_level = hasattr(self.logging, 'set_level')
+        
+        # If we don't have the needed methods, just skip changing log levels
+        if not (has_get_level and has_set_level):
+            return
+            
+        if enabled:
+            # Restore original logging level when tab is visible
+            self.logging.set_level(self.original_debug_level)
+        else:
+            # Store current level if we haven't already
+            if not hasattr(self, 'original_debug_level'):
+                self.original_debug_level = self.logging.get_level()
+            
+            # Set minimum level to INFO to hide DEBUG messages
+            # Convert LogLevel enum to its integer value for comparison
+            current_level = self.logging.get_level()
+            debug_level_value = LogLevel.Debug.value
+            if current_level <= debug_level_value:
+                self.logging.set_level(LogLevel.Info.value)
+    
+    def on_tab_shown(self, widget):
+        """Called when the tab becomes visible"""
+        self.is_visible = True
+        self.logging.log(LogLevel.Info, "Volume tab became visible, enabling debug logs")
+        # Enable debug logging when tab is visible
+        self.set_debug_logging(True)
+        
+        # Refresh data when tab is shown
+        self.update_volumes()
+        
+        # Only start monitoring if not already active
+        if not self.should_monitor or not self.pulse_thread or not self.pulse_thread.is_alive():
+            self.should_monitor = True
+            self.start_pulse_monitoring()
+        
+    def on_tab_hidden(self, widget):
+        """Called when the tab is hidden"""
+        self.is_visible = False
+        self.logging.log(LogLevel.Info, "Volume tab became hidden, disabling debug logs")
+        # Disable debug logging when tab is hidden
+        self.set_debug_logging(False)
+        
+        # For now, we'll keep monitoring active even when tab is hidden
+        # This ensures the app doesn't break if there are visibility issues
+        # self.stop_pulse_monitoring()  # Commented out to avoid potential issues
+        
     def start_pulse_monitoring(self):
         """Start the PulseAudio monitoring thread for real-time updates"""
-        self.should_monitor = True
-        self.pulse_thread = threading.Thread(target=self.monitor_pulse_events, daemon=True)
-        self.pulse_thread.start()
-        self.logging.log(LogLevel.Info, "Started real-time PulseAudio monitoring")
+        # Only start if not already monitoring
+        if self.pulse_thread is None or not self.pulse_thread.is_alive():
+            self.should_monitor = True
+            self.pulse_thread = threading.Thread(target=self.monitor_pulse_events, daemon=True)
+            self.pulse_thread.start()
+            self.logging.log(LogLevel.Info, "Started real-time PulseAudio monitoring")
+        else:
+            self.logging.log(LogLevel.Info, "PulseAudio monitoring already active")
     
     def stop_pulse_monitoring(self):
         """Stop the PulseAudio monitoring thread"""
         self.should_monitor = False
         if self.pulse_thread and self.pulse_thread.is_alive():
             self.pulse_thread.join(1.0)  # Wait for the thread to terminate with timeout
+            self.pulse_thread = None
         self.logging.log(LogLevel.Info, "Stopped PulseAudio monitoring")
     
     def monitor_pulse_events(self):
@@ -293,12 +366,18 @@ class VolumeTab(Gtk.Box):
                 if not self.should_monitor:
                     break
                     
-                self.logging.log(LogLevel.Debug, f"PulseAudio event: {line.strip()}")
+                # Only log debug messages if tab is visible
+                if self.is_visible:
+                    self.logging.log(LogLevel.Debug, f"PulseAudio event: {line.strip()}")
                 
                 try:
-                    # Update UI on main thread with a smaller delay to make updates more responsive
-                    # while still avoiding excessive updates
-                    GLib.timeout_add(10, self.update_on_pulse_event, line)
+                    # For volume change events, update immediately without delay
+                    if "sink" in line and "change" in line:
+                        # Use direct update for volume changes for immediate feedback
+                        GLib.idle_add(self.update_on_pulse_event, line)
+                    else:
+                        # Use small delay for other events to avoid UI freezing
+                        GLib.timeout_add(5, self.update_on_pulse_event, line)
                 except Exception as e:
                     self.logging.log(LogLevel.Error, f"Failed to schedule UI update: {e}")
                 
@@ -321,19 +400,38 @@ class VolumeTab(Gtk.Box):
     def update_on_pulse_event(self, event_line):
         """Update UI based on PulseAudio event type"""
         try:
-            # Avoid processing too many events in rapid succession
-            # This helps prevent crash loops and excessive CPU usage
-            if hasattr(self, '_last_event_time'):
+            # Check if this is a volume-related event, which needs immediate update
+            is_volume_event = "sink" in event_line and "change" in event_line
+
+            # For volume changes, use minimal throttling
+            if is_volume_event:
+                # Very minimal throttling for volume events to make them feel responsive
+                if hasattr(self, '_last_volume_event_time'):
+                    now = GLib.get_monotonic_time()
+                    if now - self._last_volume_event_time < 10000:  # 10ms throttle for volume
+                        return False
+                self._last_volume_event_time = GLib.get_monotonic_time()
+            # Regular event throttling for non-volume events
+            elif hasattr(self, '_last_event_time'):
                 now = GLib.get_monotonic_time()
-                if now - self._last_event_time < 20000:  # Less than 20ms
+                if now - self._last_event_time < 50000:  # 50ms throttle for other events
                     return False
-            self._last_event_time = GLib.get_monotonic_time()
+                self._last_event_time = GLib.get_monotonic_time()
+            else:
+                self._last_event_time = GLib.get_monotonic_time()
+                if not hasattr(self, '_last_volume_event_time'):
+                    self._last_volume_event_time = self._last_event_time
             
             # Handle different event types
             if "sink" in event_line:
                 # Sink events (output devices, main volume changes)
                 try:
-                    self.volume_scale.set_value(get_volume(self.logging))
+                    # Prioritize volume slider updates for immediate feedback
+                    if "change" in event_line:
+                        # Update volume immediately to feel responsive
+                        self.volume_scale.set_value(get_volume(self.logging))
+                        
+                    # Only update mute button for regular changes
                     self.update_mute_button()
                 except Exception as e:
                     self.logging.log(LogLevel.Error, f"Error updating sink UI: {e}")
@@ -348,7 +446,11 @@ class VolumeTab(Gtk.Box):
             if "source" in event_line:
                 # Source events (input devices, mic changes)
                 try:
-                    self.mic_scale.set_value(get_mic_volume(self.logging))
+                    # Update mic volume with priority for changes
+                    if "change" in event_line:
+                        self.mic_scale.set_value(get_mic_volume(self.logging))
+                    
+                    # Update mute button for all events
                     self.update_mic_mute_button()
                 except Exception as e:
                     self.logging.log(LogLevel.Error, f"Error updating source UI: {e}")
@@ -490,7 +592,8 @@ class VolumeTab(Gtk.Box):
                 # Try icon from app info first
                 if "icon" in app:
                     icon_name = app["icon"]
-                    self.logging.log(LogLevel.Debug, f"Trying app icon: {icon_name}")
+                    if self.is_visible:
+                        self.logging.log(LogLevel.Debug, f"Trying app icon: {icon_name}")
                     if self.icon_exists(icon_name):
                         icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.MENU)
                     
@@ -498,14 +601,16 @@ class VolumeTab(Gtk.Box):
                 if not icon:
                     if "binary" in app:
                         binary_name = app["binary"].lower()
-                        self.logging.log(LogLevel.Debug, f"Trying binary icon: {binary_name}")
+                        if self.is_visible:
+                            self.logging.log(LogLevel.Debug, f"Trying binary icon: {binary_name}")
                         if self.icon_exists(binary_name):
                             icon = Gtk.Image.new_from_icon_name(binary_name, Gtk.IconSize.MENU)
                 
                 # If still not valid, try app name as icon (normalized)
                 if not icon:
                     app_icon_name = app["name"].lower().replace(" ", "-")
-                    self.logging.log(LogLevel.Debug, f"Trying normalized name icon: {app_icon_name}")
+                    if self.is_visible:
+                        self.logging.log(LogLevel.Debug, f"Trying normalized name icon: {app_icon_name}")
                     if self.icon_exists(app_icon_name):
                         icon = Gtk.Image.new_from_icon_name(app_icon_name, Gtk.IconSize.MENU)
                 
@@ -588,7 +693,8 @@ class VolumeTab(Gtk.Box):
                 current_sink_name = ""
                 if "sink" in app:
                     current_sink_name = get_sink_name_by_id(app["sink"], self.logging)
-                    self.logging.log(LogLevel.Debug, f"App {app['name']} is using sink ID: {app['sink']}, name: {current_sink_name}")
+                    if self.is_visible:
+                        self.logging.log(LogLevel.Debug, f"App {app['name']} is using sink ID: {app['sink']}, name: {current_sink_name}")
                 
                 # Set the active sink in the dropdown
                 if current_sink_name:
@@ -634,7 +740,11 @@ class VolumeTab(Gtk.Box):
     def on_volume_changed(self, scale):
         """Handle volume scale changes"""
         value = int(scale.get_value())
+        # Update the volume immediately when user changes slider
         set_volume(value, self.logging)
+        # Force update of mute button to ensure it's in sync when unmuting via volume change
+        if value > 0 and get_mute_state(self.logging):
+            GLib.idle_add(self.update_mute_button)
 
     def on_mute_clicked(self, button):
         """Handle mute button clicks"""
@@ -760,7 +870,8 @@ class VolumeTab(Gtk.Box):
                 # Try icon from app info first
                 if "icon" in app:
                     icon_name = app["icon"]
-                    self.logging.log(LogLevel.Debug, f"Trying app icon: {icon_name}")
+                    if self.is_visible:
+                        self.logging.log(LogLevel.Debug, f"Trying app icon: {icon_name}")
                     if self.icon_exists(icon_name):
                         icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.MENU)
                     
@@ -768,7 +879,8 @@ class VolumeTab(Gtk.Box):
                 if not icon:
                     if "binary" in app:
                         binary_name = app["binary"].lower()
-                        self.logging.log(LogLevel.Debug, f"Trying binary icon: {binary_name}")
+                        if self.is_visible:
+                            self.logging.log(LogLevel.Debug, f"Trying binary icon: {binary_name}")
                         if self.icon_exists(binary_name):
                             icon = Gtk.Image.new_from_icon_name(binary_name, Gtk.IconSize.MENU)
                 
@@ -819,6 +931,7 @@ class VolumeTab(Gtk.Box):
     def connect_destroy_signal(self):
         """Connect to the destroy signal to clean up resources when the widget is destroyed"""
         def on_destroy(*args):
+            self.logging.log(LogLevel.Info, "Volume tab is being destroyed, cleaning up resources")
             self.stop_pulse_monitoring()
         
         self.connect("destroy", on_destroy)
