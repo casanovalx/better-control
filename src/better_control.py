@@ -8,7 +8,6 @@ import argparse
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
-from config.constants import DEPENDENCIES
 from ui.main_window import BetterControl
 from utils.dependencies import check_all_dependencies
 

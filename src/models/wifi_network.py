@@ -1,8 +1,8 @@
 import logging
-from math import log
+import subprocess
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Pango
+from gi.repository import Gtk
 
 class WiFiNetworkRow(Gtk.ListBoxRow):
     def __init__(self, network_info):

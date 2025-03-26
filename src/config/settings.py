@@ -4,6 +4,7 @@ import json
 import os
 import logging
 import constants
+from constants import CONFIG_PATH, SETTINGS_FILE
 
 def load_settings() -> dict:
     """Load settings from the settings file
@@ -12,9 +13,9 @@ def load_settings() -> dict:
         dict: Dictionary containing settings
     """
     settings = {"visibility": {}, "positions": {}}
-    if os.path.exists(constants.SETTINGS_FILE):
+    if os.path.exists(SETTINGS_FILE):
         try:
-            with open(constants.SETTINGS_FILE, "r") as f:
+            with open(SETTINGS_FILE, "r") as f:
                 data = json.load(f)
                 # Handle legacy format (just visibility settings)
                 if isinstance(data, dict) and not ("visibility" in data and "positions" in data):
@@ -33,8 +34,8 @@ def save_settings(settings: dict) -> None:
     """
     try:
         # Ensure the config directory exists
-        os.makedirs(constants.CONFIG_PATH, exist_ok=True)
-        with open(constants.SETTINGS_FILE, "w") as f:
+        os.makedirs(CONFIG_PATH, exist_ok=True)
+        with open(SETTINGS_FILE, "w") as f:
             json.dump(settings, f, indent=4)
     except Exception as e:
         logging.error(f"Error saving settings: {e}")
