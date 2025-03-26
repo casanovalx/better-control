@@ -99,9 +99,9 @@ class DisplayTab(Gtk.Box):
         brightness_frame.add(brightness_box)
         content_box.pack_start(brightness_frame, False, True, 0)
 
-        # Blue light filter section
+        # Blue light section
         bluelight_label = Gtk.Label()
-        bluelight_label.set_markup("<b>Blue Light Filter</b>")
+        bluelight_label.set_markup("<b>Blue Light</b>")
         bluelight_label.set_halign(Gtk.Align.START)
         bluelight_label.set_margin_top(15)
         content_box.pack_start(bluelight_label, False, True, 0)
@@ -180,9 +180,9 @@ class DisplayTab(Gtk.Box):
         self.brightness_scale.set_value(value)
         self.set_brightness(value)
 
-    def on_bluelight_changed(self, scale):
-        """Handle blue light filter scale changes"""
-        temperature = int(scale.get_value())
+    def set_bluelight(self, temperature):
+        """Set blue light level"""
+        temperature = int(temperature)
         settings = load_settings()
         settings["gamma"] = temperature
         save_settings(settings)
@@ -200,9 +200,15 @@ class DisplayTab(Gtk.Box):
             stderr=subprocess.DEVNULL
         )
 
+    def on_bluelight_changed(self, scale):
+        """Handle blue light scale changes"""
+        temperature = int(scale.get_value())
+        self.set_bluelight(temperature)
+
     def on_bluelight_button_clicked(self, button, value):
-        """Handle blue light filter button clicks"""
+        """Handle blue light button clicks"""
         self.bluelight_scale.set_value(value)
+        self.set_bluelight(value)
 
     def refresh_display_settings(self, button=None):
         """Refresh display settings"""
