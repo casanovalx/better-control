@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 
 import logging
-import gi
+import gi # type: ignore
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk, GObject # type: ignore
 
 from config.settings import load_settings, save_settings
 
 
 class SettingsTab(Gtk.Box):
     """Tab for application settings"""
-
     __gsignals__ = {
         'tab-visibility-changed': (GObject.SignalFlags.RUN_LAST, None, (str, bool,)),
         'tab-order-changed': (GObject.SignalFlags.RUN_LAST, None, (GObject.TYPE_PYOBJECT,)),
@@ -19,7 +18,6 @@ class SettingsTab(Gtk.Box):
 
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-
         # Set margins for dialog window context
         self.set_margin_top(10)
         self.set_margin_bottom(10)
@@ -34,7 +32,6 @@ class SettingsTab(Gtk.Box):
         scrolled_window.set_hexpand(True)
         scrolled_window.set_vexpand(True)
         self.pack_start(scrolled_window, True, True, 0)
-
         # Create a container for the content
         self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         self.content_box.set_margin_top(10)
@@ -79,7 +76,6 @@ class SettingsTab(Gtk.Box):
         settings_frame = Gtk.Frame()
         settings_frame.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
         self.content_box.pack_start(settings_frame, False, False, 10)
-
         # Tab settings section
         self.tab_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.tab_section.set_margin_top(10)
@@ -110,7 +106,6 @@ class SettingsTab(Gtk.Box):
             up_button.set_relief(Gtk.ReliefStyle.NONE)
             up_button.connect("clicked", self.on_move_up_clicked, tab_name)
             button_box.pack_start(up_button, False, False, 0)
-
             down_button = Gtk.Button()
             down_button.set_image(Gtk.Image.new_from_icon_name("go-down-symbolic", Gtk.IconSize.BUTTON))
             down_button.set_relief(Gtk.ReliefStyle.NONE)
@@ -127,7 +122,6 @@ class SettingsTab(Gtk.Box):
             label = Gtk.Label(label=f"Show {tab_name} tab")
             label.set_halign(Gtk.Align.START)
             row.pack_start(label, True, True, 0)
-
             switch = Gtk.Switch()
             # Get visibility from settings or default to True
             visible = self.settings.get("visibility", {}).get(tab_name, True)
@@ -141,7 +135,6 @@ class SettingsTab(Gtk.Box):
             switch_box.set_valign(Gtk.Align.CENTER)
             switch_box.pack_start(switch, True, False, 0)
             row.pack_end(switch_box, False, False, 0)
-
             self.tab_switches[tab_name] = switch
             self.tab_rows[tab_name] = row
 
@@ -152,12 +145,10 @@ class SettingsTab(Gtk.Box):
         """Update the order of rows in the UI to match the current tab order"""
         # Get current tab order
         tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display"])
-
         # Remove all rows from the section
         for row in self.tab_section.get_children():
             if isinstance(row, Gtk.Box) and row != self.tab_section.get_children()[0]:  # Skip the label
                 self.tab_section.remove(row)
-
         # Add rows back in the correct order
         for tab_name in tab_order:
             if tab_name in self.tab_rows:
@@ -182,7 +173,6 @@ class SettingsTab(Gtk.Box):
         """Handle move up button click"""
         # Get current tab order
         tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display"])
-
         # Find current index
         current_index = tab_order.index(tab_name)
         if current_index > 0:
@@ -203,7 +193,6 @@ class SettingsTab(Gtk.Box):
         """Handle move down button click"""
         # Get current tab order
         tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display"])
-
         # Find current index
         current_index = tab_order.index(tab_name)
         if current_index < len(tab_order) - 1:

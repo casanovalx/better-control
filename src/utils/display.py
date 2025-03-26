@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import subprocess
-import typing
+from typing import Dict, List
 import logging
 
 def get_brightness() -> int:
@@ -30,11 +30,11 @@ def set_brightness(value: int) -> None:
     except subprocess.CalledProcessError as e:
         logging.error(f"Error setting brightness: {e}")
 
-def get_displays() -> typing.List[str]:
+def get_displays() -> List[str]:
     """Get list of connected displays
 
     Returns:
-        typing.List[str]: List of display names
+        List[str]: List of display names
     """
     try:
         output = subprocess.getoutput("xrandr --query")
@@ -47,14 +47,14 @@ def get_displays() -> typing.List[str]:
         logging.error(f"Error getting displays: {e}")
         return []
 
-def get_display_info(display: str) -> typing.Dict[str, str]:
+def get_display_info(display: str) -> Dict[str, str]:
     """Get information about a specific display
 
     Args:
         display (str): Display name
 
     Returns:
-        typing.Dict[str, str]: Dictionary containing display information
+        Dict[str, str]: Dictionary containing display information
     """
     try:
         output = subprocess.getoutput(f"xrandr --query --verbose | grep -A10 {display}")

@@ -16,7 +16,6 @@ install:
 	# Create installation directories
 	mkdir -p $(INSTALL_DIR)
 	mkdir -p $(BIN_DIR)
-
 	# Copy all project files to installation directory
 	cp -r src/* $(INSTALL_DIR)/
 

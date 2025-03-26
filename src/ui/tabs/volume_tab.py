@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import gi
+import gi # type: ignore
 import logging
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib # type: ignore
 
 from utils.volume import (
     get_volume,
@@ -219,7 +219,6 @@ class VolumeTab(Gtk.Box):
         # Output devices
         active_id = self.output_combo.get_active_id()
         self.output_combo.remove_all()
-
         for sink in get_sinks():
             self.output_combo.append(sink["name"], sink["description"])
             if sink["name"] == active_id:
@@ -231,7 +230,6 @@ class VolumeTab(Gtk.Box):
         # Input devices
         active_id = self.input_combo.get_active_id()
         self.input_combo.remove_all()
-
         for source in get_sources():
             if not "monitor" in source["name"].lower():  # Skip monitor sources
                 self.input_combo.append(source["name"], source["description"])

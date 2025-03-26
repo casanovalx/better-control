@@ -2,10 +2,10 @@
 
 import logging
 import subprocess
-import gi
+import gi # type: ignore
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk # type: ignore
 
 class WiFiNetworkRow(Gtk.ListBoxRow):
     def __init__(self, network_info):

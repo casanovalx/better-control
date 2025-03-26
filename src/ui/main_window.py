@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 import traceback
-import gi
+import gi # type: ignore
 import logging
 import threading
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib # type: ignore
 
 from ui.tabs.battery_tab import BatteryTab
 from ui.tabs.bluetooth_tab import BluetoothTab
@@ -22,7 +22,6 @@ class BetterControl(Gtk.Window):
     def __init__(self, args):
         super().__init__(title="Better Control")
         self.set_default_size(600, 400)
-
         logging.info("Initializing Better Control application")
 
         # Load settings
@@ -47,7 +46,6 @@ class BetterControl(Gtk.Window):
         loading_box.set_valign(Gtk.Align.CENTER)
         loading_box.pack_start(self.loading_spinner, False, False, 0)
         loading_box.pack_start(self.loading_label, False, False, 0)
-
         self.loading_page = self.notebook.append_page(
             loading_box,
             Gtk.Label(label="Loading...")
@@ -69,12 +67,10 @@ class BetterControl(Gtk.Window):
     def create_tabs_async(self):
         """Create all tabs asynchronously"""
         logging.info("Starting asynchronous tab creation")
-
         # Start a thread to create tabs in the background
         thread = threading.Thread(target=self._create_tabs_thread)
         thread.daemon = True
         thread.start()
-
     def _create_tabs_thread(self):
         """Thread function to create tabs"""
         # Create all tabs
@@ -85,7 +81,6 @@ class BetterControl(Gtk.Window):
             "Battery": BatteryTab,
             "Display": DisplayTab
         }
-
         # Create tabs one by one
         for tab_name, tab_class in tab_classes.items():
             try:
@@ -156,7 +151,6 @@ class BetterControl(Gtk.Window):
             last_tab = self.settings.get("last_active_tab", 0)
             if last_tab < self.notebook.get_n_pages():
                 self.notebook.set_current_page(last_tab)
-
         # Remove loading tab
         self.notebook.remove_page(self.loading_page)
 
@@ -165,19 +159,16 @@ class BetterControl(Gtk.Window):
     def apply_tab_visibility(self):
         """Apply tab visibility settings"""
         visibility = self.settings.get("visibility", {})
-
         # Iterate through all tabs
         for tab_name, tab in self.tabs.items():
             # Default to showing tab if no setting exists
             should_show = visibility.get(tab_name, True)
-
             # Get the current position if it exists
             page_num = -1
             for i in range(self.notebook.get_n_pages()):
                 if self.notebook.get_nth_page(i) == tab:
                     page_num = i
                     break
-
             # Apply visibility
             if should_show and page_num == -1:
                 # Need to add the tab
@@ -195,7 +186,6 @@ class BetterControl(Gtk.Window):
                 for name, num in self.tab_pages.items():
                     if num > page_num:
                         self.tab_pages[name] = num - 1
-
                 # Remove from tab_pages
                 if tab_name in self.tab_pages:
                     del self.tab_pages[tab_name]
@@ -204,7 +194,6 @@ class BetterControl(Gtk.Window):
         """Apply tab order settings"""
         # Get current tab order from settings or use default
         tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display"])
-
         # Reorder tabs according to settings
         for tab_name in tab_order:
             if tab_name in self.tabs and tab_name in self.tab_pages:
@@ -264,12 +253,10 @@ class BetterControl(Gtk.Window):
             )
             dialog.set_default_size(500, 400)
             dialog.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
-
             # Create a fresh instance of the settings tab to use in the dialog
             settings_tab = SettingsTab()
             settings_tab.connect("tab-visibility-changed", self.on_tab_visibility_changed)
             settings_tab.connect("tab-order-changed", self.on_tab_order_changed)
-
             # Add the settings content to the dialog's content area
             content_area = dialog.get_content_area()
             content_area.add(settings_tab)
@@ -298,18 +285,15 @@ class BetterControl(Gtk.Window):
             self.settings["visibility"] = {}
         self.settings["visibility"][tab_name] = visible
         save_settings(self.settings)
-
         # Apply the change
         if tab_name in self.tabs:
             tab = self.tabs[tab_name]
             page_num = -1
-
             # Find current page number if tab is present
             for i in range(self.notebook.get_n_pages()):
                 if self.notebook.get_nth_page(i) == tab:
                     page_num = i
                     break
-
             if visible and page_num == -1:
                 # Need to add the tab
                 tab.show_all()  # Ensure tab is visible
@@ -335,7 +319,6 @@ class BetterControl(Gtk.Window):
         # Update settings
         self.settings["tab_order"] = tab_order
         save_settings(self.settings)
-
         # Apply the new order
         self.apply_tab_order()
 
@@ -370,7 +353,6 @@ class BetterControl(Gtk.Window):
         # Save current tab
         self.settings["last_active_tab"] = page_num
         save_settings(self.settings)
-
         # Get tab name for logging
         for tab_name, tab_index in self.tab_pages.items():
             if tab_index == page_num:

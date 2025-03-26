@@ -1,8 +1,8 @@
 import logging
 import subprocess
-import gi
+import gi # type: ignore
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk # type: ignore
 
 class WiFiNetworkRow(Gtk.ListBoxRow):
     def __init__(self, network_info):
@@ -36,7 +36,7 @@ class WiFiNetworkRow(Gtk.ListBoxRow):
                         # Fallback to position-based extraction
                         self.ssid = parts[1]
                 except Exception as e:
-                    logging.error()(f"Error getting active connection name: {e}")
+                    logging.error(f"Error getting active connection name: {e}")
                     self.ssid = parts[1]
             else:
                 # For non-connected networks, use the second column

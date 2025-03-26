@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
-import gi
-import logging
+import gi # type: ignore
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
-from gi.repository import Gtk, Pango
+from gi.repository import Gtk, Pango # type: ignore
 
 class BluetoothDeviceRow(Gtk.ListBoxRow):
     def __init__(self, device):

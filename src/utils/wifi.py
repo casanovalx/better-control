@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import subprocess
-import typing
+from typing import List, Dict
 import logging
 
 def get_wifi_status() -> bool:
@@ -29,11 +29,11 @@ def set_wifi_power(enabled: bool) -> None:
     except subprocess.CalledProcessError as e:
         logging.error(f"Error setting WiFi power: {e}")
 
-def get_wifi_networks() -> typing.List[typing.Dict[str, str]]:
+def get_wifi_networks() -> List[Dict[str, str]]:
     """Get list of available WiFi networks
 
     Returns:
-        typing.List[typing.Dict[str, str]]: List of network dictionaries
+        List[Dict[str, str]]: List of network dictionaries
     """
     try:
         # Use --terse mode and specific fields for more reliable parsing
@@ -42,7 +42,6 @@ def get_wifi_networks() -> typing.List[typing.Dict[str, str]]:
         for line in output.split('\n'):
             if not line.strip():
                 continue
-
             # Split by ':' since we're using terse mode
             parts = line.split(':')
             if len(parts) >= 4:
@@ -50,7 +49,6 @@ def get_wifi_networks() -> typing.List[typing.Dict[str, str]]:
                 ssid = parts[1]
                 signal = parts[2] if parts[2].strip() else "0"
                 security = parts[3] if parts[3].strip() != "" else "none"
-
                 # Only add networks with valid SSIDs
                 if ssid and ssid.strip():
                     networks.append({
@@ -64,14 +62,14 @@ def get_wifi_networks() -> typing.List[typing.Dict[str, str]]:
         logging.error(f"Error getting WiFi networks: {e}")
         return []
 
-def get_connection_info(ssid: str) -> typing.Dict[str, str]:
+def get_connection_info(ssid: str) -> Dict[str, str]:
     """Get information about a WiFi connection
 
     Args:
         ssid (str): Network SSID
 
     Returns:
-        typing.Dict[str, str]: Dictionary containing connection information
+        Dict[str, str]: Dictionary containing connection information
     """
     try:
         output = subprocess.getoutput(f"nmcli -t connection show '{ssid}'")
@@ -85,7 +83,7 @@ def get_connection_info(ssid: str) -> typing.Dict[str, str]:
         logging.error(f"Error getting connection info: {e}")
         return {}
 
-def connect_network(ssid: str, password: str = None, remember: bool = True) -> bool:
+def connect_network(ssid: str, password: str = "", remember: bool = True) -> bool:
     """Connect to a WiFi network
 
     Args:
@@ -146,11 +144,11 @@ def forget_network(ssid: str) -> bool:
         logging.error(f"Error removing network: {e}")
         return False
 
-def get_network_speed() -> typing.Dict[str, float]:
+def get_network_speed() -> Dict[str, float]:
     """Get current network speed
 
     Returns:
-        typing.Dict[str, float]: Dictionary with upload and download speeds in Mbps
+        Dict[str, float]: Dictionary with upload and download speeds in Mbps
     """
     try:
         # Get WiFi interface name
@@ -165,7 +163,6 @@ def get_network_speed() -> typing.Dict[str, float]:
             rx_bytes = int(f.read())
         with open(f"/sys/class/net/{interface}/statistics/tx_bytes") as f:
             tx_bytes = int(f.read())
-
         return {
             "rx_bytes": rx_bytes,
             "tx_bytes": tx_bytes

@@ -2,14 +2,13 @@
 
 import logging
 import subprocess
-import psutil
-import typing
+from typing import Tuple, List
 
-def get_network_speed() -> typing.Tuple[float, float]:
+def get_network_speed() -> Tuple[float, float]:
     """Measure current network speed
 
     Returns:
-        typing.Tuple[float, float]: Upload and download speeds in Mbps
+        Tuple[float, float]: Upload and download speeds in Mbps
     """
     try:
         # Get network interfaces
@@ -28,17 +27,17 @@ def get_network_speed() -> typing.Tuple[float, float]:
 
         # Store current values
         if not hasattr(get_network_speed, "prev_rx_bytes"):
-            get_network_speed.prev_rx_bytes = rx_bytes
-            get_network_speed.prev_tx_bytes = tx_bytes
+            get_network_speed.prev_rx_bytes = rx_bytes # type: ignore
+            get_network_speed.prev_tx_bytes = tx_bytes # type: ignore
             return 0.0, 0.0
 
         # Calculate speed
-        rx_speed = rx_bytes - get_network_speed.prev_rx_bytes
-        tx_speed = tx_bytes - get_network_speed.prev_tx_bytes
+        rx_speed = rx_bytes - get_network_speed.prev_rx_bytes # type: ignore
+        tx_speed = tx_bytes - get_network_speed.prev_tx_bytes # type: ignore
 
         # Update previous values
-        get_network_speed.prev_rx_bytes = rx_bytes
-        get_network_speed.prev_tx_bytes = tx_bytes
+        get_network_speed.prev_rx_bytes = rx_bytes # type: ignore
+        get_network_speed.prev_tx_bytes = tx_bytes # type: ignore
 
         # Convert to Mbps
         rx_speed_mbps = (rx_speed * 8) / (1024 * 1024)  # Convert to Mbps
@@ -50,11 +49,11 @@ def get_network_speed() -> typing.Tuple[float, float]:
         logging.error(f"Error measuring network speed: {e}")
         return 0.0, 0.0
 
-def get_wifi_networks() -> typing.List[str]:
+def get_wifi_networks() -> List[str]:
     """Get list of available WiFi networks
 
     Returns:
-        typing.List[str]: List of network information strings
+        List[str]: List of network information strings
     """
     try:
         # Use fields parameter to get a more consistent format, including SIGNAL explicitly
@@ -95,7 +94,7 @@ def set_wifi_status(enabled: bool) -> bool:
         logging.error(f"Failed to {'enable' if enabled else 'disable'} WiFi: {e}")
         return False
 
-def connect_to_wifi(ssid: str, password: str = None, remember: bool = True) -> bool:
+def connect_to_wifi(ssid: str, password: str = "", remember: bool = True) -> bool:
     """Connect to a WiFi network
 
     Args:
@@ -176,7 +175,6 @@ def disconnect_wifi() -> bool:
 
         # Second approach: Try checking all active WiFi connections
         active_connections = subprocess.getoutput("nmcli -t -f NAME,TYPE con show --active").split("\n")
-
         for conn in active_connections:
             if ":" in conn and ("wifi" in conn.lower() or "802-11-wireless" in conn.lower()):
                 connection_name = conn.split(":")[0]

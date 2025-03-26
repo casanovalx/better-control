@@ -1,7 +1,7 @@
 import shutil
 import logging
 from typing import Optional
-from config.settings import DEPENDENCIES
+from config.constants import DEPENDENCIES
 
 def check_dependency(command: str, name: str, install_instructions: str) -> Optional[str]:
     """Checks if a dependency is installed or not.

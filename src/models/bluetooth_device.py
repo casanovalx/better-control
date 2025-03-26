@@ -1,8 +1,10 @@
 import logging
 import subprocess
-import gi
+import gi  # type: ignore
+
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Pango
+from gi.repository import Gtk, Pango  # type: ignore
+
 
 class BluetoothDeviceRow(Gtk.ListBoxRow):
     def __init__(self, device_info):

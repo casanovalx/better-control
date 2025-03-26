@@ -2,10 +2,11 @@
 
 import dbus
 import dbus.mainloop.glib
-from gi.repository import GLib
-import typing
+from gi.repository import GLib # type: ignore
 import logging
 import subprocess
+
+from typing import Dict, List
 
 BLUEZ_SERVICE_NAME = 'org.bluez'
 BLUEZ_ADAPTER_INTERFACE = 'org.bluez.Adapter1'
@@ -18,7 +19,6 @@ class BluetoothManager:
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         self.bus = dbus.SystemBus()
         self.mainloop = GLib.MainLoop()
-
         try:
             self.adapter_path = self.find_adapter()
             self.adapter = dbus.Interface(
@@ -76,11 +76,11 @@ class BluetoothManager:
         except Exception as e:
             logging.error(f"Error setting Bluetooth power: {e}")
 
-    def get_devices(self) -> typing.List[typing.Dict[str, str]]:
+    def get_devices(self) -> List[Dict[str, str]]:
         """Get list of all known Bluetooth devices (both paired and discovered)
 
         Returns:
-            typing.List[typing.Dict[str, str]]: List of device dictionaries with MAC and name
+            List[Dict[str, str]]: List of device dictionaries with MAC and name
         """
         try:
             if not self.adapter:
@@ -91,14 +91,12 @@ class BluetoothManager:
                 DBUS_OM_IFACE
             )
             objects = remote_om.GetManagedObjects()
-
             devices = []
             for path, interfaces in objects.items():
                 if BLUEZ_DEVICE_INTERFACE not in interfaces:
                     continue
 
                 properties = interfaces[BLUEZ_DEVICE_INTERFACE]
-
                 if not properties.get("Name", None):
                     continue
 
@@ -111,7 +109,6 @@ class BluetoothManager:
                     'icon': properties.get("Icon", ""),
                     'path': path
                 })
-
             return devices
         except Exception as e:
             logging.error(f"Error getting devices: {e}")
@@ -218,7 +215,7 @@ def get_bluetooth_status() -> bool:
 def set_bluetooth_power(enabled: bool) -> None:
     get_bluetooth_manager().set_bluetooth_power(enabled)
 
-def get_devices() -> typing.List[typing.Dict[str, str]]:
+def get_devices() -> List[Dict[str, str]]:
     return get_bluetooth_manager().get_devices()
 
 def start_discovery() -> None:

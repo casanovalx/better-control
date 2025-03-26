@@ -4,9 +4,9 @@ import subprocess
 import shutil
 import logging
 import psutil
-import typing
+from typing import List, Optional, Dict, Tuple
 
-def check_dependency(command: str, name: str, install_instructions: str) -> typing.Optional[str]:
+def check_dependency(command: str, name: str, install_instructions: str) -> Optional[str]:
     """Checks if a dependency is installed or not
 
     Args:
@@ -15,7 +15,7 @@ def check_dependency(command: str, name: str, install_instructions: str) -> typi
         install_instructions (str): the instruction used to install the package
 
     Returns:
-        typing.Optional[str]: Error message if dependency is missing, None otherwise
+        Optional[str]: Error message if dependency is missing, None otherwise
     """
     if not shutil.which(command):
         error_msg = f"{name} is required but not installed!\n\nInstall it using:\n{install_instructions}"
@@ -23,11 +23,11 @@ def check_dependency(command: str, name: str, install_instructions: str) -> typi
         return error_msg
     return None
 
-def get_battery_devices() -> typing.List[str]:
+def get_battery_devices() -> List[str]:
     """Returns battery devices that are detected by upower
 
     Returns:
-        typing.List[str]: a list of devices
+        List[str]: a list of devices
     """
     try:
         devices = subprocess.getoutput("upower -e").split("\n")
@@ -52,11 +52,11 @@ def get_battery_info(device: str) -> str:
         logging.error(f"Error retrieving battery info for {device}: {e}")
         return ""
 
-def get_system_battery_info() -> typing.Optional[typing.Dict[str, str]]:
+def get_system_battery_info() -> Optional[Dict[str, str]]:
     """fetch the systemwide battery information from psutil
 
     Returns:
-        typing.Optional[typing.Dict[str, str]]: a dictionary containing charge, state, and time left. Or None
+        Optional[Dict[str, str]]: a dictionary containing charge, state, and time left. Or None
     """
     battery = psutil.sensors_battery()
 
@@ -80,11 +80,11 @@ def get_system_battery_info() -> typing.Optional[typing.Dict[str, str]]:
         "Time Left": time_left,
     }
 
-def detect_peripheral_battery() -> typing.Tuple[typing.Optional[str], typing.Optional[str]]:
+def detect_peripheral_battery() -> Tuple[Optional[str], Optional[str]]:
     """get the battery status of mices and keyboards
 
     Returns:
-        typing.Tuple: a tuple containing the device and the label
+        Tuple: a tuple containing the device and the label
     """
     for device in get_battery_devices():
         info = get_battery_info(device)
@@ -94,7 +94,7 @@ def detect_peripheral_battery() -> typing.Tuple[typing.Optional[str], typing.Opt
             return (device, "Wireless Keyboard Battery")
     return (None, None)
 
-def get_battery_status() -> typing.Dict[str, str]:
+def get_battery_status() -> Dict[Optional[str], Optional[str]]:
     """fetch the battery status of peripheral given from the "detect_peripheral_battery" function
 
     Example Usage:
@@ -103,7 +103,7 @@ def get_battery_status() -> typing.Dict[str, str]:
     ```
 
     Returns:
-        typing.Dict[str, str]: a dict containing the device label and battery charge
+        Dict[str, str]: a dict containing the device label and battery charge
     """
     peripheral_battery, label = detect_peripheral_battery()
 
@@ -118,7 +118,7 @@ def get_battery_status() -> typing.Dict[str, str]:
     system_battery = get_system_battery_info()
     if system_battery:
         system_battery["Device"] = "System Battery"
-        return system_battery
+        return system_battery # type: ignore
 
     return {"Device": "No Battery Detected"}
 

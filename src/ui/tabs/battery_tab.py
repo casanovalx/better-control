@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import gi
+import gi # type: ignore
 import subprocess
 import os
 import logging
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib # type: ignore
 
 from utils.system import get_battery_status
 
@@ -157,7 +157,6 @@ class BatteryTab(Gtk.Box):
         """Refresh battery information. Can be triggered by button press."""
         if button:
             logging.info("Manual refresh of battery information requested")
-
         # Clear content box
         for child in self.content_box.get_children():
             self.content_box.remove(child)

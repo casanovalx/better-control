@@ -47,7 +47,6 @@ yay -S better-control-git
 
 #### Nix (Unofficial)
 > [!NOTE]
-> This is an unofficial Nix flake maintained by the community.
 
 https://github.com/Rishabh5321/better-control-flake
 

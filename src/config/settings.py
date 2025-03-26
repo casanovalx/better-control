@@ -28,7 +28,6 @@ def load_settings() -> dict:
 
 def save_settings(settings: dict) -> None:
     """Save settings to the settings file
-
     Args:
         settings (dict): Settings to save
     """

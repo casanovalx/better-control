@@ -1,6 +1,7 @@
 import subprocess
 import logging
 import shutil
+from typing import Optional
 
 def get_current_volume() -> int:
     """Get the current volume level.
@@ -179,7 +180,7 @@ def get_source_icon_name(source_name: str, description: str) -> str:
     # Default to generic microphone
     return "audio-input-microphone-symbolic"
 
-def get_app_icon_name(app_name: str, provided_icon_name: str) -> str:
+def get_app_icon_name(app_name: str, provided_icon_name: str) -> Optional[str]:
     """Map application names to appropriate icon names.
 
     Args:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import subprocess
-import typing
+from typing import List, Dict
 import logging
 import re
 
@@ -50,17 +50,16 @@ def toggle_mute() -> None:
     except subprocess.CalledProcessError as e:
         logging.error(f"Error toggling mute: {e}")
 
-def get_sinks() -> typing.List[typing.Dict[str, str]]:
+def get_sinks() -> List[Dict[str, str]]:
     """Get list of audio sinks (output devices)
 
     Returns:
-        typing.List[typing.Dict[str, str]]: List of sink dictionaries
+        List[Dict[str, str]]: List of sink dictionaries
     """
     try:
         output = subprocess.getoutput("pactl list sinks")
         sinks = []
         current_sink = {}
-
         for line in output.split("\n"):
             if line.startswith("Sink #"):
                 if current_sink:
@@ -83,17 +82,16 @@ def get_sinks() -> typing.List[typing.Dict[str, str]]:
         logging.error(f"Error getting sinks: {e}")
         return []
 
-def get_sources() -> typing.List[typing.Dict[str, str]]:
+def get_sources() -> List[Dict[str, str]]:
     """Get list of audio sources (input devices)
 
     Returns:
-        typing.List[typing.Dict[str, str]]: List of source dictionaries
+        List[Dict[str, str]]: List of source dictionaries
     """
     try:
         output = subprocess.getoutput("pactl list sources")
         sources = []
         current_source = {}
-
         for line in output.split("\n"):
             if line.startswith("Source #"):
                 if current_source:
@@ -116,17 +114,16 @@ def get_sources() -> typing.List[typing.Dict[str, str]]:
         logging.error(f"Error getting sources: {e}")
         return []
 
-def get_applications() -> typing.List[typing.Dict[str, str]]:
+def get_applications() -> List[Dict[str, str]]:
     """Get list of applications playing audio
 
     Returns:
-        typing.List[typing.Dict[str, str]]: List of application dictionaries
+        List[Dict[str, str]]: List of application dictionaries
     """
     try:
         output = subprocess.getoutput("pactl list sink-inputs")
         apps = []
         current_app = {}
-
         for line in output.split("\n"):
             line = line.strip()
             if line.startswith("Sink Input #"):
@@ -137,7 +134,6 @@ def get_applications() -> typing.List[typing.Dict[str, str]]:
                 current_app = {"id": line.split("#")[1].strip()}
             elif ":" in line and current_app:
                 key, value = [x.strip() for x in line.split(":", 1)]
-
                 # Application name
                 if "application.name" in key:
                     current_app["name"] = value.strip('"')
@@ -156,10 +152,10 @@ def get_applications() -> typing.List[typing.Dict[str, str]]:
                         # Extract volume percentage from format like "front-left: 65536 / 100% / -0.00 dB,   front-right: 65536 / 100% / -0.00 dB"
                         volume_match = re.search(r"(\d+)%", value)
                         if volume_match:
-                            current_app["volume"] = int(volume_match.group(1))
+                            current_app["volume"] = int(volume_match.group(1)) # type: ignore
                     except (ValueError, IndexError) as e:
                         logging.warning(f"Error parsing volume from '{value}': {e}")
-                        current_app["volume"] = 100  # Default to 100% if parsing fails
+                        current_app["volume"] = 100  # Default to 100% if parsing fails # type: ignore
 
         # Add the last app if it exists and has required fields
         if current_app and "name" in current_app and "volume" in current_app:

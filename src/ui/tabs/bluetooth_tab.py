@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import gi
+import gi # type: ignore
 import logging
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib # type: ignore
 
 from utils.bluetooth import (
     get_bluetooth_status,
@@ -85,7 +85,6 @@ class BluetoothTab(Gtk.Box):
         self.power_switch = Gtk.Switch()
         self.power_switch.set_active(get_bluetooth_status())
         self.power_switch.connect("notify::active", self.on_power_switched)
-
         power_box.pack_start(power_label, False, True, 0)
         power_box.pack_end(self.power_switch, False, True, 0)
         content_box.pack_start(power_box, False, True, 0)
@@ -150,7 +149,6 @@ class BluetoothTab(Gtk.Box):
         """
         is_enabled = switch.get_active()
         set_bluetooth_power(is_enabled)
-
         # Update UI based on Bluetooth state
         if is_enabled:
             # Bluetooth enabled - show scan button
@@ -164,7 +162,6 @@ class BluetoothTab(Gtk.Box):
             for child in self.devices_box.get_children():
                 self.devices_box.remove(child)
             self.devices_box.show_all()
-
             # If we're discovering, stop it
             if self.is_discovering:
                 self.stop_scan(self.scan_button)
@@ -205,13 +202,11 @@ class BluetoothTab(Gtk.Box):
 
             current_time = GLib.get_monotonic_time()
             elapsed_seconds = (current_time - self.scan_start_time) / 1000000  # Convert to seconds
-
             # If scan has been running for more than 30 seconds, force stop
             if elapsed_seconds > 30:
                 logging.warning("Bluetooth scan timeout reached. Forcing stop.")
                 self.stop_scan(button)
                 return False
-
             return True
 
         # Add periodic check every 5 seconds
