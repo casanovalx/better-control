@@ -4,6 +4,7 @@ import os
 import subprocess
 import gi  # type: ignore
 import sys
+import threading
 from utils.arg_parser import ArgParse, eprint
 from utils.pair import Pair
 from utils.logger import LogLevel, Logger
@@ -33,7 +34,9 @@ if __name__ == "__main__":
             "Missing required dependencies. Please install them and try again.",
         )
 
-    restore_last_sink(logging)
+    # Run restore_last_sink in a background thread to prevent startup delay
+    audio_thread = threading.Thread(target=restore_last_sink, args=(logging,), daemon=True)
+    audio_thread.start()
 
     try:
         win = BetterControl(arg_parser, logging)

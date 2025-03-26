@@ -251,13 +251,13 @@ def restore_last_sink(logging: Logger):
         if last_sink in available_sinks:
             logging.log(LogLevel.Info, f"Restoring audio to {last_sink}...")
 
-            # Set Bluetooth as the default sink multiple times
-            for _ in range(3):  # Repeat 3 times to fight auto-switching
+            # Set Bluetooth as the default sink - reduce number of attempts and sleep time
+            for _ in range(2):  # Reduced from 3 times to 2
                 subprocess.run(["pactl", "set-default-sink", last_sink], check=True)
-                time.sleep(1)
+                time.sleep(0.5)  # Reduced from 1s to 0.5s
 
-            # Verify if the change was successful
-            time.sleep(1)
+            # Verify if the change was successful - reduced sleep time
+            time.sleep(0.5)  # Reduced from 1s to 0.5s
             current_sink = subprocess.getoutput("pactl get-default-sink").strip()
             if current_sink != last_sink:
                 logging.log(
@@ -266,18 +266,19 @@ def restore_last_sink(logging: Logger):
                 )
                 subprocess.run(["pactl", "set-default-sink", last_sink], check=True)
 
-            # Move all running applications to Bluetooth sink
-            output = subprocess.getoutput("pactl list short sink-inputs")
-            for line in output.split("\n"):
-                if line.strip():
-                    app_id = line.split()[0]
-                    subprocess.run(
-                        ["pactl", "move-sink-input", app_id, last_sink], check=True
-                    )
+            # Move all running applications to Bluetooth sink - use a more efficient approach
+            sink_inputs = subprocess.getoutput("pactl list short sink-inputs")
+            if sink_inputs.strip():  # Only process if there are active sink inputs
+                for line in sink_inputs.split("\n"):
+                    if line.strip():
+                        app_id = line.split()[0]
+                        subprocess.run(
+                            ["pactl", "move-sink-input", app_id, last_sink], check=True
+                        )
 
             logging.log(LogLevel.Info, f"Successfully restored audio to {last_sink}.")
 
-            # 🔹 Prevent PipeWire from overriding the sink
+            # Prevent PipeWire from overriding the sink
             subprocess.run(
                 ["pactl", "set-sink-option", last_sink, "device.headroom", "1"],
                 check=False,
