@@ -3,6 +3,7 @@
 import gi # type: ignore
 import subprocess
 import os
+import re
 from gi.repository import Gtk, GLib # type: ignore
 from utils.logger import LogLevel, Logger
 
@@ -109,7 +110,7 @@ class BatteryTab(Gtk.Box):
         if matching_label:
             self.power_mode_dropdown.set_active(list(self.power_modes.keys()).index(matching_label))
         else:
-            logging.log(LogLevel.Warn, f"Unknown power mode '{saved_mode}', defaulting to Balanced")
+            self.logging.log(LogLevel.Warn, f"Unknown power mode '{saved_mode}', defaulting to Balanced")
             self.power_mode_dropdown.set_active(list(self.power_modes.keys()).index("Balanced"))
 
         dropdown_box.pack_start(self.power_mode_dropdown, True, True, 0)
@@ -154,148 +155,178 @@ class BatteryTab(Gtk.Box):
                 if self.parent:
                     self.parent.show_error_dialog(error_message)
 
+    def get_battery_devices(self):
+        """Get list of battery devices from UPower."""
+        devices = []
+        try:
+            # List all UPower devices
+            result = subprocess.run("upower -e", shell=True, capture_output=True, text=True)
+            if result.returncode == 0:
+                for line in result.stdout.strip().split('\n'):
+                    # Only include battery devices
+                    if 'battery' in line.lower():
+                        devices.append(line)
+            return devices
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Failed to get UPower devices: {e}")
+            return []
+
+    def parse_upower_output(self, output):
+        """Parse the output of upower -i command into a dictionary."""
+        info = {}
+        current_section = None
+        
+        for line in output.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Check if this is a main property line (contains a colon)
+            if ':' in line:
+                key, value = line.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                
+                # Skip empty values
+                if not value:
+                    continue
+                    
+                # Map UPower keys to more user-friendly labels
+                key_mapping = {
+                    'native-path': 'Path',
+                    'vendor': 'Manufacturer', 
+                    'model': 'Model',
+                    'serial': 'Serial',
+                    'power supply': 'Power Supply',
+                    'updated': 'Last Updated',
+                    'has history': 'Has History',
+                    'has statistics': 'Has Statistics',
+                    'present': 'Present',
+                    'rechargeable': 'Rechargeable',
+                    'state': 'State',
+                    'warning-level': 'Warning Level',
+                    'energy': 'Energy',
+                    'energy-empty': 'Energy Empty',
+                    'energy-full': 'Energy Full',
+                    'energy-full-design': 'Energy Full Design',
+                    'energy-rate': 'Energy Rate',
+                    'voltage': 'Voltage',
+                    'time to empty': 'Time to Empty',
+                    'time to full': 'Time to Full',
+                    'percentage': 'Charge',
+                    'capacity': 'Capacity',
+                    'technology': 'Technology',
+                    'icon-name': 'Icon Name'
+                }
+                
+                display_key = key_mapping.get(key, key.capitalize())
+                info[display_key] = value
+                
+        return info
+
     def refresh_battery_info(self, button=None):
-        """Refresh battery information. Can be triggered by button press."""
+        """Refresh battery information using UPower."""
         if button:
             self.logging.log(LogLevel.Info, "Manual refresh of battery information requested")
+            
         # Clear content box
         for child in self.content_box.get_children():
             self.content_box.remove(child)
 
-        # Create a grid to hold the batteries in a 2x2 layout
-        batteries_grid = Gtk.Grid()
-        batteries_grid.set_column_spacing(20)
-        batteries_grid.set_row_spacing(20)
-        batteries_grid.set_halign(Gtk.Align.CENTER)
-        self.content_box.pack_start(batteries_grid, False, False, 0)
+        # Add the power mode box at the top
+        self.content_box.pack_start(self.power_mode_box, False, False, 0)
 
-        # Counter for batteries found and position tracking
-        batteries_found = 0
+        # Add separator after the power mode section
+        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        self.content_box.pack_start(separator, False, False, 10)
 
-        # First check if we can get battery info from /sys/class/power_supply
-        battery_paths = []
-        for root, dirs, files in os.walk('/sys/class/power_supply/', topdown=False):
-          for name in dirs:
-              path = os.path.join(root, name)
-              if os.path.exists(path):
-                battery_paths.append(path)
-
-        # Create battery sections
-        for path in battery_paths:
-            batteries_found += 1
-            battery_id = os.path.basename(path)
-
-            # Calculate grid position (2x2 layout)
-            grid_x = (batteries_found - 1) % 2
-            grid_y = (batteries_found - 1) // 2
-
-            # Create a grid for this battery
-            battery_grid = Gtk.Grid()
-            battery_grid.set_column_spacing(15)
-            battery_grid.set_row_spacing(10)
-            battery_grid.set_margin_bottom(15)
-
-            # Add battery title
-            title = f"Battery {battery_id}"
-            # Try to get model name for a better title
-            if os.path.exists(f"{path}/model_name"):
-                try:
-                    with open(f"{path}/model_name", "r") as f:
-                        model = f.read().strip()
-                        if model:
-                            title = f"{model} ({battery_id})"
-                except:
-                    pass
-
-            title_label = Gtk.Label(xalign=0)
-            title_label.set_markup(f"<span weight='bold'>{title}</span>")
-            battery_grid.attach(title_label, 0, 0, 2, 1)
-
-            row = 1
-            battery_info = {}
-
-            # Get battery information
-            try:
-                if os.path.exists(f"{path}/capacity"):
-                    with open(f"{path}/capacity", "r") as f:
-                        capacity = f.read().strip()
-                        battery_info["Charge"] = f"{capacity}%"
-
-                if os.path.exists(f"{path}/status"):
-                    with open(f"{path}/status", "r") as f:
-                        status = f.read().strip()
-                        battery_info["State"] = status
-
-                if os.path.exists(f"{path}/energy_full") and os.path.exists(f"{path}/energy_full_design"):
-                    with open(f"{path}/energy_full", "r") as f:
-                        energy_full = float(f.read().strip())
-                    with open(f"{path}/energy_full_design", "r") as f:
-                        energy_full_design = float(f.read().strip())
-                    capacity_health = (energy_full / energy_full_design) * 100
-                    battery_info["Capacity"] = f"{capacity_health:.1f}%"
-
-                if os.path.exists(f"{path}/power_now"):
-                    with open(f"{path}/power_now", "r") as f:
-                        power_now = float(f.read().strip()) / 1000000  # Convert to W
-                        battery_info["Power"] = f"{power_now:.2f} W"
-
-                if os.path.exists(f"{path}/voltage_now"):
-                    with open(f"{path}/voltage_now", "r") as f:
-                        voltage_now = float(f.read().strip()) / 1000000  # Convert to V
-                        battery_info["Voltage"] = f"{voltage_now:.2f} V"
-
-                if os.path.exists(f"{path}/cycle_count"):
-                    with open(f"{path}/cycle_count", "r") as f:
-                        cycle_count = f.read().strip()
-                        battery_info["Cycles"] = cycle_count
-
-                if os.path.exists(f"{path}/technology"):
-                    with open(f"{path}/technology", "r") as f:
-                        technology = f.read().strip()
-                        battery_info["Technology"] = technology
-
-                if os.path.exists(f"{path}/manufacturer"):
-                    with open(f"{path}/manufacturer", "r") as f:
-                        manufacturer = f.read().strip()
-                        battery_info["Manufacturer"] = manufacturer
-
-                if os.path.exists(f"{path}/serial_number"):
-                    with open(f"{path}/serial_number", "r") as f:
-                        serial = f.read().strip()
-                        battery_info["Serial"] = serial
-
-            except Exception as e:
-                self.logging.log(LogLevel.Error, f"log LogLevel.Error, reading battery info: {e}")
-
-            # Add all available information to grid
-            for key, value in battery_info.items():
-                key_label = Gtk.Label(xalign=0)
-                key_label.set_markup(f"<b>{key}:</b>")
-                battery_grid.attach(key_label, 0, row, 1, 1)
-
-                value_label = Gtk.Label(xalign=0)
-                value_label.set_text(value)
-                battery_grid.attach(value_label, 1, row, 1, 1)
-                row += 1
-
-            # Add this battery grid to the main batteries grid in a 2x2 layout
-            batteries_grid.attach(battery_grid, grid_x, grid_y, 1, 1)
-
-        # If no battery files were found, show "No battery detected" message
-        if not batteries_found:
+        # Get list of battery devices
+        battery_devices = self.get_battery_devices()
+        
+        if not battery_devices:
+            # No battery found
             no_battery_label = Gtk.Label(xalign=0)
             no_battery_label.set_text("No battery detected")
             no_battery_label.set_margin_top(10)
             no_battery_label.set_margin_bottom(10)
             self.content_box.pack_start(no_battery_label, False, False, 0)
+        else:
+            # Create a grid to hold the batteries
+            batteries_grid = Gtk.Grid()
+            batteries_grid.set_column_spacing(20)
+            batteries_grid.set_row_spacing(20)
+            batteries_grid.set_halign(Gtk.Align.CENTER)
+            self.content_box.pack_start(batteries_grid, False, False, 0)
+            
+            # Process each battery
+            for i, device_path in enumerate(battery_devices):
+                try:
+                    # Run upower command for this battery
+                    result = subprocess.run(f"upower -i {device_path}", shell=True, capture_output=True, text=True)
+                    if result.returncode == 0:
+                        battery_info = self.parse_upower_output(result.stdout)
+                        
+                        # Calculate grid position (2x2 layout)
+                        grid_x = i % 2
+                        grid_y = i // 2
+                        
+                        # Create a frame for this battery
+                        battery_frame = Gtk.Frame()
+                        battery_frame.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
+                        
+                        # Create grid for battery info
+                        battery_grid = Gtk.Grid()
+                        battery_grid.set_column_spacing(15)
+                        battery_grid.set_row_spacing(8)
+                        battery_grid.set_margin_top(10)
+                        battery_grid.set_margin_bottom(10)
+                        battery_grid.set_margin_start(10)
+                        battery_grid.set_margin_end(10)
+                        
+                        # Add battery title
+                        title = f"Battery {os.path.basename(device_path)}"
+                        if 'Model' in battery_info:
+                            title = f"{battery_info['Model']}"
+                        
+                        title_label = Gtk.Label(xalign=0)
+                        title_label.set_markup(f"<span weight='bold'>{title}</span>")
+                        battery_grid.attach(title_label, 0, 0, 2, 1)
+                        
+                        # Display priority fields first
+                        priority_fields = ['Charge', 'State', 'Capacity', 'Time to Empty', 'Time to Full', 
+                                          'Energy Rate', 'Voltage', 'Technology', 'Manufacturer']
+                        
+                        row = 1
+                        # First add priority fields
+                        for key in priority_fields:
+                            if key in battery_info:
+                                key_label = Gtk.Label(xalign=0)
+                                key_label.set_markup(f"<b>{key}:</b>")
+                                battery_grid.attach(key_label, 0, row, 1, 1)
 
-        # Add separator and power mode section
-        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        self.content_box.pack_start(separator, False, False, 10)
+                                value_label = Gtk.Label(xalign=0)
+                                value_label.set_text(battery_info[key])
+                                battery_grid.attach(value_label, 1, row, 1, 1)
+                                row += 1
+                        
+                        # Then add remaining fields
+                        for key, value in battery_info.items():
+                            if key not in priority_fields and key != 'Model':  # Skip model as it's in the title
+                                key_label = Gtk.Label(xalign=0)
+                                key_label.set_markup(f"<b>{key}:</b>")
+                                battery_grid.attach(key_label, 0, row, 1, 1)
 
-        # Add the power mode box at the bottom
-        self.content_box.pack_start(self.power_mode_box, False, False, 0)
-
+                                value_label = Gtk.Label(xalign=0)
+                                value_label.set_text(value)
+                                battery_grid.attach(value_label, 1, row, 1, 1)
+                                row += 1
+                        
+                        battery_frame.add(battery_grid)
+                        batteries_grid.attach(battery_frame, grid_x, grid_y, 1, 1)
+                        
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Error processing battery {device_path}: {e}")
+        
         # Show all updated widgets
         self.content_box.show_all()
         return True  # Keep the timer active
