@@ -6,10 +6,6 @@ A GTK-themed control panel for Linux 🐧
 > [!NOTE]
 > The application follows your system GTK theme for a native and integrated look.
 
-## What's New
-- Complete refactor of the code
-- A lot of bug fixes and optimization
-
 > [!NOTE]
 > This project is under active development. Contributions, feature requests, ideas, and testers are welcome!
 
