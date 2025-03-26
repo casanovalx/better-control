@@ -4,7 +4,9 @@ import dbus
 import dbus.mainloop.glib
 from gi.repository import GLib  # type: ignore
 import subprocess
-from typing import Dict, List, Optional
+import threading
+from typing import Dict, List, Optional, Callable
+import time  # For proper sleep handling
 
 from utils.logger import LogLevel, Logger
 
@@ -196,6 +198,78 @@ class BluetoothManager:
             self.logging.log(LogLevel.Error, f"Failed connecting to device: {e}")
             return False
 
+    def connect_device_async(self, device_path: str, callback: Callable[[bool], None]) -> None:
+        """Connect to a Bluetooth device asynchronously
+        
+        Args:
+            device_path: DBus path of the device
+            callback: Function to call when connection attempt completes with a boolean success parameter
+        """
+        def run_connect():
+            success = False
+            device_name = "Unknown Device"
+            try:
+                # Make a copy of the device_path to avoid any potential threading issues
+                local_path = str(device_path)
+                
+                # Get DBus interfaces
+                device = dbus.Interface(
+                    self.bus.get_object(BLUEZ_SERVICE_NAME, local_path),
+                    BLUEZ_DEVICE_INTERFACE,
+                )
+                properties = dbus.Interface(
+                    self.bus.get_object(BLUEZ_SERVICE_NAME, local_path), 
+                    DBUS_PROP_IFACE
+                )
+                
+                # Get device name before connecting
+                try:
+                    device_name = str(properties.Get(BLUEZ_DEVICE_INTERFACE, "Alias"))
+                except Exception:
+                    device_name = "Bluetooth Device"
+                
+                # Connect to the device
+                self.logging.log(LogLevel.Info, f"Connecting to {device_name}...")
+                device.Connect()
+                
+                # Wait to ensure connection is established
+                time.sleep(1)
+                
+                # Verify connection status
+                try:
+                    is_connected = bool(properties.Get(BLUEZ_DEVICE_INTERFACE, "Connected"))
+                    if not is_connected:
+                        self.logging.log(LogLevel.Warn, f"Connection to {device_name} reported as failed, but no exception thrown")
+                        GLib.idle_add(lambda: callback(False))
+                        return
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Failed to verify connection status: {e}")
+                
+                # Get battery information
+                battery_percentage: Optional[int] = self.get_device_battery(local_path)
+                battery_info: str = ''
+                
+                if battery_percentage is None:
+                    battery_info = ""
+                else:
+                    battery_info = f"Battery: {battery_percentage}%"
+                
+                # Send notification
+                subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT,
+                                f"{device_name} connected.\n{battery_info}"])
+                success = True
+                
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"Failed connecting to device {device_name}: {e}")
+                success = False
+            
+            # Call the callback in the main thread
+            GLib.idle_add(lambda: callback(success))
+        
+        # Start the connection process in a separate real thread
+        thread = threading.Thread(target=run_connect, daemon=True)
+        thread.start()
+
     def disconnect_device(self, device_path: str) -> bool:
         """Disconnect from a Bluetooth device"""
         try:
@@ -217,6 +291,61 @@ class BluetoothManager:
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Failed disconnecting from device: {e}")
             return False
+
+    def disconnect_device_async(self, device_path: str, callback: Callable[[bool], None]) -> None:
+        """Disconnect from a Bluetooth device asynchronously
+        
+        Args:
+            device_path: DBus path of the device
+            callback: Function to call when disconnection attempt completes with a boolean success parameter
+        """
+        def run_disconnect():
+            success = False
+            device_name = "Unknown Device"
+            try:
+                # Make a copy of the device_path to avoid any potential threading issues
+                local_path = str(device_path)
+                
+                # Get DBus interfaces
+                device = dbus.Interface(
+                    self.bus.get_object(BLUEZ_SERVICE_NAME, local_path),
+                    BLUEZ_DEVICE_INTERFACE,
+                )
+                properties = dbus.Interface(
+                    self.bus.get_object(BLUEZ_SERVICE_NAME, local_path), 
+                    DBUS_PROP_IFACE
+                )
+                
+                # Get device name before disconnecting
+                try:
+                    device_name = str(properties.Get(BLUEZ_DEVICE_INTERFACE, "Name"))
+                except Exception:
+                    try:
+                        device_name = str(properties.Get(BLUEZ_DEVICE_INTERFACE, "Alias"))
+                    except Exception:
+                        device_name = "Bluetooth Device"
+                
+                # Disconnect the device
+                self.logging.log(LogLevel.Info, f"Disconnecting from {device_name}...")
+                device.Disconnect()
+                
+                # Wait to ensure disconnection is completed
+                time.sleep(1)
+                
+                # Send notification
+                subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT, f"{device_name} disconnected."])
+                success = True
+                
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"Failed disconnecting from device {device_name}: {e}")
+                success = False
+            
+            # Call the callback in the main thread
+            GLib.idle_add(lambda: callback(success))
+            
+        # Start the disconnection process in a separate real thread
+        thread = threading.Thread(target=run_disconnect, daemon=True)
+        thread.start()
 
 
 # Create a global instance of the BluetoothManager
@@ -317,3 +446,11 @@ def connect_device(device_path: str, logging: Logger) -> bool:
 
 def disconnect_device(device_path: str, logging: Logger) -> bool:
     return get_bluetooth_manager(logging).disconnect_device(device_path)
+
+
+# Add async versions to the convenience functions
+def connect_device_async(device_path: str, callback: Callable[[bool], None], logging: Logger) -> None:
+    get_bluetooth_manager(logging).connect_device_async(device_path, callback)
+
+def disconnect_device_async(device_path: str, callback: Callable[[bool], None], logging: Logger) -> None:
+    get_bluetooth_manager(logging).disconnect_device_async(device_path, callback)

@@ -15,6 +15,8 @@ from tools.bluetooth import (
     stop_discovery,
     connect_device,
     disconnect_device,
+    connect_device_async,
+    disconnect_device_async,
 )
 from ui.widgets.bluetooth_device_row import BluetoothDeviceRow
 
@@ -130,22 +132,28 @@ class BluetoothTab(Gtk.Box):
     def update_device_list(self):
         """Update the list of Bluetooth devices"""
         # Clear existing devices
-        for child in self.devices_box.get_children():
-            self.devices_box.remove(child)
+        try:
+            for child in self.devices_box.get_children():
+                self.devices_box.remove(child)
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Error clearing device list: {e}")
 
         # Only add devices if Bluetooth is enabled
         if get_bluetooth_status(self.logging):
             # Add devices
-            devices = get_devices(self.logging)
-            for device in devices:
-                device_row = BluetoothDeviceRow(device)
-                device_row.connect_button.connect(
-                    "clicked", self.on_connect_clicked, device["path"]
-                )
-                device_row.disconnect_button.connect(
-                    "clicked", self.on_disconnect_clicked, device["path"]
-                )
-                self.devices_box.pack_start(device_row, False, True, 0)
+            try:
+                devices = get_devices(self.logging)
+                for device in devices:
+                    device_row = BluetoothDeviceRow(device)
+                    device_row.connect_button.connect(
+                        "clicked", self.on_connect_clicked, device["path"]
+                    )
+                    device_row.disconnect_button.connect(
+                        "clicked", self.on_disconnect_clicked, device["path"]
+                    )
+                    self.devices_box.pack_start(device_row, False, True, 0)
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"Error populating device list: {e}")
 
         self.devices_box.show_all()
 
@@ -279,8 +287,65 @@ class BluetoothTab(Gtk.Box):
             button (Gtk.Button): The connect button widget
             device_path (str): DBus path of the device
         """
-        if connect_device(device_path, self.logging):
-            self.update_device_list()
+        # Store button reference in a dictionary keyed by device path
+        if not hasattr(self, '_processing_buttons'):
+            self._processing_buttons = {}
+        self._processing_buttons[device_path] = button
+        
+        # Disable the button and show a spinner to indicate connection in progress
+        button.set_sensitive(False)
+        button.set_label("Connecting...")
+        
+        # Create a spinner and add it to the button
+        spinner = Gtk.Spinner()
+        spinner.start()
+        button.set_image(spinner)
+        
+        # Connect asynchronously
+        def on_connect_complete(success):
+            # Use GLib.idle_add to ensure we're on the main thread
+            def update_ui():
+                # Check if the button still exists and is valid
+                if device_path not in self._processing_buttons:
+                    return False
+                
+                stored_button = self._processing_buttons[device_path]
+                # Make sure the button is still a valid GTK widget
+                if not isinstance(stored_button, Gtk.Button) or not stored_button.get_parent():
+                    # Button was removed from UI
+                    del self._processing_buttons[device_path]
+                    self.update_device_list()
+                    return False
+                
+                # Button is still valid, update it
+                stored_button.set_label("Connect")
+                stored_button.set_image(None)
+                stored_button.set_sensitive(True)
+                
+                # Clean up our reference
+                del self._processing_buttons[device_path]
+                
+                if success:
+                    # Just update the list
+                    self.update_device_list()
+                else:
+                    # Show error in a dialog
+                    dialog = Gtk.MessageDialog(
+                        transient_for=self.get_toplevel(),
+                        modal=True,
+                        message_type=Gtk.MessageType.ERROR,
+                        buttons=Gtk.ButtonsType.OK,
+                        text="Failed to connect to device"
+                    )
+                    dialog.format_secondary_text("Please try again later.")
+                    dialog.run()
+                    dialog.destroy()
+                return False
+            
+            GLib.idle_add(update_ui)
+        
+        # Start the async connection
+        connect_device_async(device_path, on_connect_complete, self.logging)
 
     def on_disconnect_clicked(self, button, device_path):
         """Handle device disconnect button clicks
@@ -289,5 +354,62 @@ class BluetoothTab(Gtk.Box):
             button (Gtk.Button): The disconnect button widget
             device_path (str): DBus path of the device
         """
-        if disconnect_device(device_path, self.logging):
-            self.update_device_list()
+        # Store button reference in a dictionary keyed by device path
+        if not hasattr(self, '_processing_buttons'):
+            self._processing_buttons = {}
+        self._processing_buttons[device_path] = button
+        
+        # Disable the button and show a spinner to indicate disconnection in progress
+        button.set_sensitive(False)
+        button.set_label("Disconnecting...")
+        
+        # Create a spinner and add it to the button
+        spinner = Gtk.Spinner()
+        spinner.start()
+        button.set_image(spinner)
+        
+        # Disconnect asynchronously
+        def on_disconnect_complete(success):
+            # Use GLib.idle_add to ensure we're on the main thread
+            def update_ui():
+                # Check if the button still exists and is valid
+                if device_path not in self._processing_buttons:
+                    return False
+                
+                stored_button = self._processing_buttons[device_path]
+                # Make sure the button is still a valid GTK widget
+                if not isinstance(stored_button, Gtk.Button) or not stored_button.get_parent():
+                    # Button was removed from UI
+                    del self._processing_buttons[device_path]
+                    self.update_device_list()
+                    return False
+                
+                # Button is still valid, update it
+                stored_button.set_label("Disconnect")
+                stored_button.set_image(None)
+                stored_button.set_sensitive(True)
+                
+                # Clean up our reference
+                del self._processing_buttons[device_path]
+                
+                if success:
+                    # Just update the list
+                    self.update_device_list()
+                else:
+                    # Show error in a dialog
+                    dialog = Gtk.MessageDialog(
+                        transient_for=self.get_toplevel(),
+                        modal=True,
+                        message_type=Gtk.MessageType.ERROR,
+                        buttons=Gtk.ButtonsType.OK,
+                        text="Failed to disconnect from device"
+                    )
+                    dialog.format_secondary_text("Please try again later.")
+                    dialog.run()
+                    dialog.destroy()
+                return False
+            
+            GLib.idle_add(update_ui)
+        
+        # Start the async disconnection
+        disconnect_device_async(device_path, on_disconnect_complete, self.logging)

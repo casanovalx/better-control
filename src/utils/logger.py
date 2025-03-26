@@ -59,6 +59,9 @@ class Logger:
             ),
         }
 
+        # Initialize log file attribute
+        self.__log_file = None
+
         if self.__log_file_name != "":
             if self.__log_file_name.isdigit():
                 digit: int = int(self.__log_file_name)
@@ -69,14 +72,15 @@ class Logger:
                     self.log(LogLevel.Error, "Invalid log level provided")
             elif not self.__log_file_name.isdigit():
                 if not os.path.isfile(self.__log_file_name):
-                    self.__log_file: TextIOWrapper = open(self.__log_file_name, "x")
+                    self.__log_file = open(self.__log_file_name, "x")
                 else:
-                    self.__log_file: TextIOWrapper = open(self.__log_file_name, "a")
+                    self.__log_file = open(self.__log_file_name, "a")
             else:
                 self.log(LogLevel.Error, "Invalid option for argument log")
 
     def __del__(self):
-        self.__log_file.close()
+        if hasattr(self, '_Logger__log_file') and self.__log_file is not None:
+            self.__log_file.close()
 
     def log(self, log_level: LogLevel, message: str):
         """Logs messages to a stream based on user arg
@@ -108,6 +112,9 @@ class Logger:
             print(f"{get_current_time()} {label} {message}", file=stdout)
 
     def __log_to_file(self, log_level: LogLevel, message: str):
+        if not hasattr(self, '_Logger__log_file') or self.__log_file is None:
+            return
+            
         label = self.__labels[log_level].second
 
         if log_level == LogLevel.Error:
