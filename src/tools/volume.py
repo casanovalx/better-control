@@ -116,9 +116,18 @@ def get_applications(logging: Logger) -> List[Dict[str, str]]:
             current_app["name"] = line.split("=", 1)[1].strip().strip('"')
             logging.log(LogLevel.Debug, f"Using Media Name: {current_app["name"]}")
 
-        elif "application.process.binary" in line and "name" not in current_app:
-            current_app["name"] = line.split("=", 1)[1].strip().strip('"')
-            logging.log(LogLevel.Debug, f"Using Process Binary Name: {current_app["name"]}")
+        elif "application.process.binary" in line:
+            current_app["binary"] = line.split("=", 1)[1].strip().strip('"')
+            logging.log(LogLevel.Debug, f"Detected & Stored Process Binary: {current_app["binary"]}")
+            
+            # Try to determine an appropriate icon name based on the binary
+            binary_name = current_app["binary"].lower()
+            if binary_name:
+                current_app["icon"] = binary_name
+            
+        elif "application.icon_name" in line:
+            current_app["icon"] = line.split("=", 1)[1].strip().strip('"')
+            logging.log(LogLevel.Debug, f"Detected & Stored App Icon: {current_app["icon"]}")
 
         elif "Volume:" in line:
             logging.log(LogLevel.Debug, f"Found Volume Line: {line}")
@@ -128,6 +137,11 @@ def get_applications(logging: Logger) -> List[Dict[str, str]]:
                 logging.log(LogLevel.Debug, f"Detected & Stored Volume: {current_app["volume"]}")
             else:
                 logging.log(LogLevel.Debug, f"Failed to parse volume from: {line}")
+                
+        elif "Sink:" in line:
+            sink_id = line.split(":")[1].strip()
+            current_app["sink"] = sink_id
+            logging.log(LogLevel.Debug, f"Detected & Stored Sink ID: {current_app["sink"]}")
 
     # Final app processing
     if current_app:
@@ -137,10 +151,37 @@ def get_applications(logging: Logger) -> List[Dict[str, str]]:
         else:
             logging.log(LogLevel.Debug, "Skipping last app due to missing name or volume: {current_app}")
 
+    # Post-process applications to ensure they have icon information
+    for app in apps:
+        if "icon" not in app and "binary" in app:
+            app["icon"] = app["binary"].lower()
+            
+        if "icon" not in app and "name" in app:
+            # Create icon name from app name (lowercase, remove spaces)
+            app["icon"] = app["name"].lower().replace(" ", "-")
+
     logging.log(LogLevel.Debug, f"Parsed Applications: {apps}", )
     return apps
 
-
+def get_sink_name_by_id(sink_id: str, logging: Logger) -> str:
+    """Get the name of a sink by its ID number
+    
+    Args:
+        sink_id (str): The sink ID (number)
+        
+    Returns:
+        str: The sink name
+    """
+    try:
+        output = subprocess.getoutput(f"pactl list sinks short")
+        for line in output.split("\n"):
+            parts = line.split()
+            if parts and parts[0] == sink_id:
+                return parts[1]  # The second column is the sink name
+        return ""
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Failed getting sink name: {e}")
+        return ""
 
 def set_application_volume(app_id: str, value: int, logging: Logger) -> None:
     """Set volume for a specific application
@@ -153,6 +194,18 @@ def set_application_volume(app_id: str, value: int, logging: Logger) -> None:
         subprocess.run(["pactl", "set-sink-input-volume", app_id, f"{value}%"], check=True)
     except subprocess.CalledProcessError as e:
         logging.log(LogLevel.Error, f"Failed setting application volume: {e}")
+
+def move_application_to_sink(app_id: str, sink_name: str, logging: Logger) -> None:
+    """Move an application to a different audio output device
+
+    Args:
+        app_id (str): Application sink input ID
+        sink_name (str): Name of the sink to move the application to
+    """
+    try:
+        subprocess.run(["pactl", "move-sink-input", app_id, sink_name], check=True)
+    except subprocess.CalledProcessError as e:
+        logging.log(LogLevel.Error, f"Failed moving application to sink: {e}")
 
 def set_default_sink(sink_name: str, logging: Logger) -> None:
     try:

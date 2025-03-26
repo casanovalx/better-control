@@ -17,12 +17,14 @@ from tools.volume import (
     get_sources,
     get_applications,
     set_application_volume,
+    move_application_to_sink,
     set_default_sink,
     set_default_source,
     get_mic_volume,
     set_mic_volume,
     get_mic_mute_state,
     toggle_mic_mute,
+    get_sink_name_by_id,
 )
 
 class VolumeTab(Gtk.Box):
@@ -37,6 +39,9 @@ class VolumeTab(Gtk.Box):
         self.set_margin_bottom(15)
         self.set_hexpand(True)
         self.set_vexpand(True)
+        
+        # Get the default icon theme
+        self.icon_theme = Gtk.IconTheme.get_default()
 
         # Create header box with title and refresh button
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -302,22 +307,77 @@ class VolumeTab(Gtk.Box):
             no_apps_label.set_margin_bottom(5)
             self.app_box.pack_start(no_apps_label, False, True, 0)
         else:
+            # Get available sinks for output selection
+            sinks = get_sinks(self.logging)
+            sink_options = [(sink["name"], sink["description"]) for sink in sinks]
+            
             for app in apps:
                 box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
                 box.set_margin_bottom(5)
 
-                # App icon
-                icon_name = app.get("icon", "audio-x-generic-symbolic")
-                icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.MENU)
+                # App icon - try multiple sources with fallbacks
+                icon = None
+                
+                # Try icon from app info first
+                if "icon" in app:
+                    icon_name = app["icon"]
+                    self.logging.log(LogLevel.Debug, f"Trying app icon: {icon_name}")
+                    if self.icon_exists(icon_name):
+                        icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.MENU)
+                    
+                # If icon is not valid or not found, try binary name as icon
+                if not icon:
+                    if "binary" in app:
+                        binary_name = app["binary"].lower()
+                        self.logging.log(LogLevel.Debug, f"Trying binary icon: {binary_name}")
+                        if self.icon_exists(binary_name):
+                            icon = Gtk.Image.new_from_icon_name(binary_name, Gtk.IconSize.MENU)
+                
+                # If still not valid, try app name as icon (normalized)
+                if not icon:
+                    app_icon_name = app["name"].lower().replace(" ", "-")
+                    self.logging.log(LogLevel.Debug, f"Trying normalized name icon: {app_icon_name}")
+                    if self.icon_exists(app_icon_name):
+                        icon = Gtk.Image.new_from_icon_name(app_icon_name, Gtk.IconSize.MENU)
+                
+                # Try some common app-specific mappings
+                if not icon:
+                    app_name = app["name"].lower()
+                    
+                    # Map of known application names to their icon names
+                    app_icon_map = {
+                        "firefox": "firefox",
+                        "chrome": "google-chrome",
+                        "chromium": "chromium",
+                        "spotify": "spotify",
+                        "mpv": "mpv",
+                        "vlc": "vlc",
+                        "telegram": "telegram",
+                        "discord": "discord",
+                        "steam": "steam",
+                        "brave": "brave",
+                        "audacious": "audacious",
+                        "clementine": "clementine",
+                        "deadbeef": "deadbeef",
+                        "rhythmbox": "rhythmbox"
+                    }
+                    
+                    # Check for partial matches in app name
+                    for key, icon_name in app_icon_map.items():
+                        if key in app_name and self.icon_exists(icon_name):
+                            icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.MENU)
+                            break
+                
+                # Last resort: fallback to generic audio icon
+                if not icon:
+                    icon = Gtk.Image.new_from_icon_name("audio-x-generic-symbolic", Gtk.IconSize.MENU)
+                
                 box.pack_start(icon, False, False, 0)
 
                 # App name
-                name_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
                 name_label = Gtk.Label(label=app["name"])
                 name_label.set_halign(Gtk.Align.START)
-                name_box.pack_start(name_label, False, True, 0)
-
-                box.pack_start(name_box, True, True, 0)
+                box.pack_start(name_label, True, True, 0)
 
                 # Volume slider
                 scale = Gtk.Scale.new_with_range(
@@ -327,6 +387,39 @@ class VolumeTab(Gtk.Box):
                 scale.set_value(app["volume"])
                 scale.connect("value-changed", self.on_app_volume_changed, app["id"])
                 box.pack_start(scale, False, True, 0)
+                
+                # Output device selector
+                output_combo = Gtk.ComboBoxText()
+                output_combo.set_tooltip_text("Select output device for this application")
+                
+                # Populate the output device dropdown
+                for sink_name, sink_desc in sink_options:
+                    output_combo.append(sink_name, sink_desc)
+                
+                # Get the current sink name for this application
+                current_sink_name = ""
+                if "sink" in app:
+                    current_sink_name = get_sink_name_by_id(app["sink"], self.logging)
+                    self.logging.log(LogLevel.Debug, f"App {app['name']} is using sink ID: {app['sink']}, name: {current_sink_name}")
+                
+                # Set the active sink in the dropdown
+                if current_sink_name:
+                    # Find the index of the current sink in the options
+                    for i, (sink_name, _) in enumerate(sink_options):
+                        if sink_name == current_sink_name:
+                            output_combo.set_active(i)
+                            break
+                    else:
+                        # If not found, default to first option
+                        output_combo.set_active(0)
+                else:
+                    # Default to first option
+                    output_combo.set_active(0)
+                
+                # Connect the changed signal
+                output_combo.connect("changed", self.on_app_output_changed, app["id"])
+                
+                box.pack_start(output_combo, False, True, 0)
 
                 self.app_box.pack_start(box, False, True, 0)
 
@@ -397,7 +490,14 @@ class VolumeTab(Gtk.Box):
         value = int(scale.get_value())
         set_application_volume(app_id, value, self.logging)
 
-    def on_refresh_clicked(self):
+    def on_app_output_changed(self, combo, app_id):
+        """Handle application output device changes"""
+        device_id = combo.get_active_id()
+        if device_id:
+            move_application_to_sink(app_id, device_id, self.logging)
+            self.logging.log(LogLevel.Info, f"Moving application {app_id} to sink {device_id}")
+
+    def on_refresh_clicked(self, button=None):
         """Handle refresh button click"""
         self.logging.log(LogLevel.Info, "Manual refresh of audio devices requested")
         self.update_device_lists()
@@ -414,3 +514,7 @@ class VolumeTab(Gtk.Box):
         self.update_volumes()
 
         GLib.timeout_add(3000, self.on_auto_refresh)
+
+    def icon_exists(self, icon_name):
+        """Check if an icon exists in the icon theme"""
+        return self.icon_theme.has_icon(icon_name)
