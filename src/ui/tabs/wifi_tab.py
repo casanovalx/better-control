@@ -424,7 +424,7 @@ class WiFiTab(Gtk.Box):
         self.logging.log(LogLevel.Info, "Manual refresh of WiFi networks requested")
         self.update_network_list()
 
-    def on_connect_clicked(self):
+    def on_connect_clicked(self, button):
         """Handle connect button click"""
         row = self.networks_box.get_selected_row()
         if row is None:
@@ -547,7 +547,7 @@ class WiFiTab(Gtk.Box):
             self.update_network_list()
         return False  # Required for GLib.idle_add
 
-    def on_disconnect_clicked(self):
+    def on_disconnect_clicked(self, button):
         """Handle disconnect button click"""
         row = self.networks_box.get_selected_row()
         if row is None:
@@ -593,7 +593,7 @@ class WiFiTab(Gtk.Box):
         thread.daemon = True
         thread.start()
 
-    def on_forget_clicked(self):
+    def on_forget_clicked(self, button):
         """Handle forget button click"""
         row = self.networks_box.get_selected_row()
         if row is None:
