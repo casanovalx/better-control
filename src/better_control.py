@@ -1,11 +1,14 @@
 #!/usr/bin/env python3 
 
+from math import log
 import os
 import subprocess
+from typing import Optional
 import gi  # type: ignore
 import sys
 import logging
 from utils.arg_parser import ArgParse, eprint
+from utils.pair import Pair
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # type: ignore
@@ -26,6 +29,12 @@ if __name__ == "__main__":
     if arg_parser.find_arg(("-f", "--force")) and not check_all_dependencies():
         logging.error("Missing required dependencies. Please install them and try again.")
         sys.exit(1)
+
+    log_info: Pair[bool, Optional[str]] = Pair(False, None)
+
+    if arg_parser.find_arg(("-l", "--log")):
+        log_info.first = True
+        log_info.second = arg_parser.option_arg(("-l", "--log"))
 
      # Configure logging
     logging.basicConfig(

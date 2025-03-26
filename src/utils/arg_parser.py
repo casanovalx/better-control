@@ -13,6 +13,14 @@ class ArgParse:
         self.args: List[str] = args
 
     def find_arg(self, arg: Tuple[str, str]) -> bool:
+        """tries to find 'arg' inside the argument list
+
+        Args:
+            arg (Tuple[str, str]): a tuple containing a short form of the arg, and long form
+
+        Returns:
+            bool: true if one of the arg is found, or false
+        """
         #? Check for short arg
         for i in self.args:
             if not i.startswith('-'):
@@ -28,6 +36,14 @@ class ArgParse:
         return arg[1] in self.args
 
     def option_arg(self, arg: Tuple[str, str]) -> Optional[str]:
+        """tries to find and return an option from a given argument
+
+        Args:
+            arg (Tuple[str, str]): a tuple containing a short form of the arg, and long form
+
+        Returns:
+            Optional[str]: the option given or None
+        """
         for i, test_arg in enumerate(self.args):
             if not test_arg.startswith('-'):
                 continue
@@ -64,6 +80,10 @@ class ArgParse:
         eprint(stream, f"   -f, --force                     Makes the app force to have all dependencies installed")
         eprint(stream, f"   -V, --volume                    Starts with the volume tab open")
         eprint(stream, f"   -w, --wifi                      Starts with the wifi tab open")
+        eprint(stream, f"   -l, --log                       The program will either log to a file if given a file path or output to stdout based on the log level if given a value between 0, 1, 2.")
+        eprint(stream, f"                                       0 = debug, info, and error logs will be printed")
+        eprint(stream, f"                                       1 = info, and error logs will be printed")
+        eprint(stream, f"                                       2 = only error logs will be printed (default)")
 
         if stream == stderr:
             exit(1)
