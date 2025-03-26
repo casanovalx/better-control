@@ -12,6 +12,7 @@ BLUEZ_ADAPTER_INTERFACE = 'org.bluez.Adapter1'
 BLUEZ_DEVICE_INTERFACE = 'org.bluez.Device1'
 DBUS_OM_IFACE = 'org.freedesktop.DBus.ObjectManager'
 DBUS_PROP_IFACE = 'org.freedesktop.DBus.Properties'
+DEFAULT_NOTIFY_SUBJECT='Control Center'
 
 
 class BluetoothManager:
@@ -173,8 +174,8 @@ class BluetoothManager:
             battery_info = f"Battery: {battery_percentage}%" if isinstance(battery_percentage, int) and battery_percentage >= 0 else ""
 
             # Send notification
-            subprocess.run(["notify-send", "Bluetooth Device Connected",
-                            f"{device_name} is connected\n{battery_info}"])
+            subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT,
+                            f"{device_name} connected.\n{battery_info}"])
 
             return True
         except Exception as e:
@@ -200,7 +201,7 @@ class BluetoothManager:
             device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Name")
             device.Disconnect()
 
-            subprocess.run(["notify-send", "Control Center", f"{device_name} Disconnected"])
+            subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT, f"{device_name} disconnected."])
 
             return True
         except Exception as e:
