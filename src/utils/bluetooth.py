@@ -232,3 +232,4 @@ def connect_device(device_path: str) -> bool:
 
 def disconnect_device(device_path: str) -> bool:
     return get_bluetooth_manager().disconnect_device(device_path) 
+
