@@ -2,11 +2,15 @@
 
 import subprocess
 import shutil
-import logging
 import psutil
 from typing import List, Optional, Dict, Tuple
 
-def check_dependency(command: str, name: str, install_instructions: str) -> Optional[str]:
+from utils.logger import LogLevel, Logger
+
+
+def check_dependency(
+    command: str, name: str, install_instructions: str, logging: Logger
+) -> Optional[str]:
     """Checks if a dependency is installed or not
 
     Args:
@@ -19,11 +23,12 @@ def check_dependency(command: str, name: str, install_instructions: str) -> Opti
     """
     if not shutil.which(command):
         error_msg = f"{name} is required but not installed!\n\nInstall it using:\n{install_instructions}"
-        logging.error(error_msg)
+        logging.log(LogLevel.Error, error_msg)
         return error_msg
     return None
 
-def get_battery_devices() -> List[str]:
+
+def get_battery_devices(logging: Logger) -> List[str]:
     """Returns battery devices that are detected by upower
 
     Returns:
@@ -33,10 +38,11 @@ def get_battery_devices() -> List[str]:
         devices = subprocess.getoutput("upower -e").split("\n")
         return [device for device in devices if "battery" in device]
     except Exception as e:
-        logging.error(f"Error retrieving battery devices: {e}")
+        logging.log(LogLevel.Error, f"Error retrieving battery devices: {e}")
         return []
 
-def get_battery_info(device: str) -> str:
+
+def get_battery_info(device: str, logging: Logger) -> str:
     """fetch the information of a battery
 
     Args:
@@ -49,8 +55,9 @@ def get_battery_info(device: str) -> str:
         info = subprocess.getoutput(f"upower -i {device}")
         return info
     except Exception as e:
-        logging.error(f"Error retrieving battery info for {device}: {e}")
+        logging.log(LogLevel.Error, f"Error retrieving battery info for {device}: {e}")
         return ""
+
 
 def get_system_battery_info() -> Optional[Dict[str, str]]:
     """fetch the systemwide battery information from psutil
@@ -80,21 +87,23 @@ def get_system_battery_info() -> Optional[Dict[str, str]]:
         "Time Left": time_left,
     }
 
-def detect_peripheral_battery() -> Tuple[Optional[str], Optional[str]]:
+
+def detect_peripheral_battery(logging: Logger) -> Tuple[Optional[str], Optional[str]]:
     """get the battery status of mices and keyboards
 
     Returns:
         Tuple: a tuple containing the device and the label
     """
-    for device in get_battery_devices():
-        info = get_battery_info(device)
+    for device in get_battery_devices(logging):
+        info = get_battery_info(device, logging)
         if "mouse" in info.lower():
             return (device, "Wireless Mouse Battery")
         elif "keyboard" in info.lower():
             return (device, "Wireless Keyboard Battery")
     return (None, None)
 
-def get_battery_status() -> Dict[Optional[str], Optional[str]]:
+
+def get_battery_status(logging: Logger) -> Dict[Optional[str], Optional[str]]:
     """fetch the battery status of peripheral given from the "detect_peripheral_battery" function
 
     Example Usage:
@@ -105,12 +114,16 @@ def get_battery_status() -> Dict[Optional[str], Optional[str]]:
     Returns:
         Dict[str, str]: a dict containing the device label and battery charge
     """
-    peripheral_battery, label = detect_peripheral_battery()
+    peripheral_battery, label = detect_peripheral_battery(logging)
 
     if peripheral_battery:
-        info = get_battery_info(peripheral_battery)
+        info = get_battery_info(peripheral_battery, logging)
         percentage = next(
-            (line.split(":")[1].strip() for line in info.split("\n") if "percentage" in line.lower()),
+            (
+                line.split(":")[1].strip()
+                for line in info.split("\n")
+                if "percentage" in line.lower()
+            ),
             "Unknown",
         )
         return {"Device": label, "Charge": percentage}
@@ -118,18 +131,19 @@ def get_battery_status() -> Dict[Optional[str], Optional[str]]:
     system_battery = get_system_battery_info()
     if system_battery:
         system_battery["Device"] = "System Battery"
-        return system_battery # type: ignore
+        return system_battery  # type: ignore
 
     return {"Device": "No Battery Detected"}
 
-def get_current_brightness() -> int:
+
+def get_current_brightness(logging: Logger) -> int:
     """Get the current brightness level.
 
     Returns:
         int: Current brightness level (0-100)
     """
     if not shutil.which("brightnessctl"):
-        logging.error("brightnessctl is not installed.")
+        logging.log(LogLevel.Error, "brightnessctl is not installed.")
         return 50
 
     output = subprocess.getoutput("brightnessctl get")
@@ -138,12 +152,13 @@ def get_current_brightness() -> int:
     try:
         return int((int(output) / int(max_brightness)) * 100)
     except ValueError:
-        logging.error(
+        logging.log(LogLevel.Error,
             f"Unexpected output from brightnessctl: {output}, {max_brightness}"
         )
         return 50
 
-def set_brightness_level(value: int) -> None:
+
+def set_brightness_level(value: int, logging: Logger) -> None:
     """Set brightness to a specific level.
 
     Args:
@@ -155,4 +170,6 @@ def set_brightness_level(value: int) -> None:
         actual_value = int((value / 100) * max_brightness)
         subprocess.run(["brightnessctl", "s", f"{actual_value}"])
     else:
-        logging.error("brightnessctl is missing. Please check our GitHub page to see all dependencies and install them")
+        logging.log(LogLevel.Error,
+            "brightnessctl is missing. Please check our GitHub page to see all dependencies and install them"
+        )

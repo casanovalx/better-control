@@ -11,6 +11,3 @@ class Pair(Generic[T, U]):
 
     def __repr__(self) -> str:
         return f"Pair({self.first}, {self.second})"
-
-    def __str__(self):
-        return f"({self.first}, {self.second})"

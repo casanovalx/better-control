@@ -2,9 +2,10 @@
 
 import subprocess
 from typing import List, Dict
-import logging
+from utils.logger import LogLevel, Logger
 
-def get_wifi_status() -> bool:
+
+def get_wifi_status(logging: Logger) -> bool:
     """Get WiFi power status
 
     Returns:
@@ -14,10 +15,11 @@ def get_wifi_status() -> bool:
         output = subprocess.getoutput("nmcli radio wifi")
         return output.strip().lower() == "enabled"
     except Exception as e:
-        logging.error(f"Error getting WiFi status: {e}")
+        logging.log(LogLevel.Error, f"Failed getting WiFi status: {e}")
         return False
 
-def set_wifi_power(enabled: bool) -> None:
+
+def set_wifi_power(enabled: bool, logging: Logger) -> None:
     """Set WiFi power state
 
     Args:
@@ -27,9 +29,10 @@ def set_wifi_power(enabled: bool) -> None:
         state = "on" if enabled else "off"
         subprocess.run(["nmcli", "radio", "wifi", state], check=True)
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error setting WiFi power: {e}")
+        logging.log(LogLevel.Error, f"Failed setting WiFi power: {e}")
 
-def get_wifi_networks() -> List[Dict[str, str]]:
+
+def get_wifi_networks(logging: Logger) -> List[Dict[str, str]]:
     """Get list of available WiFi networks
 
     Returns:
@@ -37,13 +40,15 @@ def get_wifi_networks() -> List[Dict[str, str]]:
     """
     try:
         # Use --terse mode and specific fields for more reliable parsing
-        output = subprocess.getoutput("nmcli -t -f IN-USE,SSID,SIGNAL,SECURITY device wifi list")
+        output = subprocess.getoutput(
+            "nmcli -t -f IN-USE,SSID,SIGNAL,SECURITY device wifi list"
+        )
         networks = []
-        for line in output.split('\n'):
+        for line in output.split("\n"):
             if not line.strip():
                 continue
             # Split by ':' since we're using terse mode
-            parts = line.split(':')
+            parts = line.split(":")
             if len(parts) >= 4:
                 in_use = "*" in parts[0]
                 ssid = parts[1]
@@ -51,18 +56,21 @@ def get_wifi_networks() -> List[Dict[str, str]]:
                 security = parts[3] if parts[3].strip() != "" else "none"
                 # Only add networks with valid SSIDs
                 if ssid and ssid.strip():
-                    networks.append({
-                        "in_use": in_use,
-                        "ssid": ssid.strip(),
-                        "signal": signal.strip(),
-                        "security": security.strip()
-                    })
+                    networks.append(
+                        {
+                            "in_use": in_use,
+                            "ssid": ssid.strip(),
+                            "signal": signal.strip(),
+                            "security": security.strip(),
+                        }
+                    )
         return networks
     except Exception as e:
-        logging.error(f"Error getting WiFi networks: {e}")
+        logging.log(LogLevel.Error, f"Failed getting WiFi networks: {e}")
         return []
 
-def get_connection_info(ssid: str) -> Dict[str, str]:
+
+def get_connection_info(ssid: str, logging: Logger) -> Dict[str, str]:
     """Get information about a WiFi connection
 
     Args:
@@ -80,10 +88,11 @@ def get_connection_info(ssid: str) -> Dict[str, str]:
                 info[key.strip()] = value.strip()
         return info
     except Exception as e:
-        logging.error(f"Error getting connection info: {e}")
+        logging.log(LogLevel.Error, f"Failed getting connection info: {e}")
         return {}
 
-def connect_network(ssid: str, password: str = "", remember: bool = True) -> bool:
+
+def connect_network(ssid: str, logging: Logger, password: str = "", remember: bool = True) -> bool:
     """Connect to a WiFi network
 
     Args:
@@ -109,10 +118,11 @@ def connect_network(ssid: str, password: str = "", remember: bool = True) -> boo
                 return True
             return False
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error connecting to network: {e}")
+        logging.log(LogLevel.Error, f"Failed connecting to network: {e}")
         return False
 
-def disconnect_network(ssid: str) -> bool:
+
+def disconnect_network(ssid: str, logging: Logger) -> bool:
     """Disconnect from a WiFi network
 
     Args:
@@ -125,10 +135,11 @@ def disconnect_network(ssid: str) -> bool:
         subprocess.run(["nmcli", "connection", "down", ssid], check=True)
         return True
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error disconnecting from network: {e}")
+        logging.log(LogLevel.Error, f"Failed disconnecting from network: {e}")
         return False
 
-def forget_network(ssid: str) -> bool:
+
+def forget_network(ssid: str, logging: Logger) -> bool:
     """Remove a saved WiFi network
 
     Args:
@@ -141,10 +152,11 @@ def forget_network(ssid: str) -> bool:
         subprocess.run(["nmcli", "connection", "delete", ssid], check=True)
         return True
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error removing network: {e}")
+        logging.log(LogLevel.Error, f"Failed removing network: {e}")
         return False
 
-def get_network_speed() -> Dict[str, float]:
+
+def get_network_speed(logging: Logger) -> Dict[str, float]:
     """Get current network speed
 
     Returns:
@@ -163,10 +175,7 @@ def get_network_speed() -> Dict[str, float]:
             rx_bytes = int(f.read())
         with open(f"/sys/class/net/{interface}/statistics/tx_bytes") as f:
             tx_bytes = int(f.read())
-        return {
-            "rx_bytes": rx_bytes,
-            "tx_bytes": tx_bytes
-        }
+        return {"rx_bytes": rx_bytes, "tx_bytes": tx_bytes}
     except Exception as e:
-        logging.error(f"Error getting network speed: {e}")
+        logging.log(LogLevel.Error, f"Failed getting network speed: {e}")
         return {"rx_bytes": 0, "tx_bytes": 0}

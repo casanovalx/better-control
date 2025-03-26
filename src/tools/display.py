@@ -2,9 +2,11 @@
 
 import subprocess
 from typing import Dict, List
-import logging
 
-def get_brightness() -> int:
+from utils.logger import LogLevel, Logger
+
+
+def get_brightness(logging: Logger) -> int:
     """Get the current brightness level
 
     Returns:
@@ -16,10 +18,11 @@ def get_brightness() -> int:
         current_brightness = int(output)
         return int((current_brightness / max_brightness) * 100)
     except Exception as e:
-        logging.error(f"Error getting brightness: {e}")
+        logging.log(LogLevel.Error, f"Failed getting brightness: {e}")
         return 0
 
-def set_brightness(value: int) -> None:
+
+def set_brightness(value: int, logging: Logger) -> None:
     """Set the brightness level
 
     Args:
@@ -28,9 +31,10 @@ def set_brightness(value: int) -> None:
     try:
         subprocess.run(["brightnessctl", "s", f"{value}%"], check=True)
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error setting brightness: {e}")
+        logging.log(LogLevel.Error, f"Failed setting brightness: {e}")
 
-def get_displays() -> List[str]:
+
+def get_displays(logging: Logger) -> List[str]:
     """Get list of connected displays
 
     Returns:
@@ -44,10 +48,11 @@ def get_displays() -> List[str]:
                 displays.append(line.split()[0])
         return displays
     except Exception as e:
-        logging.error(f"Error getting displays: {e}")
+        logging.log(LogLevel.Error, f"Failed getting displays: {e}")
         return []
 
-def get_display_info(display: str) -> Dict[str, str]:
+
+def get_display_info(display: str, logging: Logger) -> Dict[str, str]:
     """Get information about a specific display
 
     Args:
@@ -65,5 +70,5 @@ def get_display_info(display: str) -> Dict[str, str]:
                 info[key.strip()] = value.strip()
         return info
     except Exception as e:
-        logging.error(f"Error getting display info: {e}")
+        logging.log(LogLevel.Error, f"Failed getting display info: {e}")
         return {}

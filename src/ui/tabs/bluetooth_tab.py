@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import gi # type: ignore
-import logging
+import gi  # type: ignore
+
+from utils.logger import LogLevel, Logger
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib # type: ignore
+from gi.repository import Gtk, GLib  # type: ignore
 
 from tools.bluetooth import (
     get_bluetooth_status,
@@ -17,11 +18,14 @@ from tools.bluetooth import (
 )
 from ui.widgets.bluetooth_device_row import BluetoothDeviceRow
 
+
 class BluetoothTab(Gtk.Box):
     """Bluetooth settings tab"""
 
-    def __init__(self):
+    def __init__(self, logging: Logger):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.logging = logging
+
         self.set_margin_start(15)
         self.set_margin_end(15)
         self.set_margin_top(15)
@@ -42,12 +46,16 @@ class BluetoothTab(Gtk.Box):
         title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
 
         # Add bluetooth icon
-        bluetooth_icon = Gtk.Image.new_from_icon_name("bluetooth-symbolic", Gtk.IconSize.DIALOG)
+        bluetooth_icon = Gtk.Image.new_from_icon_name(
+            "bluetooth-symbolic", Gtk.IconSize.DIALOG
+        )
         title_box.pack_start(bluetooth_icon, False, False, 0)
 
         # Add title
         bluetooth_label = Gtk.Label()
-        bluetooth_label.set_markup("<span weight='bold' size='large'>Bluetooth Devices</span>")
+        bluetooth_label.set_markup(
+            "<span weight='bold' size='large'>Bluetooth Devices</span>"
+        )
         bluetooth_label.set_halign(Gtk.Align.START)
         title_box.pack_start(bluetooth_label, False, False, 0)
 
@@ -55,12 +63,14 @@ class BluetoothTab(Gtk.Box):
 
         # Add scan button
         self.scan_button = Gtk.Button()
-        scan_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        scan_icon = Gtk.Image.new_from_icon_name(
+            "view-refresh-symbolic", Gtk.IconSize.BUTTON
+        )
         self.scan_button.set_image(scan_icon)
         self.scan_button.set_tooltip_text("Scan for Devices")
         self.scan_button.connect("clicked", self.on_scan_clicked)
         # Set initial visibility based on Bluetooth status
-        self.scan_button.set_visible(get_bluetooth_status())
+        self.scan_button.set_visible(get_bluetooth_status(self.logging))
         header_box.pack_end(self.scan_button, False, False, 0)
 
         self.pack_start(header_box, False, False, 0)
@@ -83,7 +93,7 @@ class BluetoothTab(Gtk.Box):
         power_label.set_markup("<b>Bluetooth</b>")
         power_label.set_halign(Gtk.Align.START)
         self.power_switch = Gtk.Switch()
-        self.power_switch.set_active(get_bluetooth_status())
+        self.power_switch.set_active(get_bluetooth_status(self.logging))
         self.power_switch.connect("notify::active", self.on_power_switched)
         power_box.pack_start(power_label, False, True, 0)
         power_box.pack_end(self.power_switch, False, True, 0)
@@ -124,13 +134,17 @@ class BluetoothTab(Gtk.Box):
             self.devices_box.remove(child)
 
         # Only add devices if Bluetooth is enabled
-        if get_bluetooth_status():
+        if get_bluetooth_status(self.logging):
             # Add devices
-            devices = get_devices()
+            devices = get_devices(self.logging)
             for device in devices:
                 device_row = BluetoothDeviceRow(device)
-                device_row.connect_button.connect("clicked", self.on_connect_clicked, device["path"])
-                device_row.disconnect_button.connect("clicked", self.on_disconnect_clicked, device["path"])
+                device_row.connect_button.connect(
+                    "clicked", self.on_connect_clicked, device["path"]
+                )
+                device_row.disconnect_button.connect(
+                    "clicked", self.on_disconnect_clicked, device["path"]
+                )
                 self.devices_box.pack_start(device_row, False, True, 0)
 
         self.devices_box.show_all()
@@ -148,7 +162,7 @@ class BluetoothTab(Gtk.Box):
             gparam: GObject parameter
         """
         is_enabled = switch.get_active()
-        set_bluetooth_power(is_enabled)
+        set_bluetooth_power(is_enabled, self.logging)
         # Update UI based on Bluetooth state
         if is_enabled:
             # Bluetooth enabled - show scan button
@@ -177,17 +191,19 @@ class BluetoothTab(Gtk.Box):
             self.stop_scan(button)
             return
 
-        logging.info("Starting Bluetooth device scan")
+        self.logging.log(LogLevel.Info, "Starting Bluetooth device scan")
         # Disable button during scan
         button.set_sensitive(False)
         button.set_label("Scanning...")
 
         # Start discovery
         try:
-            start_discovery()
+            start_discovery(self.logging)
             self.is_discovering = True
         except Exception as e:
-            logging.error(f"Failed to start Bluetooth discovery: {e}")
+            self.logging.log(
+                LogLevel.Error, f"Failed to start Bluetooth discovery: {e}"
+            )
             button.set_label("Scan for Devices")
             button.set_sensitive(True)
             return
@@ -201,10 +217,14 @@ class BluetoothTab(Gtk.Box):
                 return False
 
             current_time = GLib.get_monotonic_time()
-            elapsed_seconds = (current_time - self.scan_start_time) / 1000000  # Convert to seconds
+            elapsed_seconds = (
+                current_time - self.scan_start_time
+            ) / 1000000  # Convert to seconds
             # If scan has been running for more than 30 seconds, force stop
             if elapsed_seconds > 30:
-                logging.warning("Bluetooth scan timeout reached. Forcing stop.")
+                self.logging.log(
+                    LogLevel.Warn, "Bluetooth scan timeout reached. Forcing stop."
+                )
                 self.stop_scan(button)
                 return False
             return True
@@ -230,16 +250,16 @@ class BluetoothTab(Gtk.Box):
         Args:
             button (Gtk.Button): The scan button widget
         """
-        logging.info("Stopping Bluetooth device scan")
+        self.logging.log(LogLevel.Info, "Stopping Bluetooth device scan")
         if not self.is_discovering:
             button.set_sensitive(True)
             button.set_label("Scan for Devices")
             return
 
         try:
-            stop_discovery()
+            stop_discovery(self.logging)
         except Exception as e:
-            logging.error(f"Failed to stop Bluetooth discovery: {e}")
+            self.logging.log(LogLevel.Error, f"Failed to stop Bluetooth discovery: {e}")
         finally:
             self.is_discovering = False
             if self.discovery_timeout_id:
@@ -259,7 +279,7 @@ class BluetoothTab(Gtk.Box):
             button (Gtk.Button): The connect button widget
             device_path (str): DBus path of the device
         """
-        if connect_device(device_path):
+        if connect_device(device_path, self.logging):
             self.update_device_list()
 
     def on_disconnect_clicked(self, button, device_path):
@@ -269,5 +289,5 @@ class BluetoothTab(Gtk.Box):
             button (Gtk.Button): The disconnect button widget
             device_path (str): DBus path of the device
         """
-        if disconnect_device(device_path):
+        if disconnect_device(device_path, self.logging):
             self.update_device_list()

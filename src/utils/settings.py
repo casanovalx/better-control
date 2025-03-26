@@ -2,13 +2,13 @@
 
 import json
 import os
-import logging
+from utils.logger import LogLevel, Logger
 
 CONFIG_DIR = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
 CONFIG_PATH = os.path.join(CONFIG_DIR, "better-control")
 SETTINGS_FILE = os.path.join(CONFIG_PATH, "settings.json")
 
-def load_settings() -> dict:
+def load_settings(logging: Logger) -> dict:
     """Load settings from the settings file
 
     Returns:
@@ -25,10 +25,10 @@ def load_settings() -> dict:
                 else:
                     settings = data
         except Exception as e:
-            logging.error(f"Error loading settings: {e}")
+            logging.log(LogLevel.Error, f"Error loading settings: {e}")
     return settings
 
-def save_settings(settings: dict) -> None:
+def save_settings(settings: dict, logging: Logger) -> None:
     """Save settings to the settings file
     Args:
         settings (dict): Settings to save
@@ -39,4 +39,4 @@ def save_settings(settings: dict) -> None:
         with open(SETTINGS_FILE, "w") as f:
             json.dump(settings, f, indent=4)
     except Exception as e:
-        logging.error(f"Error saving settings: {e}")
+        logging.log(LogLevel.Error, f"Error saving settings: {e}")

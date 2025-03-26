@@ -3,12 +3,15 @@
 import gi # type: ignore
 import subprocess
 import os
-import logging
 from gi.repository import Gtk, GLib # type: ignore
+from utils.logger import LogLevel, Logger
+
 
 class BatteryTab(Gtk.Box):
-    def __init__(self, parent=None):
+    def __init__(self, logging: Logger, parent=None):
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.logging = logging
+
         self.set_margin_top(15)
         self.set_margin_bottom(15)
         self.set_margin_start(15)
@@ -97,7 +100,7 @@ class BatteryTab(Gtk.Box):
                 if current_plan in plan_mapping:
                     saved_mode = current_plan
         except Exception as e:
-            logging.error(f"Failed to get current power plan: {e}")
+            self.logging.log(LogLevel.Error, f"Failed to get current power plan: {e}")
 
         matching_label = next(
             (label for label, value in self.power_modes.items() if value == saved_mode),
@@ -106,7 +109,7 @@ class BatteryTab(Gtk.Box):
         if matching_label:
             self.power_mode_dropdown.set_active(list(self.power_modes.keys()).index(matching_label))
         else:
-            logging.warning(f"Warning: Unknown power mode '{saved_mode}', defaulting to Balanced")
+            logging.log(LogLevel.Warn, f"Unknown power mode '{saved_mode}', defaulting to Balanced")
             self.power_mode_dropdown.set_active(list(self.power_modes.keys()).index("Balanced"))
 
         dropdown_box.pack_start(self.power_mode_dropdown, True, True, 0)
@@ -133,28 +136,28 @@ class BatteryTab(Gtk.Box):
 
                 if result.returncode != 0:
                     error_message = "powerprofilesctl is missing. Please check our GitHub page to see all dependencies and install them."
-                    logging.error(error_message)
+                    self.logging.log(LogLevel.Error, error_message)
                     if self.parent:
                         self.parent.show_error_dialog(error_message)
                 else:
-                    logging.info(f"Power mode changed to: {selected_mode} ({mode_value})")
+                    self.logging.log(LogLevel.Info, f"Power mode changed to: {selected_mode} ({mode_value})")
 
             except subprocess.CalledProcessError as e:
                 error_message = f"Failed to set power mode: {e}"
-                logging.error(error_message)
+                self.logging.log(LogLevel.Error, error_message)
                 if self.parent:
                     self.parent.show_error_dialog(error_message)
 
             except FileNotFoundError:
                 error_message = "powerprofilesctl is not installed or not found in PATH."
-                logging.error(error_message)
+                self.logging.log(LogLevel.Error, error_message)
                 if self.parent:
                     self.parent.show_error_dialog(error_message)
 
     def refresh_battery_info(self, button=None):
         """Refresh battery information. Can be triggered by button press."""
         if button:
-            logging.info("Manual refresh of battery information requested")
+            self.logging.log(LogLevel.Info, "Manual refresh of battery information requested")
         # Clear content box
         for child in self.content_box.get_children():
             self.content_box.remove(child)
@@ -262,7 +265,7 @@ class BatteryTab(Gtk.Box):
                         battery_info["Serial"] = serial
 
             except Exception as e:
-                logging.error(f"Error reading battery info: {e}")
+                self.logging.log(LogLevel.Error, f"log LogLevel.Error, reading battery info: {e}")
 
             # Add all available information to grid
             for key, value in battery_info.items():

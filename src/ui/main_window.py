@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 import traceback
-import gi # type: ignore
+import gi  # type: ignore
 import logging
 import threading
 
-from utils import arg_parser
+from utils.arg_parser import ArgParse
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib # type: ignore
+from gi.repository import Gtk, GLib  # type: ignore
 
 from ui.tabs.battery_tab import BatteryTab
 from ui.tabs.bluetooth_tab import BluetoothTab
@@ -17,28 +17,27 @@ from ui.tabs.volume_tab import VolumeTab
 from ui.tabs.wifi_tab import WiFiTab
 from ui.tabs.settings_tab import SettingsTab
 from utils.settings import load_settings, save_settings
+from utils.logger import LogLevel, Logger
+
 
 class BetterControl(Gtk.Window):
     """Main application window"""
 
-    def __init__(self, arg_parser: arg_parser.ArgParse):
+    def __init__(self, arg_parser: ArgParse, logging: Logger):
         super().__init__(title="Better Control")
+        self.logging = logging
         self.set_default_size(600, 400)
-        logging.info("Initializing Better Control application")
+        self.logging.log(LogLevel.Info, "Initializing Better Control application")
 
-        # Load settings
-        self.settings = load_settings()
-        logging.info("Settings loaded")
+        self.settings = load_settings(logging)
+        self.logging.log(LogLevel.Info, "Settings loaded")
 
-        # Create notebook for tabs
         self.notebook = Gtk.Notebook()
         self.add(self.notebook)
 
-        # Track tabs for visibility management
         self.tabs = {}
         self.tab_pages = {}
 
-        # Add loading indicator
         self.loading_spinner = Gtk.Spinner()
         self.loading_spinner.start()
 
@@ -49,30 +48,24 @@ class BetterControl(Gtk.Window):
         loading_box.pack_start(self.loading_spinner, False, False, 0)
         loading_box.pack_start(self.loading_label, False, False, 0)
         self.loading_page = self.notebook.append_page(
-            loading_box,
-            Gtk.Label(label="Loading...")
+            loading_box, Gtk.Label(label="Loading...")
         )
 
-        # Start async tab creation
         self.create_tabs_async()
-
-        # Add settings button to the notebook action area
         self.create_settings_button()
-
-        # Set active tab based on command line arguments
         self.arg_parser = arg_parser
 
-        # Connect signals
         self.connect("destroy", self.on_destroy)
         self.notebook.connect("switch-page", self.on_tab_switched)
 
     def create_tabs_async(self):
         """Create all tabs asynchronously"""
-        logging.info("Starting asynchronous tab creation")
+        self.logging.log(LogLevel.Info, "Starting asynchronous tab creation")
         # Start a thread to create tabs in the background
         thread = threading.Thread(target=self._create_tabs_thread)
         thread.daemon = True
         thread.start()
+
     def _create_tabs_thread(self):
         """Thread function to create tabs"""
         # Create all tabs
@@ -81,13 +74,13 @@ class BetterControl(Gtk.Window):
             "Wi-Fi": WiFiTab,
             "Bluetooth": BluetoothTab,
             "Battery": BatteryTab,
-            "Display": DisplayTab
+            "Display": DisplayTab,
         }
         # Create tabs one by one
         for tab_name, tab_class in tab_classes.items():
             try:
                 # Create the tab
-                tab = tab_class()
+                tab = tab_class(self.logging)
 
                 # Update UI from main thread
                 GLib.idle_add(self._add_tab_to_ui, tab_name, tab)
@@ -96,7 +89,7 @@ class BetterControl(Gtk.Window):
                 GLib.usleep(10000)  # 10ms delay
 
             except Exception as e:
-                logging.error(f"Error creating {tab_name} tab: {e}")
+                self.logging.log(LogLevel.Error, f"Failed creating {tab_name} tab: {e}")
 
         # Complete initialization on main thread
         GLib.idle_add(self._finish_tab_loading)
@@ -115,17 +108,16 @@ class BetterControl(Gtk.Window):
         if should_show:
             # Add tab to notebook with proper label
             page_num = self.notebook.append_page(
-                tab,
-                self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
+                tab, self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
             )
             self.tab_pages[tab_name] = page_num
 
-        logging.info(f"Created {tab_name} tab")
+        self.logging.log(LogLevel.Info, f"Created {tab_name} tab")
         return False  # Required for GLib.idle_add
 
     def _finish_tab_loading(self):
         """Finish tab loading by applying visibility and order (on main thread)"""
-        logging.info("All tabs created, finalizing UI")
+        self.logging.log(LogLevel.Info, "All tabs created, finalizing UI")
 
         # Apply tab order (visibility is already applied)
         self.apply_tab_order()
@@ -142,11 +134,20 @@ class BetterControl(Gtk.Window):
             self.notebook.set_current_page(self.tab_pages["Volume"])
         elif self.arg_parser.find_arg(("-w", "--wifi")) and "Wi-Fi" in self.tab_pages:
             self.notebook.set_current_page(self.tab_pages["Wi-Fi"])
-        elif self.arg_parser.find_arg(("-b", "--bluetooth")) and "Bluetooth" in self.tab_pages:
+        elif (
+            self.arg_parser.find_arg(("-b", "--bluetooth"))
+            and "Bluetooth" in self.tab_pages
+        ):
             self.notebook.set_current_page(self.tab_pages["Bluetooth"])
-        elif self.arg_parser.find_arg(("-B", "--battery")) and "Battery" in self.tab_pages:
+        elif (
+            self.arg_parser.find_arg(("-B", "--battery"))
+            and "Battery" in self.tab_pages
+        ):
             self.notebook.set_current_page(self.tab_pages["Battery"])
-        elif self.arg_parser.find_arg(("-d", "--display")) and "Display" in self.tab_pages:
+        elif (
+            self.arg_parser.find_arg(("-d", "--display"))
+            and "Display" in self.tab_pages
+        ):
             self.notebook.set_current_page(self.tab_pages["Display"])
         else:
             # Use last active tab from settings
@@ -177,7 +178,7 @@ class BetterControl(Gtk.Window):
                 tab.show_all()  # Ensure tab is visible
                 page_num = self.notebook.append_page(
                     tab,
-                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
+                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name)),
                 )
                 self.tab_pages[tab_name] = page_num
                 self.notebook.show_all()  # Ensure notebook updates
@@ -195,7 +196,9 @@ class BetterControl(Gtk.Window):
     def apply_tab_order(self):
         """Apply tab order settings"""
         # Get current tab order from settings or use default
-        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display"])
+        tab_order = self.settings.get(
+            "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display"]
+        )
         # Reorder tabs according to settings
         for tab_name in tab_order:
             if tab_name in self.tabs and tab_name in self.tab_pages:
@@ -217,7 +220,7 @@ class BetterControl(Gtk.Window):
             "Bluetooth": "bluetooth-symbolic",
             "Battery": "battery-good-symbolic",
             "Display": "video-display-symbolic",
-            "Settings": "preferences-system-symbolic"
+            "Settings": "preferences-system-symbolic",
         }
         return icons.get(tab_name, "application-x-executable-symbolic")
 
@@ -237,11 +240,11 @@ class BetterControl(Gtk.Window):
         self.notebook.set_action_widget(settings_button, Gtk.PackType.END)
         settings_button.show_all()
 
-        logging.info("Settings button created and attached to notebook")
+        self.logging.log(LogLevel.Info, "Settings button created and attached to notebook")
 
     def toggle_settings_panel(self, widget):
         """Toggle the settings panel visibility"""
-        logging.info("Settings button clicked, opening settings dialog")
+        self.logging.log(LogLevel.Info, "Settings button clicked, opening settings dialog")
 
         try:
             # Create a dialog window for settings
@@ -249,15 +252,15 @@ class BetterControl(Gtk.Window):
                 title="Settings",
                 parent=self,
                 flags=Gtk.DialogFlags.MODAL,
-                buttons=(
-                    Gtk.STOCK_CLOSE, Gtk.ResponseType.CLOSE
-                )
+                buttons=(Gtk.STOCK_CLOSE, Gtk.ResponseType.CLOSE),
             )
             dialog.set_default_size(500, 400)
             dialog.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
             # Create a fresh instance of the settings tab to use in the dialog
-            settings_tab = SettingsTab()
-            settings_tab.connect("tab-visibility-changed", self.on_tab_visibility_changed)
+            settings_tab = SettingsTab(self.logging)
+            settings_tab.connect(
+                "tab-visibility-changed", self.on_tab_visibility_changed
+            )
             settings_tab.connect("tab-order-changed", self.on_tab_order_changed)
             # Add the settings content to the dialog's content area
             content_area = dialog.get_content_area()
@@ -271,13 +274,13 @@ class BetterControl(Gtk.Window):
             response = dialog.run()
 
             if response == Gtk.ResponseType.CLOSE:
-                logging.info("Settings dialog closed")
+                self.logging.log(LogLevel.Info, "Settings dialog closed")
 
             # Clean up the dialog
             dialog.destroy()
 
         except Exception as e:
-            logging.error(f"Error in toggle_settings_panel: {e}")
+            self.logging.log(LogLevel.Error, f"Error in toggle_settings_panel: {e}")
             traceback.print_exc()
 
     def on_tab_visibility_changed(self, widget, tab_name, visible):
@@ -286,7 +289,7 @@ class BetterControl(Gtk.Window):
         if "visibility" not in self.settings:
             self.settings["visibility"] = {}
         self.settings["visibility"][tab_name] = visible
-        save_settings(self.settings)
+        save_settings(self.settings, self.logging)
         # Apply the change
         if tab_name in self.tabs:
             tab = self.tabs[tab_name]
@@ -301,7 +304,7 @@ class BetterControl(Gtk.Window):
                 tab.show_all()  # Ensure tab is visible
                 page_num = self.notebook.append_page(
                     tab,
-                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
+                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name)),
                 )
                 self.tab_pages[tab_name] = page_num
                 self.notebook.show_all()  # Ensure notebook updates
@@ -320,7 +323,7 @@ class BetterControl(Gtk.Window):
         """Handle tab order changed signal from settings tab"""
         # Update settings
         self.settings["tab_order"] = tab_order
-        save_settings(self.settings)
+        save_settings(self.settings, self.logging)
         # Apply the new order
         self.apply_tab_order()
 
@@ -347,16 +350,16 @@ class BetterControl(Gtk.Window):
         # Save current tab
         self.settings["last_active_tab"] = self.notebook.get_current_page()
         # Save settings
-        save_settings(self.settings)
-        logging.info("Application shutting down, settings saved")
+        save_settings(self.settings, self.logging)
+        self.logging.log(LogLevel.Info, "Application shutting down, settings saved")
 
     def on_tab_switched(self, notebook, page, page_num):
         """Handle tab switching"""
         # Save current tab
         self.settings["last_active_tab"] = page_num
-        save_settings(self.settings)
-        # Get tab name for logging
+        save_settings(self.settings, self.logging)
+        # Get tab name
         for tab_name, tab_index in self.tab_pages.items():
             if tab_index == page_num:
-                logging.info(f"Switched to {tab_name} tab")
+                self.logging.log(LogLevel.Info, f"Switched to {tab_name} tab")
                 break

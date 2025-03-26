@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 import gi # type: ignore
-import logging
 import subprocess
+
+from utils.logger import LogLevel, Logger
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib # type: ignore
@@ -27,8 +28,9 @@ from tools.volume import (
 class VolumeTab(Gtk.Box):
     """Volume settings tab"""
 
-    def __init__(self):
+    def __init__(self, logging: Logger):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.logging = logging
         self.set_margin_start(15)
         self.set_margin_end(15)
         self.set_margin_top(15)
@@ -114,7 +116,7 @@ class VolumeTab(Gtk.Box):
         self.volume_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL, 0, 100, 1
         )
-        self.volume_scale.set_value(get_volume())
+        self.volume_scale.set_value(get_volume(self.logging))
         self.volume_scale.connect("value-changed", self.on_volume_changed)
         volume_box.pack_start(self.volume_scale, True, True, 0)
 
@@ -171,7 +173,7 @@ class VolumeTab(Gtk.Box):
         self.mic_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL, 0, 100, 1
         )
-        self.mic_scale.set_value(get_mic_volume())
+        self.mic_scale.set_value(get_mic_volume(self.logging))
         self.mic_scale.connect("value-changed", self.on_mic_volume_changed)
         mic_box.pack_start(self.mic_scale, True, True, 0)
 
@@ -220,24 +222,24 @@ class VolumeTab(Gtk.Box):
     def update_device_lists(self):
         """Update output and input device lists and sync dropdown with the actual default sink."""
         try:
-            logging.info("Updating audio device lists...")
+            self.logging.log(LogLevel.Info, "Updating audio device lists...")
 
             # Get the currently active sink
             current_sink = subprocess.getoutput("pactl get-default-sink").strip()
-            logging.info(f"Current active output sink: {current_sink}")
+            self.logging.log(LogLevel.Info, f"Current active output sink: {current_sink}")
 
             # Output devices (speakers/headphones)
             self.output_combo.remove_all()
-            sinks = get_sinks()
+            sinks = get_sinks(self.logging)
 
             if not sinks:
-                logging.warning("No output sinks found!")
+                self.logging.log(LogLevel.Warn, "No output sinks found!")
                 self.output_combo.append("no-sink", "No Output Devices Found")
                 self.output_combo.set_active(0)
             else:
                 active_index = -1
                 for i, sink in enumerate(sinks):
-                    logging.info(f"Adding output sink: {sink['name']} ({sink['description']})")
+                    self.logging.log(LogLevel.Info, f"Adding output sink: {sink['name']} ({sink['description']})")
                     self.output_combo.append(sink["name"], sink["description"])
                     if sink["name"] == current_sink:
                         active_index = i
@@ -249,21 +251,21 @@ class VolumeTab(Gtk.Box):
 
             # Get the currently active input source (microphone)
             current_source = subprocess.getoutput("pactl get-default-source").strip()
-            logging.info(f"Current active input source: {current_source}")
+            self.logging.log(LogLevel.Info, f"Current active input source: {current_source}")
 
             # Input devices (microphones)
             self.input_combo.remove_all()
-            sources = get_sources()
+            sources = get_sources(self.logging)
 
             if not sources:
-                logging.warning("No input sources found!")
+                self.logging.log(LogLevel.Warn, "No input sources found!")
                 self.input_combo.append("no-source", "No Input Devices Found")
                 self.input_combo.set_active(0)
             else:
                 active_index = -1
                 for i, source in enumerate(sources):
                     if "monitor" not in source["name"].lower():  # Skip monitor sources
-                        logging.info(f"Adding input source: {source['name']} ({source['description']})")
+                        self.logging.log(LogLevel.Info, f"Adding input source: {source['name']} ({source['description']})")
                         self.input_combo.append(source["name"], source["description"])
                         if source["name"] == current_source:
                             active_index = i
@@ -274,15 +276,15 @@ class VolumeTab(Gtk.Box):
                     self.input_combo.set_active(0)  # Default to first item
 
         except Exception as e:
-            logging.error(f"Error updating device lists: {e}")
+            self.logging.log(LogLevel.Error, f"Failed updating device lists: {e}")
 
 
     def update_mute_buttons(self):
         """Update mute button labels"""
-        speaker_muted = get_mute_state()
+        speaker_muted = get_mute_state(self.logging)
         self.mute_button.set_label("Unmute" if speaker_muted else "Mute")
 
-        mic_muted = get_mic_mute_state()
+        mic_muted = get_mic_mute_state(self.logging)
         self.mic_mute_button.set_label("Unmute Mic" if mic_muted else "Mute Mic")
 
     def update_application_list(self):
@@ -292,7 +294,7 @@ class VolumeTab(Gtk.Box):
             self.app_box.remove(child)
 
         # Add controls for each application
-        apps = get_applications()
+        apps = get_applications(self.logging)
         if not apps:
             # Show "No applications playing audio" message
             no_apps_label = Gtk.Label()
@@ -336,10 +338,10 @@ class VolumeTab(Gtk.Box):
         """Update volume displays"""
         try:
             # Update main volume
-            self.volume_scale.set_value(get_volume())
+            self.volume_scale.set_value(get_volume(self.logging))
 
             # Update mic volume
-            self.mic_scale.set_value(get_mic_volume())
+            self.mic_scale.set_value(get_mic_volume(self.logging))
 
             # Update mute buttons
             self.update_mute_buttons()
@@ -348,58 +350,58 @@ class VolumeTab(Gtk.Box):
             self.update_application_list()
 
         except Exception as e:
-            logging.error(f"Error updating volumes: {e}")
+            self.logging.log(LogLevel.Error, f"Error updating volumes: {e}")
 
     def on_volume_changed(self, scale):
         """Handle volume scale changes"""
         value = int(scale.get_value())
-        set_volume(value)
+        set_volume(value, self.logging)
 
     def on_mute_clicked(self, button):
         """Handle mute button clicks"""
-        toggle_mute()
+        toggle_mute(self.logging)
         self.update_mute_buttons()
 
-    def on_quick_volume_clicked(self, button, volume):
+    def on_quick_volume_clicked(self, volume):
         """Handle quick volume button clicks"""
-        set_volume(volume)
+        set_volume(volume, self.logging)
         self.volume_scale.set_value(volume)
 
     def on_mic_volume_changed(self, scale):
         """Handle microphone volume scale changes"""
         value = int(scale.get_value())
-        set_mic_volume(value)
+        set_mic_volume(value, self.logging)
 
-    def on_mic_mute_clicked(self, button):
+    def on_mic_mute_clicked(self):
         """Handle microphone mute button clicks"""
-        toggle_mic_mute()
+        toggle_mic_mute(self.logging)
         self.update_mute_buttons()
 
     def on_quick_mic_volume_clicked(self, button, volume):
         """Handle quick microphone volume button clicks"""
-        set_mic_volume(volume)
+        set_mic_volume(volume, self.logging)
         self.mic_scale.set_value(volume)
 
     def on_output_changed(self, combo):
         """Handle output device selection changes"""
         device_id = combo.get_active_id()
         if device_id:
-            set_default_sink(device_id)
+            set_default_sink(device_id, self.logging)
 
     def on_input_changed(self, combo):
         """Handle input device selection changes"""
         device_id = combo.get_active_id()
         if device_id:
-            set_default_source(device_id)
+            set_default_source(device_id, self.logging)
 
     def on_app_volume_changed(self, scale, app_id):
         """Handle application volume changes"""
         value = int(scale.get_value())
-        set_application_volume(app_id, value)
+        set_application_volume(app_id, value, self.logging)
 
-    def on_refresh_clicked(self, button):
+    def on_refresh_clicked(self):
         """Handle refresh button click"""
-        logging.info("Manual refresh of audio devices requested")
+        self.logging.log(LogLevel.Info, "Manual refresh of audio devices requested")
         self.update_device_lists()
         self.update_application_list()
         self.update_mute_buttons()
@@ -407,15 +409,10 @@ class VolumeTab(Gtk.Box):
 
     def on_auto_refresh(self):
         """Automatically refresh audio device lists and UI every 3 seconds."""
-        logging.info("Auto-refreshing audio settings...")
+        self.logging.log(LogLevel.Info, "Auto-refreshing audio settings...")
         self.update_device_lists()
         self.update_application_list()
         self.update_mute_buttons()
         self.update_volumes()
-        
-        # 🔹 Re-run this function every 3 seconds (3000ms)
+
         GLib.timeout_add(3000, self.on_auto_refresh)
-
-
-
-

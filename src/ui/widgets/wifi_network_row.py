@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
-import logging
 import subprocess
-import gi # type: ignore
+import gi  # type: ignore
+from utils.logger import LogLevel, Logger
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk # type: ignore
+from gi.repository import Gtk  # type: ignore
+
 
 class WiFiNetworkRow(Gtk.ListBoxRow):
-    def __init__(self, network_info):
+    def __init__(self, network_info, logging: Logger):
         super().__init__()
         self.set_margin_top(5)
         self.set_margin_bottom(5)
@@ -26,16 +27,22 @@ class WiFiNetworkRow(Gtk.ListBoxRow):
             if self.is_connected:
                 # Try to get the proper SSID from nmcli connection show --active
                 try:
-                    active_connections = subprocess.getoutput("nmcli -t -f NAME,DEVICE connection show --active").split("\n")
+                    active_connections = subprocess.getoutput(
+                        "nmcli -t -f NAME,DEVICE connection show --active"
+                    ).split("\n")
                     for conn in active_connections:
-                        if ":" in conn and "wifi" in subprocess.getoutput(f"nmcli -t -f TYPE connection show '{conn.split(':')[0]}'"):
+                        if ":" in conn and "wifi" in subprocess.getoutput(
+                            f"nmcli -t -f TYPE connection show '{conn.split(':')[0]}'"
+                        ):
                             self.ssid = conn.split(":")[0]
                             break
                     else:
                         # Fallback to position-based extraction
                         self.ssid = parts[1]
                 except Exception as e:
-                    logging.error(f"Error getting active connection name: {e}")
+                    logging.log(
+                        LogLevel.Error, f"Error getting active connection name: {e}"
+                    )
                     self.ssid = parts[1]
             else:
                 # For non-connected networks, use the second column
@@ -77,7 +84,7 @@ class WiFiNetworkRow(Gtk.ListBoxRow):
                     self.signal_strength = "0%"
                     signal_value = 0
         except (IndexError, ValueError) as e:
-            logging.error(f"Error parsing signal strength from {parts}: {e}")
+            logging.log(LogLevel.Error, f"Error parsing signal strength from {parts}: {e}")
             self.signal_strength = "0%"
             signal_value = 0
 
@@ -126,7 +133,9 @@ class WiFiNetworkRow(Gtk.ListBoxRow):
 
         details_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
 
-        security_image = Gtk.Image.new_from_icon_name(security_icon, Gtk.IconSize.SMALL_TOOLBAR)
+        security_image = Gtk.Image.new_from_icon_name(
+            security_icon, Gtk.IconSize.SMALL_TOOLBAR
+        )
         details_box.pack_start(security_image, False, False, 0)
 
         security_label = Gtk.Label(label=self.security)

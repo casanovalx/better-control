@@ -1,14 +1,16 @@
-import logging
 import subprocess
-import gi  # type: ignore
+import gi
+
+from utils.logger import LogLevel, Logger  # type: ignore
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # type: ignore
 
 
 class BluetoothDeviceRow(Gtk.ListBoxRow):
-    def __init__(self, device_info):
+    def __init__(self, device_info, logging: Logger):
         super().__init__()
+        self.logging = logging
         self.set_margin_top(5)
         self.set_margin_bottom(5)
         self.set_margin_start(10)
@@ -38,7 +40,7 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
             else:
                 self.device_type = "unknown"
         except Exception as e:
-            logging.error(f"Error checking status for {self.mac_address}: {e}")
+            self.logging.log(LogLevel.Error, f"Failed checking status for {self.mac_address}: {e}")
             self.device_type = "unknown"
 
         # Main container for the row

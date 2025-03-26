@@ -1,24 +1,19 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env python3
 
-from math import log
 import os
 import subprocess
 from typing import Optional
 import gi  # type: ignore
 import sys
-import logging
 from utils.arg_parser import ArgParse, eprint
 from utils.pair import Pair
+from utils.logger import LogLevel, Logger
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # type: ignore
-
 from ui.main_window import BetterControl
 from utils.dependencies import check_all_dependencies
-
 from tools.bluetooth import restore_last_sink
-
-restore_last_sink()  # Restore Bluetooth audio when app starts
 
 
 if __name__ == "__main__":
@@ -31,36 +26,35 @@ if __name__ == "__main__":
         eprint(sys.stdout, "5.3")
         exit(0)
 
-    if arg_parser.find_arg(("-f", "--force")) and not check_all_dependencies():
-        logging.error("Missing required dependencies. Please install them and try again.")
-        sys.exit(1)
+    logging = Logger(arg_parser)
 
-    log_info: Pair[bool, Optional[str]] = Pair(False, None)
+    if arg_parser.find_arg(("-f", "--force")) and not check_all_dependencies(logging):
+        logging.log(
+            LogLevel.Error,
+            "Missing required dependencies. Please install them and try again.",
+        )
 
-    if arg_parser.find_arg(("-l", "--log")):
-        log_info.first = True
-        log_info.second = arg_parser.option_arg(("-l", "--log"))
-
-     # Configure logging
-    logging.basicConfig(
-        level=logging.DEBUG, format="%(asctime)s [LOG] %(message)s", datefmt="%H:%M:%S"
-    )
+    restore_last_sink(logging)
 
     try:
-        # Create the main window
-        win = BetterControl(arg_parser)
+        win = BetterControl(arg_parser, logging)
         win.set_default_size(1000, 700)
-        win.resize(1000, 700)  # Ensure correct placement
+        win.resize(1000, 700)
         win.connect("destroy", Gtk.main_quit)
         win.show_all()
 
-        # Ensure Hyprland floating works
+        #? Hyprland shenanigans
         if "hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
             subprocess.run(
-                ["hyprctl", "keyword", "windowrule", "float,class:^(better_control.py)$"]
+                [
+                    "hyprctl",
+                    "keyword",
+                    "windowrule",
+                    "float,class:^(better_control.py)$",
+                ]
             )
 
         Gtk.main()
     except Exception as e:
-        logging.error(f"Error starting application: {e}")
+        logging.log(LogLevel.Error, f"Error starting application: {e}")
         sys.exit(1)

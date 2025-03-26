@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 
-import gi # type: ignore
+import gi  # type: ignore
 import subprocess
-import logging
+
+from utils.logger import LogLevel, Logger
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk # type: ignore
+from gi.repository import Gtk  # type: ignore
 
 from utils.settings import load_settings, save_settings
+
 
 class DisplayTab(Gtk.Box):
     """Display settings tab"""
 
-    def __init__(self):
+    def __init__(self, logging: Logger):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.logging = logging
+
         self.set_margin_start(15)
         self.set_margin_end(15)
         self.set_margin_top(15)
@@ -29,12 +33,16 @@ class DisplayTab(Gtk.Box):
         title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
 
         # Add display icon
-        display_icon = Gtk.Image.new_from_icon_name("video-display-symbolic", Gtk.IconSize.DIALOG)
+        display_icon = Gtk.Image.new_from_icon_name(
+            "video-display-symbolic", Gtk.IconSize.DIALOG
+        )
         title_box.pack_start(display_icon, False, False, 0)
 
         # Add title
         display_label = Gtk.Label()
-        display_label.set_markup("<span weight='bold' size='large'>Display Settings</span>")
+        display_label.set_markup(
+            "<span weight='bold' size='large'>Display Settings</span>"
+        )
         display_label.set_halign(Gtk.Align.START)
         title_box.pack_start(display_label, False, False, 0)
 
@@ -42,7 +50,9 @@ class DisplayTab(Gtk.Box):
 
         # Add refresh button
         refresh_button = Gtk.Button()
-        refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        refresh_icon = Gtk.Image.new_from_icon_name(
+            "view-refresh-symbolic", Gtk.IconSize.BUTTON
+        )
         refresh_button.set_image(refresh_icon)
         refresh_button.set_tooltip_text("Refresh Display Settings")
         refresh_button.connect("clicked", self.refresh_display_settings)
@@ -120,7 +130,7 @@ class DisplayTab(Gtk.Box):
         self.bluelight_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL, 2500, 6500, 100
         )
-        settings = load_settings()
+        settings = load_settings(self.logging)
         saved_gamma = settings.get("gamma", 6500)
         self.bluelight_scale.set_value(saved_gamma)
         self.bluelight_scale.set_value_pos(Gtk.PositionType.RIGHT)
@@ -131,13 +141,7 @@ class DisplayTab(Gtk.Box):
         bluelight_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
 
         # Map percentage to temperature values (inverted: 0% = off = 6500K, 100% = max = 2500K)
-        temp_values = {
-            "0%": 6500,
-            "25%": 5500,
-            "50%": 4500,
-            "75%": 3500,
-            "100%": 2500
-        }
+        temp_values = {"0%": 6500, "25%": 5500, "50%": 4500, "75%": 3500, "100%": 2500}
 
         for label, value in temp_values.items():
             button = Gtk.Button(label=label)
@@ -158,7 +162,7 @@ class DisplayTab(Gtk.Box):
             max_brightness = subprocess.getoutput("brightnessctl max")
             return int((int(output) / int(max_brightness)) * 100)
         except Exception as e:
-            logging.error(f"Error getting brightness: {e}")
+            self.logging.log(LogLevel.Error, f"Failed getting brightness: {e}")
             return 50
 
     def set_brightness(self, value):
@@ -168,7 +172,7 @@ class DisplayTab(Gtk.Box):
             actual_value = int((value / 100) * max_brightness)
             subprocess.run(["brightnessctl", "s", f"{actual_value}"])
         except Exception as e:
-            logging.error(f"Error setting brightness: {e}")
+            self.logging.log(LogLevel.Error, f"Failed setting brightness: {e}")
 
     def on_brightness_changed(self, scale):
         """Handle brightness scale changes"""
@@ -183,30 +187,30 @@ class DisplayTab(Gtk.Box):
     def on_bluelight_changed(self, scale):
         """Handle blue light filter scale changes"""
         temperature = int(scale.get_value())
-        settings = load_settings()
+        settings = load_settings(self.logging)
         settings["gamma"] = temperature
-        save_settings(settings)
+        save_settings(settings, self.logging)
 
         # Kill any existing gammastep process
         subprocess.run(
             ["pkill", "-f", "gammastep"],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
+            stderr=subprocess.DEVNULL,
         )
         # Start new gammastep process with new temperature
         subprocess.Popen(
             ["gammastep", "-O", str(temperature)],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
+            stderr=subprocess.DEVNULL,
         )
 
     def on_bluelight_button_clicked(self, button, value):
         """Handle blue light filter button clicks"""
         self.bluelight_scale.set_value(value)
 
-    def refresh_display_settings(self, button=None):
+    def refresh_display_settings(self):
         """Refresh display settings"""
-        logging.info("Manual refresh of display settings requested")
+        self.logging.log(LogLevel.Info, "Manual refresh of display settings requested")
 
         # Block the value-changed signal before updating the brightness slider
         self.brightness_scale.disconnect_by_func(self.on_brightness_changed)
@@ -219,8 +223,10 @@ class DisplayTab(Gtk.Box):
         self.brightness_scale.connect("value-changed", self.on_brightness_changed)
 
         # Reload settings from file
-        settings = load_settings()
+        settings = load_settings(self.logging)
         saved_gamma = settings.get("gamma", 6500)
         self.bluelight_scale.set_value(saved_gamma)
 
-        logging.info(f"Display settings refreshed - Brightness: {current_brightness}%, Blue light: {saved_gamma}K")
+        self.logging.log(LogLevel.Info,
+            f"Display settings refreshed - Brightness: {current_brightness}%, Blue light: {saved_gamma}K"
+        )

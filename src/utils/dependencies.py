@@ -1,6 +1,6 @@
 import shutil
-import logging
 from typing import Optional
+from utils.logger import LogLevel, Logger
 
 DEPENDENCIES = [
     (
@@ -36,8 +36,9 @@ DEPENDENCIES = [
 ]
 
 
-
-def check_dependency(command: str, name: str, install_instructions: str) -> Optional[str]:
+def check_dependency(
+    command: str, name: str, install_instructions: str, logging: Logger
+) -> Optional[str]:
     """Checks if a dependency is installed or not.
 
     Args:
@@ -50,16 +51,19 @@ def check_dependency(command: str, name: str, install_instructions: str) -> Opti
     """
     if not shutil.which(command):
         error_msg = f"{name} is required but not installed!\n\nInstall it using:\n{install_instructions}"
-        logging.error(error_msg)
+        logging.log(LogLevel.Error, error_msg)
         return error_msg
     return None
 
-def check_all_dependencies() -> bool:
+
+def check_all_dependencies(logging: Logger) -> bool:
     """Checks if all dependencies exist or not.
 
     Returns:
         bool: returns false if there are dependencies missing, or return true
     """
-    missing = [check_dependency(cmd, name, inst) for cmd, name, inst in DEPENDENCIES]
+    missing = [
+        check_dependency(cmd, name, inst, logging) for cmd, name, inst in DEPENDENCIES
+    ]
     missing = [msg for msg in missing if msg]
     return not missing

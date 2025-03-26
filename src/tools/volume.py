@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
+import logging
 import subprocess
 from typing import List, Dict
-import logging
 import re
 import subprocess
 from typing import List, Dict
 
-def get_volume() -> int:
+from utils.logger import LogLevel, Logger
+
+def get_volume(logging: Logger) -> int:
     """Get current volume level
 
     Returns:
@@ -18,10 +20,10 @@ def get_volume() -> int:
         volume = int(output.split("/")[1].strip().strip("%"))
         return volume
     except Exception as e:
-        logging.error(f"Error getting volume: {e}")
+        logging.log(LogLevel.Error, f"Failed getting volume: {e}")
         return 0
 
-def set_volume(value: int) -> None:
+def set_volume(value: int, logging: Logger) -> None:
     """Set volume level
 
     Args:
@@ -30,9 +32,9 @@ def set_volume(value: int) -> None:
     try:
         subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{value}%"], check=True)
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error setting volume: {e}")
+        logging.log(LogLevel.Error, f"Failed setting volume: {e}")
 
-def get_mute_state() -> bool:
+def get_mute_state(logging: Logger) -> bool:
     """Get mute state
 
     Returns:
@@ -42,18 +44,18 @@ def get_mute_state() -> bool:
         output = subprocess.getoutput("pactl get-sink-mute @DEFAULT_SINK@")
         return "yes" in output.lower()
     except Exception as e:
-        logging.error(f"Error getting mute state: {e}")
+        logging.log(LogLevel.Error, f"Failed getting mute state: {e}")
         return False
 
-def toggle_mute() -> None:
+def toggle_mute(logging: Logger) -> None:
     """Toggle mute state"""
     try:
         subprocess.run(["pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle"], check=True)
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error toggling mute: {e}")
+        logging.log(LogLevel.Error, f"Failed toggling mute: {e}")
 
 
-def get_sources() -> List[Dict[str, str]]:
+def get_sources(logging: Logger) -> List[Dict[str, str]]:
     """Get list of audio sources (input devices)
 
     Returns:
@@ -82,65 +84,65 @@ def get_sources() -> List[Dict[str, str]]:
 
         return sources
     except Exception as e:
-        logging.error(f"Error getting sources: {e}")
+        logging.log(LogLevel.Error, f"Failed getting sources: {e}")
         return []
 
 
-def get_applications() -> List[Dict[str, str]]:
+def get_applications(logging: Logger) -> List[Dict[str, str]]:
     output = subprocess.getoutput("pactl list sink-inputs")
     apps = []
     current_app = {}
 
     for line in output.split("\n"):
         line = line.strip()
-        print(f"Parsing Line: {line}")  # Debugging
+        logging.log(LogLevel.Debug, f"Parsing Line: {line}")  # Debugging
 
         if line.startswith("Sink Input #"):
             if current_app:  # Finalize previous app before moving to a new one
-                print("Finalizing previous app:", current_app)  
+                logging.log(LogLevel.Debug, f"Finalizing previous app: {current_app}")
                 if "name" in current_app and "volume" in current_app:
-                    apps.append(current_app)  
+                    apps.append(current_app)
                 else:
-                    print("Skipping app due to missing name or volume!", current_app)
-            
+                    logging.log(LogLevel.Debug, f"Skipping app due to missing name or volume: {current_app}")
+
             current_app = {"id": line.split("#")[1].strip()}  # New app entry
-            print("New app detected with ID:", current_app["id"])
+            logging.log(LogLevel.Debug, f"New app detected with ID: {current_app["id"]}")
 
         elif "application.name" in line:
             current_app["name"] = line.split("=", 1)[1].strip().strip('"')
-            print("Detected & Stored App Name:", current_app["name"])
+            logging.log(LogLevel.Debug, f"Detected & Stored App Name: {current_app["name"]}")
 
         elif "media.name" in line and "name" not in current_app:
             current_app["name"] = line.split("=", 1)[1].strip().strip('"')
-            print("Using Media Name:", current_app["name"])
+            logging.log(LogLevel.Debug, f"Using Media Name: {current_app["name"]}")
 
         elif "application.process.binary" in line and "name" not in current_app:
             current_app["name"] = line.split("=", 1)[1].strip().strip('"')
-            print("Using Process Binary Name:", current_app["name"])
+            logging.log(LogLevel.Debug, f"Using Process Binary Name: {current_app["name"]}")
 
         elif "Volume:" in line:
-            print("Found Volume Line:", line)
+            logging.log(LogLevel.Debug, f"Found Volume Line: {line}")
             match = re.search(r"(\d+)%", line)
             if match:
-                current_app["volume"] = int(match.group(1))
-                print("Detected & Stored Volume:", current_app["volume"])
+                current_app["volume"] = int(match.group(1)) # type: ignore
+                logging.log(LogLevel.Debug, f"Detected & Stored Volume: {current_app["volume"]}")
             else:
-                print("Failed to parse volume from:", line)
+                logging.log(LogLevel.Debug, f"Failed to parse volume from: {line}")
 
     # Final app processing
     if current_app:
-        print("Finalizing last app:", current_app)
+        logging.log(LogLevel.Debug, "Finalizing last app: {current_app}")
         if "name" in current_app and "volume" in current_app:
             apps.append(current_app)
         else:
-            print("Skipping last app due to missing name or volume!", current_app)
+            logging.log(LogLevel.Debug, "Skipping last app due to missing name or volume: {current_app}")
 
-    print("Parsed Applications:", apps)
+    logging.log(LogLevel.Debug, f"Parsed Applications: {apps}", )
     return apps
 
 
 
-def set_application_volume(app_id: str, value: int) -> None:
+def set_application_volume(app_id: str, value: int, logging: Logger) -> None:
     """Set volume for a specific application
 
     Args:
@@ -150,12 +152,12 @@ def set_application_volume(app_id: str, value: int) -> None:
     try:
         subprocess.run(["pactl", "set-sink-input-volume", app_id, f"{value}%"], check=True)
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error setting application volume: {e}")
+        logging.log(LogLevel.Error, f"Failed setting application volume: {e}")
 
-def set_default_sink(sink_name: str) -> None:
+def set_default_sink(sink_name: str, logging: Logger) -> None:
     try:
         subprocess.run(["pactl", "set-default-sink", sink_name], check=True)
-        
+
         # Move all running apps to the new sink
         output = subprocess.getoutput("pactl list short sink-inputs")
         for line in output.split("\n"):
@@ -164,9 +166,9 @@ def set_default_sink(sink_name: str) -> None:
                 subprocess.run(["pactl", "move-sink-input", app_id, sink_name], check=True)
 
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error setting default sink: {e}")
+        logging.log(LogLevel.Error, f"Failed setting default sink: {e}")
 
-def get_sinks() -> List[Dict[str, str]]:
+def get_sinks(logging: Logger) -> List[Dict[str, str]]:
     """Get list of audio sinks (output devices)."""
     try:
         output = subprocess.getoutput("pactl list sinks")
@@ -185,19 +187,19 @@ def get_sinks() -> List[Dict[str, str]]:
                 if key == "Name":
                     current_sink["name"] = value
                 elif key == "Description":
-                    current_sink["description"] = value  # ✅ Fix: Ensure description is included
+                    current_sink["description"] = value
 
         if current_sink:
             sinks.append(current_sink)
 
         return sinks
     except Exception as e:
-        logging.error(f"Error getting sinks: {e}")
+        logging.log(LogLevel.Error, f"Failed getting sinks: {e}")
         return []
 
 
 
-def set_default_source(source_name: str) -> None:
+def set_default_source(source_name: str, logging: Logger) -> None:
     """Set default audio input device
 
     Args:
@@ -206,9 +208,9 @@ def set_default_source(source_name: str) -> None:
     try:
         subprocess.run(["pactl", "set-default-source", source_name], check=True)
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error setting default source: {e}")
+        logging.log(LogLevel.Error, f"Failed setting default source: {e}")
 
-def get_mic_volume() -> int:
+def get_mic_volume(logging: Logger) -> int:
     """Get microphone volume level
 
     Returns:
@@ -219,10 +221,10 @@ def get_mic_volume() -> int:
         volume = int(output.split("/")[1].strip().strip("%"))
         return volume
     except Exception as e:
-        logging.error(f"Error getting mic volume: {e}")
+        logging.log(LogLevel.Error, f"Failed getting mic volume: {e}")
         return 0
 
-def set_mic_volume(value: int) -> None:
+def set_mic_volume(value: int, logging: Logger) -> None:
     """Set microphone volume level
 
     Args:
@@ -231,9 +233,9 @@ def set_mic_volume(value: int) -> None:
     try:
         subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", f"{value}%"], check=True)
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error setting mic volume: {e}")
+        logging.log(LogLevel.Error, f"Failed setting mic volume: {e}")
 
-def get_mic_mute_state() -> bool:
+def get_mic_mute_state(logging: Logger) -> bool:
     """Get microphone mute state
 
     Returns:
@@ -243,12 +245,12 @@ def get_mic_mute_state() -> bool:
         output = subprocess.getoutput("pactl get-source-mute @DEFAULT_SOURCE@")
         return "yes" in output.lower()
     except Exception as e:
-        logging.error(f"Error getting mic mute state: {e}")
+        logging.log(LogLevel.Error, f"Failed getting mic mute state: {e}")
         return False
 
-def toggle_mic_mute() -> None:
+def toggle_mic_mute(logging: Logger) -> None:
     """Toggle microphone mute state"""
     try:
         subprocess.run(["pactl", "set-source-mute", "@DEFAULT_SOURCE@", "toggle"], check=True)
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error toggling mic mute: {e}")
+        logging.log(LogLevel.Error, f"Failed toggling mic mute: {e}")

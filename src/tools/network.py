@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
-import logging
 import subprocess
 from typing import Tuple, List
 
-def get_network_speed() -> Tuple[float, float]:
+from utils.logger import LogLevel, Logger
+
+
+def get_network_speed(logging: Logger) -> Tuple[float, float]:
     """Measure current network speed
 
     Returns:
@@ -12,7 +14,9 @@ def get_network_speed() -> Tuple[float, float]:
     """
     try:
         # Get network interfaces
-        interfaces = subprocess.getoutput("nmcli -t -f DEVICE,TYPE device | grep wifi").split("\n")
+        interfaces = subprocess.getoutput(
+            "nmcli -t -f DEVICE,TYPE device | grep wifi"
+        ).split("\n")
         wifi_interfaces = [line.split(":")[0] for line in interfaces if ":" in line]
 
         if not wifi_interfaces:
@@ -22,22 +26,26 @@ def get_network_speed() -> Tuple[float, float]:
         interface = wifi_interfaces[0]
 
         # Get current transmit and receive bytes
-        rx_bytes = int(subprocess.getoutput(f"cat /sys/class/net/{interface}/statistics/rx_bytes"))
-        tx_bytes = int(subprocess.getoutput(f"cat /sys/class/net/{interface}/statistics/tx_bytes"))
+        rx_bytes = int(
+            subprocess.getoutput(f"cat /sys/class/net/{interface}/statistics/rx_bytes")
+        )
+        tx_bytes = int(
+            subprocess.getoutput(f"cat /sys/class/net/{interface}/statistics/tx_bytes")
+        )
 
         # Store current values
         if not hasattr(get_network_speed, "prev_rx_bytes"):
-            get_network_speed.prev_rx_bytes = rx_bytes # type: ignore
-            get_network_speed.prev_tx_bytes = tx_bytes # type: ignore
+            get_network_speed.prev_rx_bytes = rx_bytes  # type: ignore
+            get_network_speed.prev_tx_bytes = tx_bytes  # type: ignore
             return 0.0, 0.0
 
         # Calculate speed
-        rx_speed = rx_bytes - get_network_speed.prev_rx_bytes # type: ignore
-        tx_speed = tx_bytes - get_network_speed.prev_tx_bytes # type: ignore
+        rx_speed = rx_bytes - get_network_speed.prev_rx_bytes  # type: ignore
+        tx_speed = tx_bytes - get_network_speed.prev_tx_bytes  # type: ignore
 
         # Update previous values
-        get_network_speed.prev_rx_bytes = rx_bytes # type: ignore
-        get_network_speed.prev_tx_bytes = tx_bytes # type: ignore
+        get_network_speed.prev_rx_bytes = rx_bytes  # type: ignore
+        get_network_speed.prev_tx_bytes = tx_bytes  # type: ignore
 
         # Convert to Mbps
         rx_speed_mbps = (rx_speed * 8) / (1024 * 1024)  # Convert to Mbps
@@ -46,10 +54,11 @@ def get_network_speed() -> Tuple[float, float]:
         return tx_speed_mbps, rx_speed_mbps
 
     except Exception as e:
-        logging.error(f"Error measuring network speed: {e}")
+        logging.log(LogLevel.Error, f"Failed measuring network speed: {e}")
         return 0.0, 0.0
 
-def get_wifi_networks() -> List[str]:
+
+def get_wifi_networks(logging: Logger) -> List[str]:
     """Get list of available WiFi networks
 
     Returns:
@@ -57,14 +66,17 @@ def get_wifi_networks() -> List[str]:
     """
     try:
         # Use fields parameter to get a more consistent format, including SIGNAL explicitly
-        output = subprocess.getoutput("nmcli -f IN-USE,BSSID,SSID,MODE,CHAN,RATE,SIGNAL,BARS,SECURITY dev wifi list")
+        output = subprocess.getoutput(
+            "nmcli -f IN-USE,BSSID,SSID,MODE,CHAN,RATE,SIGNAL,BARS,SECURITY dev wifi list"
+        )
         networks = output.split("\n")[1:]  # Skip header row
         return networks
     except Exception as e:
-        logging.error(f"Error getting WiFi networks: {e}")
+        logging.log(LogLevel.Error, f"Failed getting WiFi networks: {e}")
         return []
 
-def get_wifi_status() -> bool:
+
+def get_wifi_status(logging: Logger) -> bool:
     """Check if WiFi is enabled
 
     Returns:
@@ -74,10 +86,11 @@ def get_wifi_status() -> bool:
         wifi_status = subprocess.getoutput("nmcli radio wifi").strip()
         return wifi_status.lower() == "enabled"
     except Exception as e:
-        logging.error(f"Error getting WiFi status: {e}")
+        logging.log(LogLevel.Error, f"Failed getting WiFi status: {e}")
         return False
 
-def set_wifi_status(enabled: bool) -> bool:
+
+def set_wifi_status(enabled: bool, logging: Logger) -> bool:
     """Enable or disable WiFi
 
     Args:
@@ -91,10 +104,15 @@ def set_wifi_status(enabled: bool) -> bool:
         subprocess.run(["nmcli", "radio", "wifi", command], check=True)
         return True
     except subprocess.CalledProcessError as e:
-        logging.error(f"Failed to {'enable' if enabled else 'disable'} WiFi: {e}")
+        logging.log(
+            LogLevel.Error, f"Failed to {'enable' if enabled else 'disable'} WiFi: {e}"
+        )
         return False
 
-def connect_to_wifi(ssid: str, password: str = "", remember: bool = True) -> bool:
+
+def connect_to_wifi(
+    ssid: str, logging: Logger, password: str = "", remember: bool = True
+) -> bool:
     """Connect to a WiFi network
 
     Args:
@@ -148,10 +166,11 @@ def connect_to_wifi(ssid: str, password: str = "", remember: bool = True) -> boo
         return True
 
     except subprocess.CalledProcessError as e:
-        logging.error(f"Failed to connect to network {ssid}: {e}")
+        logging.log(LogLevel.Error, f"Failed to connect to network {ssid}: {e}")
         return False
 
-def disconnect_wifi() -> bool:
+
+def disconnect_wifi(logging: Logger) -> bool:
     """Disconnect from current WiFi network
 
     Returns:
@@ -159,14 +178,18 @@ def disconnect_wifi() -> bool:
     """
     try:
         # First approach: Try to find WiFi device that's connected
-        connected_wifi_device = subprocess.getoutput("nmcli -t -f DEVICE,STATE dev | grep wifi.*:connected")
+        connected_wifi_device = subprocess.getoutput(
+            "nmcli -t -f DEVICE,STATE dev | grep wifi.*:connected"
+        )
 
         if connected_wifi_device:
             # Extract device name
             wifi_device = connected_wifi_device.split(":")[0]
 
             # Get connection name for this device
-            device_connection = subprocess.getoutput(f"nmcli -t -f NAME,DEVICE con show --active | grep {wifi_device}")
+            device_connection = subprocess.getoutput(
+                f"nmcli -t -f NAME,DEVICE con show --active | grep {wifi_device}"
+            )
 
             if device_connection and ":" in device_connection:
                 connection_name = device_connection.split(":")[0]
@@ -174,9 +197,13 @@ def disconnect_wifi() -> bool:
                 return True
 
         # Second approach: Try checking all active WiFi connections
-        active_connections = subprocess.getoutput("nmcli -t -f NAME,TYPE con show --active").split("\n")
+        active_connections = subprocess.getoutput(
+            "nmcli -t -f NAME,TYPE con show --active"
+        ).split("\n")
         for conn in active_connections:
-            if ":" in conn and ("wifi" in conn.lower() or "802-11-wireless" in conn.lower()):
+            if ":" in conn and (
+                "wifi" in conn.lower() or "802-11-wireless" in conn.lower()
+            ):
                 connection_name = conn.split(":")[0]
                 subprocess.run(["nmcli", "con", "down", connection_name], check=True)
                 return True
@@ -184,10 +211,11 @@ def disconnect_wifi() -> bool:
         return False
 
     except subprocess.CalledProcessError as e:
-        logging.error(f"Failed to disconnect: {e}")
+        logging.log(LogLevel.Error, f"Failed to disconnect: {e}")
         return False
 
-def forget_wifi_network(ssid: str) -> bool:
+
+def forget_wifi_network(ssid: str, logging: Logger) -> bool:
     """Remove a saved WiFi network
 
     Args:
@@ -200,5 +228,5 @@ def forget_wifi_network(ssid: str) -> bool:
         subprocess.run(["nmcli", "connection", "delete", ssid], check=True)
         return True
     except subprocess.CalledProcessError as e:
-        logging.error(f"Failed to forget network: {e}")
+        logging.log(LogLevel.Error, f"Failed to forget network: {e}")
         return False

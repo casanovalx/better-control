@@ -2,7 +2,8 @@
 
 import gi # type: ignore
 import threading
-import logging
+
+from utils.logger import LogLevel, Logger
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib # type: ignore
@@ -17,12 +18,15 @@ from tools.wifi import (
     get_network_speed
 )
 
+
+
 class WiFiTab(Gtk.Box):
     """WiFi settings tab"""
 
-    def __init__(self):
+    def __init__(self, logging: Logger):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        logging.info("Initializing WiFi tab")
+        self.logging = logging
+        self.logging.log(LogLevel.Info, "Initializing WiFi tab")
         self.set_margin_start(15)
         self.set_margin_end(15)
         self.set_margin_top(15)
@@ -77,7 +81,7 @@ class WiFiTab(Gtk.Box):
         power_label.set_markup("<b>Wi-Fi</b>")
         power_label.set_halign(Gtk.Align.START)
         self.power_switch = Gtk.Switch()
-        self.power_switch.set_active(get_wifi_status())
+        self.power_switch.set_active(get_wifi_status(self.logging))
         self.power_switch.connect("notify::active", self.on_power_switched)
         power_box.pack_start(power_label, False, True, 0)
         power_box.pack_end(self.power_switch, False, True, 0)
@@ -147,7 +151,7 @@ class WiFiTab(Gtk.Box):
 
     def load_networks(self):
         """Load WiFi networks list - to be called after all tabs are loaded"""
-        logging.info("Loading WiFi networks after tabs initialization")
+        self.logging.log(LogLevel.Info, "Loading WiFi networks after tabs initialization")
         # Add a loading indicator
         row = Gtk.ListBoxRow()
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -176,12 +180,12 @@ class WiFiTab(Gtk.Box):
         """Background thread to load WiFi networks"""
         try:
             # Get networks
-            networks = get_wifi_networks()
-            logging.info(f"Found {len(networks)} WiFi networks")
+            networks = get_wifi_networks(self.logging)
+            self.logging.log(LogLevel.Info, f"Found {len(networks)} WiFi networks")
             # Update UI in main thread
             GLib.idle_add(self._update_networks_in_ui, networks)
         except Exception as e:
-            logging.error(f"Error loading WiFi networks: {e}")
+            self.logging.log(LogLevel.Error, f"Failed loading WiFi networks: {e}")
             # Show error in UI
             GLib.idle_add(self._show_network_error, str(e))
     def _update_networks_in_ui(self, networks):
@@ -280,7 +284,7 @@ class WiFiTab(Gtk.Box):
 
             self.networks_box.show_all()
         except Exception as e:
-            logging.error(f"Error updating networks in UI: {e}")
+            self.logging.log(LogLevel.Error, f"Failed updating networks in UI: {e}")
             self._show_network_error(str(e))
 
         return False  # Required for GLib.idle_add
@@ -301,7 +305,7 @@ class WiFiTab(Gtk.Box):
         error_icon = Gtk.Image.new_from_icon_name("dialog-error-symbolic", Gtk.IconSize.MENU)
         box.pack_start(error_icon, False, False, 0)
 
-        label = Gtk.Label(label=f"Error loading networks: {error_message}")
+        label = Gtk.Label(label=f"Failed loading networks: {error_message}")
         label.set_halign(Gtk.Align.START)
         box.pack_start(label, True, True, 0)
 
@@ -313,7 +317,7 @@ class WiFiTab(Gtk.Box):
 
     def update_network_list(self):
         """Update the list of WiFi networks"""
-        logging.info("Refreshing WiFi networks list")
+        self.logging.log(LogLevel.Info, "Refreshing WiFi networks list")
 
         # Clear existing networks
         for child in self.networks_box.get_children():
@@ -346,7 +350,7 @@ class WiFiTab(Gtk.Box):
 
     def update_network_speed(self):
         """Update network speed display"""
-        speed = get_network_speed()
+        speed = get_network_speed(self.logging)
         rx_bytes = speed["rx_bytes"]
         tx_bytes = speed["tx_bytes"]
 
@@ -364,16 +368,16 @@ class WiFiTab(Gtk.Box):
     def on_power_switched(self, switch, gparam):
         """Handle WiFi power switch toggle"""
         state = switch.get_active()
-        logging.info(f"Setting WiFi power: {'ON' if state else 'OFF'}")
+        self.logging.log(LogLevel.Info, f"Setting WiFi power: {'ON' if state else 'OFF'}")
         # Run power toggle in a background thread to avoid UI freezing
         def power_toggle_thread():
             try:
-                set_wifi_power(state)
+                set_wifi_power(state, self.logging)
                 if state:
                     # If Wi-Fi was turned on, update networks list
                     GLib.idle_add(self.update_network_list)
             except Exception as e:
-                logging.error(f"Error setting WiFi power: {e}")
+                self.logging.log(LogLevel.Error, f"Failed setting WiFi power: {e}")
         # Start thread
         thread = threading.Thread(target=power_toggle_thread)
         thread.daemon = True
@@ -381,7 +385,7 @@ class WiFiTab(Gtk.Box):
 
     def on_refresh_clicked(self, button):
         """Handle refresh button click"""
-        logging.info("Manual refresh of WiFi networks requested")
+        self.logging.log(LogLevel.Info, "Manual refresh of WiFi networks requested")
         self.update_network_list()
 
     def on_connect_clicked(self, button):
@@ -399,7 +403,7 @@ class WiFiTab(Gtk.Box):
             ssid = name_label.get_label()
             ssid = ssid.replace("<b>", "").replace("</b>", "")
 
-        logging.info(f"Connecting to WiFi network: {ssid}")
+        self.logging.log(LogLevel.Info, f"Connecting to WiFi network: {ssid}")
 
         # Show connecting indicator in list
         for child in self.networks_box.get_children():
@@ -429,7 +433,7 @@ class WiFiTab(Gtk.Box):
         def connect_thread():
             try:
                 # First try to connect without password
-                success = connect_network(ssid)
+                success = connect_network(ssid, self.logging)
                 if success:
                     # Successfully connected
                     GLib.idle_add(self.update_network_list)
@@ -437,7 +441,7 @@ class WiFiTab(Gtk.Box):
                 # If connection failed, show password dialog on main thread
                 GLib.idle_add(self._show_password_dialog, ssid)
             except Exception as e:
-                logging.error(f"Error connecting to network: {e}")
+                self.logging.log(LogLevel.Error, f"Failed connecting to network: {e}")
                 GLib.idle_add(self.update_network_list)  # Refresh to clear connecting status
         # Start connection thread
         thread = threading.Thread(target=connect_thread)
@@ -445,7 +449,7 @@ class WiFiTab(Gtk.Box):
         thread.start()
     def _show_password_dialog(self, ssid):
         """Show password dialog for secured networks"""
-        networks = get_wifi_networks()
+        networks = get_wifi_networks(self.logging)
         network = next((n for n in networks if n["ssid"] == ssid), None)
         if network and network["security"].lower() != "none":
             dialog = Gtk.Dialog(
@@ -493,7 +497,7 @@ class WiFiTab(Gtk.Box):
                             # Failed to connect, just refresh UI to clear status
                             GLib.idle_add(self.update_network_list)
                     except Exception as e:
-                        logging.error(f"Error connecting to network with password: {e}")
+                        self.logging.log(LogLevel.Error, f"Failed connecting to network with password: {e}")
                         GLib.idle_add(self.update_network_list)
                 thread = threading.Thread(target=connect_with_password_thread)
                 thread.daemon = True
@@ -522,7 +526,7 @@ class WiFiTab(Gtk.Box):
             ssid = name_label.get_label()
             ssid = ssid.replace("<b>", "").replace("</b>", "")
 
-        logging.info(f"Disconnecting from WiFi network: {ssid}")
+        self.logging.log(LogLevel.Info, f"Disconnecting from WiFi network: {ssid}")
 
         # Show disconnecting indicator
         for child in self.networks_box.get_children():
@@ -567,7 +571,7 @@ class WiFiTab(Gtk.Box):
         if not ssid:
             ssid = name_label.get_label()
             ssid = ssid.replace("<b>", "").replace("</b>", "")
-        logging.info(f"Forgetting WiFi network: {ssid}")
+        self.logging.log(LogLevel.Info, f"Forgetting WiFi network: {ssid}")
 
         dialog = Gtk.MessageDialog(
             transient_for=self.get_toplevel(),
@@ -611,13 +615,13 @@ class WiFiTab(Gtk.Box):
             # Run forget in background thread
             def forget_thread():
                 try:
-                    if forget_network(ssid):
+                    if forget_network(ssid, self.logging):
                         GLib.idle_add(self.update_network_list)
                     else:
                         # Failed to forget, just refresh UI
                         GLib.idle_add(self.update_network_list)
                 except Exception as e:
-                    logging.error(f"Error forgetting network: {e}")
+                    self.logging.log(LogLevel.Error, f"Failed forgetting network: {e}")
                     GLib.idle_add(self.update_network_list)
             thread = threading.Thread(target=forget_thread)
             thread.daemon = True
@@ -626,12 +630,12 @@ class WiFiTab(Gtk.Box):
     def _disconnect_thread(self, ssid):
         """Thread function to disconnect from a WiFi network"""
         try:
-            if disconnect_network(ssid):
+            if disconnect_network(ssid, self.logging):
                 GLib.idle_add(self.update_network_list)
-                logging.info(f"Successfully disconnected from {ssid}")
+                self.logging.log(LogLevel.Info, f"Successfully disconnected from {ssid}")
             else:
-                logging.error(f"Failed to disconnect from {ssid}")
+                self.logging.log(LogLevel.Error, f"Failed to disconnect from {ssid}")
                 GLib.idle_add(self.update_network_list)
         except Exception as e:
-            logging.error(f"Error disconnecting from network: {e}")
+            self.logging.log(LogLevel.Error, f"Failed disconnecting from network: {e}")
             GLib.idle_add(self.update_network_list)

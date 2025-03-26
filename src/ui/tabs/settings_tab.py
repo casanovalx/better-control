@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import logging
-import gi # type: ignore
+import gi
+
+from utils.logger import LogLevel, Logger # type: ignore
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject # type: ignore
@@ -16,9 +17,10 @@ class SettingsTab(Gtk.Box):
         'tab-order-changed': (GObject.SignalFlags.RUN_LAST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
-    def __init__(self):
+    def __init__(self, logging: Logger):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        # Set margins for dialog window context
+        self.logging = logging
+
         self.set_margin_top(10)
         self.set_margin_bottom(10)
         self.set_margin_start(10)
@@ -26,13 +28,12 @@ class SettingsTab(Gtk.Box):
         self.set_hexpand(True)
         self.set_vexpand(True)
 
-        # Create a scrolled window to ensure content is accessible
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scrolled_window.set_hexpand(True)
         scrolled_window.set_vexpand(True)
         self.pack_start(scrolled_window, True, True, 0)
-        # Create a container for the content
+
         self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         self.content_box.set_margin_top(10)
         self.content_box.set_margin_bottom(10)
@@ -40,16 +41,13 @@ class SettingsTab(Gtk.Box):
         self.content_box.set_margin_end(10)
         scrolled_window.add(self.content_box)
 
-        # Load current settings
-        self.settings = load_settings()
+        self.settings = load_settings(logging)
 
-        # Create UI
         self.populate_settings()
 
-        # Make sure everything is visible
         self.show_all()
 
-        logging.info("Settings UI has been created and populated")
+        self.logging.log(LogLevel.Info, "Settings UI has been created and populated")
 
     def populate_settings(self):
         """Populate the settings tab with options"""
@@ -164,7 +162,7 @@ class SettingsTab(Gtk.Box):
 
         # Update settings
         self.settings["visibility"][tab_name] = active
-        save_settings(self.settings)
+        save_settings(self.settings, self.logging)
 
         # Emit signal to notify the main window
         self.emit("tab-visibility-changed", tab_name, active)
@@ -181,7 +179,7 @@ class SettingsTab(Gtk.Box):
 
             # Update settings
             self.settings["tab_order"] = tab_order
-            save_settings(self.settings)
+            save_settings(self.settings, self.logging)
 
             # Update UI order
             self.update_ui_order()
@@ -201,7 +199,7 @@ class SettingsTab(Gtk.Box):
 
             # Update settings
             self.settings["tab_order"] = tab_order
-            save_settings(self.settings)
+            save_settings(self.settings, self.logging)
 
             # Update UI order
             self.update_ui_order()

@@ -1,9 +1,11 @@
 import subprocess
-import logging
 import shutil
 from typing import Optional
 
-def get_current_volume() -> int:
+from utils.logger import LogLevel, Logger
+
+
+def get_current_volume(logging: Logger) -> int:
     """Get the current volume level.
 
     Returns:
@@ -14,10 +16,11 @@ def get_current_volume() -> int:
         volume = int(output.split("/")[1].strip().strip("%"))
         return volume
     except Exception as e:
-        logging.error(f"Error getting volume: {e}")
+        logging.log(LogLevel.Error, f"Failed getting volume: {e}")
         return 50
 
-def get_current_mic_volume() -> int:
+
+def get_current_mic_volume(logging: Logger) -> int:
     """Get the current microphone volume level.
 
     Returns:
@@ -28,10 +31,11 @@ def get_current_mic_volume() -> int:
         volume = int(output.split("/")[1].strip().strip("%"))
         return volume
     except Exception as e:
-        logging.error(f"Error getting mic volume: {e}")
+        logging.log(LogLevel.Error, f"Failed getting mic volume: {e}")
         return 50
 
-def set_volume_level(value: int) -> None:
+
+def set_volume_level(value: int, logging: Logger) -> None:
     """Set the speaker volume to a specific level.
 
     Args:
@@ -40,9 +44,12 @@ def set_volume_level(value: int) -> None:
     if shutil.which("pactl"):
         subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{value}%"])
     else:
-        logging.error("pactl is missing. Please check our GitHub page to see all dependencies and install them")
+        logging.log(LogLevel.Error, 
+            "pactl is missing. Please check our GitHub page to see all dependencies and install them"
+        )
 
-def set_mic_level(value: int) -> None:
+
+def set_mic_level(value: int, logging: Logger) -> None:
     """Set the microphone volume to a specific level.
 
     Args:
@@ -51,9 +58,12 @@ def set_mic_level(value: int) -> None:
     if shutil.which("pactl"):
         subprocess.run(["pactl", "set-source-volume", "@DEFAULT_SOURCE@", f"{value}%"])
     else:
-        logging.error("pactl is missing. Please check our GitHub page to see all dependencies and install them")
+        logging.log(LogLevel.Error, 
+            "pactl is missing. Please check our GitHub page to see all dependencies and install them"
+        )
 
-def is_muted(audio_type: str = "sink") -> bool:
+
+def is_muted(logging: Logger, audio_type: str = "sink") -> bool:
     """Check if the audio sink or source is currently muted.
 
     Args:
@@ -72,17 +82,20 @@ def is_muted(audio_type: str = "sink") -> bool:
 
         return "yes" in output.lower()
     except Exception as e:
-        logging.error(f"Error checking mute state: {e}")
+        logging.log(LogLevel.Error, f"Failed checking mute state: {e}")
         return False
 
-def toggle_mute(audio_type: str = "sink") -> None:
+
+def toggle_mute(logging: Logger, audio_type: str = "sink") -> None:
     """Toggle mute state for speaker or microphone.
 
     Args:
         audio_type (str): "sink" for speaker, "source" for microphone
     """
     if not shutil.which("pactl"):
-        logging.error("pactl is missing. Please check our GitHub page to see all dependencies and install them")
+        logging.log(LogLevel.Error, 
+            "pactl is missing. Please check our GitHub page to see all dependencies and install them"
+        )
         return
 
     try:
@@ -93,7 +106,8 @@ def toggle_mute(audio_type: str = "sink") -> None:
         else:
             raise ValueError("Invalid audio_type. Use 'sink' or 'source'.")
     except Exception as e:
-        logging.error(f"Error toggling mute: {e}")
+        logging.log(LogLevel.Error, f"Failed toggling mute: {e}")
+
 
 def get_sink_icon_name(sink_name: str, description: str) -> str:
     """Determine the appropriate icon for an audio output device.
@@ -137,6 +151,7 @@ def get_sink_icon_name(sink_name: str, description: str) -> str:
     # Default to speaker
     return "audio-speakers-symbolic"
 
+
 def get_source_icon_name(source_name: str, description: str) -> str:
     """Determine the appropriate icon for an audio input device.
 
@@ -179,6 +194,7 @@ def get_source_icon_name(source_name: str, description: str) -> str:
 
     # Default to generic microphone
     return "audio-input-microphone-symbolic"
+
 
 def get_app_icon_name(app_name: str, provided_icon_name: str) -> Optional[str]:
     """Map application names to appropriate icon names.

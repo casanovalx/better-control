@@ -1,0 +1,1508 @@
+23:07:756 [INFO]: No previous sink saved.
+23:07:787 [INFO]: Initializing Better Control application
+23:07:787 [INFO]: Settings loaded
+23:07:789 [INFO]: Starting asynchronous tab creation
+23:07:791 [INFO]: Settings button created and attached to notebook
+23:07:809 [INFO]: Updating audio device lists...
+23:07:816 [INFO]: Current active output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0
+23:07:825 [INFO]: Adding output sink: alsa_output.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:07:826 [INFO]: Adding output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0 (G435 Wireless Gaming Headset Pro)
+23:07:882 [INFO]: Current active input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0
+23:07:901 [INFO]: Adding input source: alsa_input.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:07:901 [INFO]: Adding input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0 (G435 Wireless Gaming Headset Pro)
+23:07:955 [DEBUG]: Parsing Line: Sink Input #65
+23:07:956 [DEBUG]: New app detected with ID: 65
+23:07:956 [DEBUG]: Parsing Line: Driver: PipeWire
+23:07:956 [DEBUG]: Parsing Line: Owner Module: n/a
+23:07:956 [DEBUG]: Parsing Line: Client: 64
+23:07:956 [DEBUG]: Parsing Line: Sink: 71
+23:07:956 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:07:956 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:07:956 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""
+23:07:956 [DEBUG]: Parsing Line: Corked: no
+23:07:956 [DEBUG]: Parsing Line: Mute: no
+23:07:956 [DEBUG]: Parsing Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:07:956 [DEBUG]: Found Volume Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:07:956 [DEBUG]: Detected & Stored Volume: 100
+23:07:956 [DEBUG]: Parsing Line: balance 0.00
+23:07:956 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:07:956 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:07:956 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:07:956 [DEBUG]: Parsing Line: Properties:
+23:07:956 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:07:956 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:07:956 [DEBUG]: Parsing Line: application.name = "spotify"
+23:07:956 [DEBUG]: Detected & Stored App Name: spotify
+23:07:956 [DEBUG]: Parsing Line: application.process.id = "1111"
+23:07:956 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:07:956 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:07:956 [DEBUG]: Parsing Line: application.process.binary = "spotify"
+23:07:956 [DEBUG]: Parsing Line: application.language = "en_US.UTF-8"
+23:07:956 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:07:956 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:07:956 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:07:956 [DEBUG]: Parsing Line: media.role = "music"
+23:07:956 [DEBUG]: Parsing Line: media.name = "Spotify"
+23:07:956 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:07:956 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:07:956 [DEBUG]: Parsing Line: node.latency = "8192/44100"
+23:07:956 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:07:956 [DEBUG]: Parsing Line: node.name = "spotify"
+23:07:956 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:07:956 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:07:956 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:07:956 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:07:956 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:07:956 [DEBUG]: Parsing Line: object.register = "false"
+23:07:956 [DEBUG]: Parsing Line: factory.id = "7"
+23:07:956 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:07:956 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:07:956 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:07:956 [DEBUG]: Parsing Line: client.id = "64"
+23:07:956 [DEBUG]: Parsing Line: object.id = "65"
+23:07:956 [DEBUG]: Parsing Line: object.serial = "65"
+23:07:956 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:07:956 [DEBUG]: Parsing Line: pulse.attr.tlength = "640064"
+23:07:956 [DEBUG]: Parsing Line: pulse.attr.prebuf = "0"
+23:07:956 [DEBUG]: Parsing Line: pulse.attr.minreq = "7056"
+23:07:956 [DEBUG]: Parsing Line: node.driver-id = "72"
+23:07:956 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-media-role:music"
+23:07:956 [DEBUG]: Parsing Line: 
+23:07:956 [DEBUG]: Parsing Line: Sink Input #87
+23:07:956 [DEBUG]: Finalizing previous app: {'id': '65', 'volume': 100, 'name': 'spotify'}
+23:07:956 [DEBUG]: New app detected with ID: 87
+23:07:956 [DEBUG]: Parsing Line: Driver: PipeWire
+23:07:956 [DEBUG]: Parsing Line: Owner Module: n/a
+23:07:956 [DEBUG]: Parsing Line: Client: 86
+23:07:956 [DEBUG]: Parsing Line: Sink: 71
+23:07:956 [DEBUG]: Parsing Line: Sample Specification: s16le 1ch 44100Hz
+23:07:956 [DEBUG]: Parsing Line: Channel Map: mono
+23:07:956 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"s16le\""  format.rate = "44100"  format.channels = "1"  format.channel_map = "\"mono\""
+23:07:956 [DEBUG]: Parsing Line: Corked: no
+23:07:956 [DEBUG]: Parsing Line: Mute: no
+23:07:956 [DEBUG]: Parsing Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:07:956 [DEBUG]: Found Volume Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:07:957 [DEBUG]: Detected & Stored Volume: 153
+23:07:957 [DEBUG]: Parsing Line: balance 0.00
+23:07:957 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:07:957 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:07:957 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:07:957 [DEBUG]: Parsing Line: Properties:
+23:07:957 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:07:957 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:07:957 [DEBUG]: Parsing Line: application.name = "speech-dispatcher-dummy"
+23:07:957 [DEBUG]: Detected & Stored App Name: speech-dispatcher-dummy
+23:07:957 [DEBUG]: Parsing Line: application.process.id = "1765"
+23:07:957 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:07:957 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:07:957 [DEBUG]: Parsing Line: application.process.binary = "sd_dummy"
+23:07:957 [DEBUG]: Parsing Line: application.language = "C"
+23:07:957 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:07:957 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:07:957 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:07:957 [DEBUG]: Parsing Line: pulse.min.req = "512/48000"
+23:07:957 [DEBUG]: Parsing Line: pulse.min.quantum = "512/48000"
+23:07:957 [DEBUG]: Parsing Line: pulse.idle.timeout = "5"
+23:07:957 [DEBUG]: Parsing Line: media.name = "playback"
+23:07:957 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:07:957 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:07:957 [DEBUG]: Parsing Line: node.latency = "471/44100"
+23:07:957 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:07:957 [DEBUG]: Parsing Line: node.name = "speech-dispatcher-dummy"
+23:07:957 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:07:957 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:07:957 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:07:957 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:07:957 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:07:957 [DEBUG]: Parsing Line: object.register = "false"
+23:07:957 [DEBUG]: Parsing Line: factory.id = "7"
+23:07:957 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:07:957 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:07:957 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:07:957 [DEBUG]: Parsing Line: client.id = "78"
+23:07:957 [DEBUG]: Parsing Line: object.id = "79"
+23:07:957 [DEBUG]: Parsing Line: object.serial = "87"
+23:07:957 [DEBUG]: Parsing Line: pulse.attr.minreq = "942"
+23:07:957 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:07:957 [DEBUG]: Parsing Line: pulse.attr.tlength = "2826"
+23:07:957 [DEBUG]: Parsing Line: pulse.attr.prebuf = "1886"
+23:07:957 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-application-name:speech-dispatcher-dummy"
+23:07:957 [DEBUG]: Finalizing last app: {current_app}
+23:07:957 [DEBUG]: Parsed Applications: [{'id': '65', 'volume': 100, 'name': 'spotify'}, {'id': '87', 'volume': 153, 'name': 'speech-dispatcher-dummy'}]
+23:07:960 [INFO]: Created Volume tab
+23:07:969 [INFO]: Initializing WiFi tab
+23:08:015 [INFO]: Created Wi-Fi tab
+23:08:041 [INFO]: Created Bluetooth tab
+23:08:314 [INFO]: Created Battery tab
+23:08:347 [INFO]: Created Display tab
+23:08:366 [INFO]: All tabs created, finalizing UI
+23:08:366 [INFO]: Loading WiFi networks after tabs initialization
+23:10:789 [INFO]: Auto-refreshing audio settings...
+23:10:789 [INFO]: Updating audio device lists...
+23:10:803 [INFO]: Current active output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0
+23:10:816 [INFO]: Adding output sink: alsa_output.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:10:817 [INFO]: Adding output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0 (G435 Wireless Gaming Headset Pro)
+23:10:871 [INFO]: Current active input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0
+23:10:885 [INFO]: Adding input source: alsa_input.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:10:885 [INFO]: Adding input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0 (G435 Wireless Gaming Headset Pro)
+23:10:899 [DEBUG]: Parsing Line: Sink Input #65
+23:10:899 [DEBUG]: New app detected with ID: 65
+23:10:899 [DEBUG]: Parsing Line: Driver: PipeWire
+23:10:899 [DEBUG]: Parsing Line: Owner Module: n/a
+23:10:899 [DEBUG]: Parsing Line: Client: 64
+23:10:899 [DEBUG]: Parsing Line: Sink: 71
+23:10:899 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:10:899 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:10:899 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""
+23:10:899 [DEBUG]: Parsing Line: Corked: no
+23:10:899 [DEBUG]: Parsing Line: Mute: no
+23:10:899 [DEBUG]: Parsing Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:10:899 [DEBUG]: Found Volume Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:10:899 [DEBUG]: Detected & Stored Volume: 100
+23:10:899 [DEBUG]: Parsing Line: balance 0.00
+23:10:899 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:10:899 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:10:899 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:10:899 [DEBUG]: Parsing Line: Properties:
+23:10:899 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:10:899 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:10:899 [DEBUG]: Parsing Line: application.name = "spotify"
+23:10:899 [DEBUG]: Detected & Stored App Name: spotify
+23:10:899 [DEBUG]: Parsing Line: application.process.id = "1111"
+23:10:899 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:10:899 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:10:899 [DEBUG]: Parsing Line: application.process.binary = "spotify"
+23:10:899 [DEBUG]: Parsing Line: application.language = "en_US.UTF-8"
+23:10:899 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:10:899 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:10:899 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:10:899 [DEBUG]: Parsing Line: media.role = "music"
+23:10:899 [DEBUG]: Parsing Line: media.name = "Spotify"
+23:10:899 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:10:899 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:10:899 [DEBUG]: Parsing Line: node.latency = "8192/44100"
+23:10:899 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:10:899 [DEBUG]: Parsing Line: node.name = "spotify"
+23:10:899 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:10:899 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:10:899 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:10:899 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:10:899 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:10:899 [DEBUG]: Parsing Line: object.register = "false"
+23:10:899 [DEBUG]: Parsing Line: factory.id = "7"
+23:10:899 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:10:899 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:10:899 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:10:899 [DEBUG]: Parsing Line: client.id = "64"
+23:10:899 [DEBUG]: Parsing Line: object.id = "65"
+23:10:899 [DEBUG]: Parsing Line: object.serial = "65"
+23:10:899 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:10:899 [DEBUG]: Parsing Line: pulse.attr.tlength = "640064"
+23:10:899 [DEBUG]: Parsing Line: pulse.attr.prebuf = "0"
+23:10:899 [DEBUG]: Parsing Line: pulse.attr.minreq = "7056"
+23:10:899 [DEBUG]: Parsing Line: node.driver-id = "72"
+23:10:899 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-media-role:music"
+23:10:899 [DEBUG]: Parsing Line: 
+23:10:899 [DEBUG]: Parsing Line: Sink Input #87
+23:10:899 [DEBUG]: Finalizing previous app: {'id': '65', 'volume': 100, 'name': 'spotify'}
+23:10:899 [DEBUG]: New app detected with ID: 87
+23:10:899 [DEBUG]: Parsing Line: Driver: PipeWire
+23:10:899 [DEBUG]: Parsing Line: Owner Module: n/a
+23:10:899 [DEBUG]: Parsing Line: Client: 86
+23:10:899 [DEBUG]: Parsing Line: Sink: 71
+23:10:899 [DEBUG]: Parsing Line: Sample Specification: s16le 1ch 44100Hz
+23:10:899 [DEBUG]: Parsing Line: Channel Map: mono
+23:10:899 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"s16le\""  format.rate = "44100"  format.channels = "1"  format.channel_map = "\"mono\""
+23:10:899 [DEBUG]: Parsing Line: Corked: no
+23:10:899 [DEBUG]: Parsing Line: Mute: no
+23:10:899 [DEBUG]: Parsing Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:10:899 [DEBUG]: Found Volume Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:10:899 [DEBUG]: Detected & Stored Volume: 153
+23:10:899 [DEBUG]: Parsing Line: balance 0.00
+23:10:899 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:10:899 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:10:899 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:10:899 [DEBUG]: Parsing Line: Properties:
+23:10:899 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:10:899 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:10:899 [DEBUG]: Parsing Line: application.name = "speech-dispatcher-dummy"
+23:10:899 [DEBUG]: Detected & Stored App Name: speech-dispatcher-dummy
+23:10:899 [DEBUG]: Parsing Line: application.process.id = "1765"
+23:10:899 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:10:900 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:10:900 [DEBUG]: Parsing Line: application.process.binary = "sd_dummy"
+23:10:900 [DEBUG]: Parsing Line: application.language = "C"
+23:10:900 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:10:900 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:10:900 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:10:900 [DEBUG]: Parsing Line: pulse.min.req = "512/48000"
+23:10:900 [DEBUG]: Parsing Line: pulse.min.quantum = "512/48000"
+23:10:900 [DEBUG]: Parsing Line: pulse.idle.timeout = "5"
+23:10:900 [DEBUG]: Parsing Line: media.name = "playback"
+23:10:900 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:10:900 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:10:900 [DEBUG]: Parsing Line: node.latency = "471/44100"
+23:10:900 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:10:900 [DEBUG]: Parsing Line: node.name = "speech-dispatcher-dummy"
+23:10:900 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:10:900 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:10:900 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:10:900 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:10:900 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:10:900 [DEBUG]: Parsing Line: object.register = "false"
+23:10:900 [DEBUG]: Parsing Line: factory.id = "7"
+23:10:900 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:10:900 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:10:900 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:10:900 [DEBUG]: Parsing Line: client.id = "78"
+23:10:900 [DEBUG]: Parsing Line: object.id = "79"
+23:10:900 [DEBUG]: Parsing Line: object.serial = "87"
+23:10:900 [DEBUG]: Parsing Line: pulse.attr.minreq = "942"
+23:10:900 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:10:900 [DEBUG]: Parsing Line: pulse.attr.tlength = "2826"
+23:10:900 [DEBUG]: Parsing Line: pulse.attr.prebuf = "1886"
+23:10:900 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-application-name:speech-dispatcher-dummy"
+23:10:900 [DEBUG]: Finalizing last app: {current_app}
+23:10:900 [DEBUG]: Parsed Applications: [{'id': '65', 'volume': 100, 'name': 'spotify'}, {'id': '87', 'volume': 153, 'name': 'speech-dispatcher-dummy'}]
+23:10:990 [DEBUG]: Parsing Line: Sink Input #65
+23:10:990 [DEBUG]: New app detected with ID: 65
+23:10:990 [DEBUG]: Parsing Line: Driver: PipeWire
+23:10:990 [DEBUG]: Parsing Line: Owner Module: n/a
+23:10:990 [DEBUG]: Parsing Line: Client: 64
+23:10:990 [DEBUG]: Parsing Line: Sink: 71
+23:10:990 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:10:990 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:10:990 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""
+23:10:990 [DEBUG]: Parsing Line: Corked: no
+23:10:990 [DEBUG]: Parsing Line: Mute: no
+23:10:990 [DEBUG]: Parsing Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:10:990 [DEBUG]: Found Volume Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:10:990 [DEBUG]: Detected & Stored Volume: 100
+23:10:990 [DEBUG]: Parsing Line: balance 0.00
+23:10:990 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:10:990 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:10:990 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:10:991 [DEBUG]: Parsing Line: Properties:
+23:10:991 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:10:991 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:10:991 [DEBUG]: Parsing Line: application.name = "spotify"
+23:10:991 [DEBUG]: Detected & Stored App Name: spotify
+23:10:991 [DEBUG]: Parsing Line: application.process.id = "1111"
+23:10:991 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:10:991 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:10:991 [DEBUG]: Parsing Line: application.process.binary = "spotify"
+23:10:991 [DEBUG]: Parsing Line: application.language = "en_US.UTF-8"
+23:10:991 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:10:991 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:10:991 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:10:991 [DEBUG]: Parsing Line: media.role = "music"
+23:10:991 [DEBUG]: Parsing Line: media.name = "Spotify"
+23:10:991 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:10:991 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:10:991 [DEBUG]: Parsing Line: node.latency = "8192/44100"
+23:10:991 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:10:991 [DEBUG]: Parsing Line: node.name = "spotify"
+23:10:991 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:10:991 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:10:991 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:10:991 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:10:991 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:10:991 [DEBUG]: Parsing Line: object.register = "false"
+23:10:991 [DEBUG]: Parsing Line: factory.id = "7"
+23:10:991 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:10:991 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:10:991 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:10:991 [DEBUG]: Parsing Line: client.id = "64"
+23:10:991 [DEBUG]: Parsing Line: object.id = "65"
+23:10:991 [DEBUG]: Parsing Line: object.serial = "65"
+23:10:991 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:10:991 [DEBUG]: Parsing Line: pulse.attr.tlength = "640064"
+23:10:991 [DEBUG]: Parsing Line: pulse.attr.prebuf = "0"
+23:10:991 [DEBUG]: Parsing Line: pulse.attr.minreq = "7056"
+23:10:991 [DEBUG]: Parsing Line: node.driver-id = "72"
+23:10:991 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-media-role:music"
+23:10:991 [DEBUG]: Parsing Line: 
+23:10:991 [DEBUG]: Parsing Line: Sink Input #87
+23:10:991 [DEBUG]: Finalizing previous app: {'id': '65', 'volume': 100, 'name': 'spotify'}
+23:10:991 [DEBUG]: New app detected with ID: 87
+23:10:991 [DEBUG]: Parsing Line: Driver: PipeWire
+23:10:991 [DEBUG]: Parsing Line: Owner Module: n/a
+23:10:991 [DEBUG]: Parsing Line: Client: 86
+23:10:991 [DEBUG]: Parsing Line: Sink: 71
+23:10:991 [DEBUG]: Parsing Line: Sample Specification: s16le 1ch 44100Hz
+23:10:991 [DEBUG]: Parsing Line: Channel Map: mono
+23:10:991 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"s16le\""  format.rate = "44100"  format.channels = "1"  format.channel_map = "\"mono\""
+23:10:991 [DEBUG]: Parsing Line: Corked: no
+23:10:991 [DEBUG]: Parsing Line: Mute: no
+23:10:991 [DEBUG]: Parsing Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:10:991 [DEBUG]: Found Volume Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:10:991 [DEBUG]: Detected & Stored Volume: 153
+23:10:991 [DEBUG]: Parsing Line: balance 0.00
+23:10:991 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:10:991 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:10:991 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:10:991 [DEBUG]: Parsing Line: Properties:
+23:10:991 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:10:991 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:10:991 [DEBUG]: Parsing Line: application.name = "speech-dispatcher-dummy"
+23:10:991 [DEBUG]: Detected & Stored App Name: speech-dispatcher-dummy
+23:10:991 [DEBUG]: Parsing Line: application.process.id = "1765"
+23:10:991 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:10:991 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:10:991 [DEBUG]: Parsing Line: application.process.binary = "sd_dummy"
+23:10:991 [DEBUG]: Parsing Line: application.language = "C"
+23:10:991 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:10:991 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:10:991 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:10:991 [DEBUG]: Parsing Line: pulse.min.req = "512/48000"
+23:10:991 [DEBUG]: Parsing Line: pulse.min.quantum = "512/48000"
+23:10:991 [DEBUG]: Parsing Line: pulse.idle.timeout = "5"
+23:10:991 [DEBUG]: Parsing Line: media.name = "playback"
+23:10:991 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:10:991 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:10:991 [DEBUG]: Parsing Line: node.latency = "471/44100"
+23:10:991 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:10:991 [DEBUG]: Parsing Line: node.name = "speech-dispatcher-dummy"
+23:10:991 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:10:991 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:10:991 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:10:991 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:10:991 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:10:991 [DEBUG]: Parsing Line: object.register = "false"
+23:10:991 [DEBUG]: Parsing Line: factory.id = "7"
+23:10:991 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:10:991 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:10:991 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:10:991 [DEBUG]: Parsing Line: client.id = "78"
+23:10:991 [DEBUG]: Parsing Line: object.id = "79"
+23:10:991 [DEBUG]: Parsing Line: object.serial = "87"
+23:10:991 [DEBUG]: Parsing Line: pulse.attr.minreq = "942"
+23:10:991 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:10:991 [DEBUG]: Parsing Line: pulse.attr.tlength = "2826"
+23:10:991 [DEBUG]: Parsing Line: pulse.attr.prebuf = "1886"
+23:10:991 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-application-name:speech-dispatcher-dummy"
+23:10:991 [DEBUG]: Finalizing last app: {current_app}
+23:10:991 [DEBUG]: Parsed Applications: [{'id': '65', 'volume': 100, 'name': 'spotify'}, {'id': '87', 'volume': 153, 'name': 'speech-dispatcher-dummy'}]
+23:13:136 [INFO]: Found 3 WiFi networks
+23:13:993 [INFO]: Auto-refreshing audio settings...
+23:13:993 [INFO]: Updating audio device lists...
+23:14:006 [INFO]: Current active output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0
+23:14:020 [INFO]: Adding output sink: alsa_output.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:14:020 [INFO]: Adding output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0 (G435 Wireless Gaming Headset Pro)
+23:14:076 [INFO]: Current active input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0
+23:14:090 [INFO]: Adding input source: alsa_input.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:14:090 [INFO]: Adding input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0 (G435 Wireless Gaming Headset Pro)
+23:14:103 [DEBUG]: Parsing Line: Sink Input #65
+23:14:103 [DEBUG]: New app detected with ID: 65
+23:14:103 [DEBUG]: Parsing Line: Driver: PipeWire
+23:14:103 [DEBUG]: Parsing Line: Owner Module: n/a
+23:14:103 [DEBUG]: Parsing Line: Client: 64
+23:14:103 [DEBUG]: Parsing Line: Sink: 71
+23:14:103 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:14:103 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:14:103 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""
+23:14:103 [DEBUG]: Parsing Line: Corked: no
+23:14:103 [DEBUG]: Parsing Line: Mute: no
+23:14:103 [DEBUG]: Parsing Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:14:103 [DEBUG]: Found Volume Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:14:103 [DEBUG]: Detected & Stored Volume: 100
+23:14:103 [DEBUG]: Parsing Line: balance 0.00
+23:14:103 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:14:103 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:14:103 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:14:103 [DEBUG]: Parsing Line: Properties:
+23:14:103 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:14:103 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:14:103 [DEBUG]: Parsing Line: application.name = "spotify"
+23:14:103 [DEBUG]: Detected & Stored App Name: spotify
+23:14:103 [DEBUG]: Parsing Line: application.process.id = "1111"
+23:14:103 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:14:103 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:14:103 [DEBUG]: Parsing Line: application.process.binary = "spotify"
+23:14:103 [DEBUG]: Parsing Line: application.language = "en_US.UTF-8"
+23:14:103 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:14:103 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:14:103 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:14:103 [DEBUG]: Parsing Line: media.role = "music"
+23:14:103 [DEBUG]: Parsing Line: media.name = "Spotify"
+23:14:103 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:14:103 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:14:103 [DEBUG]: Parsing Line: node.latency = "8192/44100"
+23:14:103 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:14:103 [DEBUG]: Parsing Line: node.name = "spotify"
+23:14:103 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:14:103 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:14:103 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:14:103 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:14:103 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:14:103 [DEBUG]: Parsing Line: object.register = "false"
+23:14:103 [DEBUG]: Parsing Line: factory.id = "7"
+23:14:103 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:14:103 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:14:103 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:14:103 [DEBUG]: Parsing Line: client.id = "64"
+23:14:103 [DEBUG]: Parsing Line: object.id = "65"
+23:14:103 [DEBUG]: Parsing Line: object.serial = "65"
+23:14:103 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:14:103 [DEBUG]: Parsing Line: pulse.attr.tlength = "640064"
+23:14:103 [DEBUG]: Parsing Line: pulse.attr.prebuf = "0"
+23:14:103 [DEBUG]: Parsing Line: pulse.attr.minreq = "7056"
+23:14:103 [DEBUG]: Parsing Line: node.driver-id = "72"
+23:14:103 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-media-role:music"
+23:14:103 [DEBUG]: Parsing Line: 
+23:14:103 [DEBUG]: Parsing Line: Sink Input #87
+23:14:103 [DEBUG]: Finalizing previous app: {'id': '65', 'volume': 100, 'name': 'spotify'}
+23:14:103 [DEBUG]: New app detected with ID: 87
+23:14:103 [DEBUG]: Parsing Line: Driver: PipeWire
+23:14:103 [DEBUG]: Parsing Line: Owner Module: n/a
+23:14:103 [DEBUG]: Parsing Line: Client: 86
+23:14:103 [DEBUG]: Parsing Line: Sink: 71
+23:14:103 [DEBUG]: Parsing Line: Sample Specification: s16le 1ch 44100Hz
+23:14:103 [DEBUG]: Parsing Line: Channel Map: mono
+23:14:103 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"s16le\""  format.rate = "44100"  format.channels = "1"  format.channel_map = "\"mono\""
+23:14:103 [DEBUG]: Parsing Line: Corked: no
+23:14:103 [DEBUG]: Parsing Line: Mute: no
+23:14:103 [DEBUG]: Parsing Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:14:103 [DEBUG]: Found Volume Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:14:103 [DEBUG]: Detected & Stored Volume: 153
+23:14:103 [DEBUG]: Parsing Line: balance 0.00
+23:14:104 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:14:104 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:14:104 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:14:104 [DEBUG]: Parsing Line: Properties:
+23:14:104 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:14:104 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:14:104 [DEBUG]: Parsing Line: application.name = "speech-dispatcher-dummy"
+23:14:104 [DEBUG]: Detected & Stored App Name: speech-dispatcher-dummy
+23:14:104 [DEBUG]: Parsing Line: application.process.id = "1765"
+23:14:104 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:14:104 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:14:104 [DEBUG]: Parsing Line: application.process.binary = "sd_dummy"
+23:14:104 [DEBUG]: Parsing Line: application.language = "C"
+23:14:104 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:14:104 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:14:104 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:14:104 [DEBUG]: Parsing Line: pulse.min.req = "512/48000"
+23:14:104 [DEBUG]: Parsing Line: pulse.min.quantum = "512/48000"
+23:14:104 [DEBUG]: Parsing Line: pulse.idle.timeout = "5"
+23:14:104 [DEBUG]: Parsing Line: media.name = "playback"
+23:14:104 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:14:104 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:14:104 [DEBUG]: Parsing Line: node.latency = "471/44100"
+23:14:104 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:14:104 [DEBUG]: Parsing Line: node.name = "speech-dispatcher-dummy"
+23:14:104 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:14:104 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:14:104 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:14:104 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:14:104 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:14:104 [DEBUG]: Parsing Line: object.register = "false"
+23:14:104 [DEBUG]: Parsing Line: factory.id = "7"
+23:14:104 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:14:104 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:14:104 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:14:104 [DEBUG]: Parsing Line: client.id = "78"
+23:14:104 [DEBUG]: Parsing Line: object.id = "79"
+23:14:104 [DEBUG]: Parsing Line: object.serial = "87"
+23:14:104 [DEBUG]: Parsing Line: pulse.attr.minreq = "942"
+23:14:104 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:14:104 [DEBUG]: Parsing Line: pulse.attr.tlength = "2826"
+23:14:104 [DEBUG]: Parsing Line: pulse.attr.prebuf = "1886"
+23:14:104 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-application-name:speech-dispatcher-dummy"
+23:14:104 [DEBUG]: Finalizing last app: {current_app}
+23:14:104 [DEBUG]: Parsed Applications: [{'id': '65', 'volume': 100, 'name': 'spotify'}, {'id': '87', 'volume': 153, 'name': 'speech-dispatcher-dummy'}]
+23:14:192 [DEBUG]: Parsing Line: Sink Input #65
+23:14:192 [DEBUG]: New app detected with ID: 65
+23:14:192 [DEBUG]: Parsing Line: Driver: PipeWire
+23:14:192 [DEBUG]: Parsing Line: Owner Module: n/a
+23:14:192 [DEBUG]: Parsing Line: Client: 64
+23:14:192 [DEBUG]: Parsing Line: Sink: 71
+23:14:192 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:14:192 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:14:192 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""
+23:14:192 [DEBUG]: Parsing Line: Corked: no
+23:14:192 [DEBUG]: Parsing Line: Mute: no
+23:14:192 [DEBUG]: Parsing Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:14:192 [DEBUG]: Found Volume Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:14:192 [DEBUG]: Detected & Stored Volume: 100
+23:14:192 [DEBUG]: Parsing Line: balance 0.00
+23:14:192 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:14:192 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:14:192 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:14:192 [DEBUG]: Parsing Line: Properties:
+23:14:192 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:14:192 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:14:192 [DEBUG]: Parsing Line: application.name = "spotify"
+23:14:192 [DEBUG]: Detected & Stored App Name: spotify
+23:14:192 [DEBUG]: Parsing Line: application.process.id = "1111"
+23:14:192 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:14:192 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:14:192 [DEBUG]: Parsing Line: application.process.binary = "spotify"
+23:14:192 [DEBUG]: Parsing Line: application.language = "en_US.UTF-8"
+23:14:192 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:14:192 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:14:192 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:14:192 [DEBUG]: Parsing Line: media.role = "music"
+23:14:192 [DEBUG]: Parsing Line: media.name = "Spotify"
+23:14:192 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:14:192 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:14:192 [DEBUG]: Parsing Line: node.latency = "8192/44100"
+23:14:192 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:14:192 [DEBUG]: Parsing Line: node.name = "spotify"
+23:14:192 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:14:192 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:14:193 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:14:193 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:14:193 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:14:193 [DEBUG]: Parsing Line: object.register = "false"
+23:14:193 [DEBUG]: Parsing Line: factory.id = "7"
+23:14:193 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:14:193 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:14:193 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:14:193 [DEBUG]: Parsing Line: client.id = "64"
+23:14:193 [DEBUG]: Parsing Line: object.id = "65"
+23:14:193 [DEBUG]: Parsing Line: object.serial = "65"
+23:14:193 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:14:193 [DEBUG]: Parsing Line: pulse.attr.tlength = "640064"
+23:14:193 [DEBUG]: Parsing Line: pulse.attr.prebuf = "0"
+23:14:193 [DEBUG]: Parsing Line: pulse.attr.minreq = "7056"
+23:14:193 [DEBUG]: Parsing Line: node.driver-id = "72"
+23:14:193 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-media-role:music"
+23:14:193 [DEBUG]: Parsing Line: 
+23:14:193 [DEBUG]: Parsing Line: Sink Input #87
+23:14:193 [DEBUG]: Finalizing previous app: {'id': '65', 'volume': 100, 'name': 'spotify'}
+23:14:193 [DEBUG]: New app detected with ID: 87
+23:14:193 [DEBUG]: Parsing Line: Driver: PipeWire
+23:14:193 [DEBUG]: Parsing Line: Owner Module: n/a
+23:14:193 [DEBUG]: Parsing Line: Client: 86
+23:14:193 [DEBUG]: Parsing Line: Sink: 71
+23:14:193 [DEBUG]: Parsing Line: Sample Specification: s16le 1ch 44100Hz
+23:14:193 [DEBUG]: Parsing Line: Channel Map: mono
+23:14:193 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"s16le\""  format.rate = "44100"  format.channels = "1"  format.channel_map = "\"mono\""
+23:14:193 [DEBUG]: Parsing Line: Corked: no
+23:14:193 [DEBUG]: Parsing Line: Mute: no
+23:14:193 [DEBUG]: Parsing Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:14:193 [DEBUG]: Found Volume Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:14:193 [DEBUG]: Detected & Stored Volume: 153
+23:14:193 [DEBUG]: Parsing Line: balance 0.00
+23:14:193 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:14:193 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:14:193 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:14:193 [DEBUG]: Parsing Line: Properties:
+23:14:193 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:14:193 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:14:193 [DEBUG]: Parsing Line: application.name = "speech-dispatcher-dummy"
+23:14:193 [DEBUG]: Detected & Stored App Name: speech-dispatcher-dummy
+23:14:193 [DEBUG]: Parsing Line: application.process.id = "1765"
+23:14:193 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:14:193 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:14:193 [DEBUG]: Parsing Line: application.process.binary = "sd_dummy"
+23:14:193 [DEBUG]: Parsing Line: application.language = "C"
+23:14:193 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:14:193 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:14:193 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:14:193 [DEBUG]: Parsing Line: pulse.min.req = "512/48000"
+23:14:193 [DEBUG]: Parsing Line: pulse.min.quantum = "512/48000"
+23:14:193 [DEBUG]: Parsing Line: pulse.idle.timeout = "5"
+23:14:193 [DEBUG]: Parsing Line: media.name = "playback"
+23:14:193 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:14:193 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:14:193 [DEBUG]: Parsing Line: node.latency = "471/44100"
+23:14:193 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:14:193 [DEBUG]: Parsing Line: node.name = "speech-dispatcher-dummy"
+23:14:193 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:14:193 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:14:193 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:14:193 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:14:193 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:14:193 [DEBUG]: Parsing Line: object.register = "false"
+23:14:193 [DEBUG]: Parsing Line: factory.id = "7"
+23:14:193 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:14:193 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:14:193 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:14:193 [DEBUG]: Parsing Line: client.id = "78"
+23:14:193 [DEBUG]: Parsing Line: object.id = "79"
+23:14:193 [DEBUG]: Parsing Line: object.serial = "87"
+23:14:193 [DEBUG]: Parsing Line: pulse.attr.minreq = "942"
+23:14:193 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:14:193 [DEBUG]: Parsing Line: pulse.attr.tlength = "2826"
+23:14:193 [DEBUG]: Parsing Line: pulse.attr.prebuf = "1886"
+23:14:193 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-application-name:speech-dispatcher-dummy"
+23:14:193 [DEBUG]: Finalizing last app: {current_app}
+23:14:193 [DEBUG]: Parsed Applications: [{'id': '65', 'volume': 100, 'name': 'spotify'}, {'id': '87', 'volume': 153, 'name': 'speech-dispatcher-dummy'}]
+23:14:197 [INFO]: Switched to Volume tab
+23:14:854 [INFO]: Switched to Wi-Fi tab
+23:17:195 [INFO]: Auto-refreshing audio settings...
+23:17:195 [INFO]: Updating audio device lists...
+23:17:215 [INFO]: Current active output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0
+23:17:224 [INFO]: Adding output sink: alsa_output.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:17:224 [INFO]: Adding output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0 (G435 Wireless Gaming Headset Pro)
+23:17:257 [INFO]: Current active input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0
+23:17:271 [INFO]: Adding input source: alsa_input.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:17:271 [INFO]: Adding input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0 (G435 Wireless Gaming Headset Pro)
+23:17:284 [DEBUG]: Parsing Line: Sink Input #65
+23:17:284 [DEBUG]: New app detected with ID: 65
+23:17:284 [DEBUG]: Parsing Line: Driver: PipeWire
+23:17:284 [DEBUG]: Parsing Line: Owner Module: n/a
+23:17:284 [DEBUG]: Parsing Line: Client: 64
+23:17:284 [DEBUG]: Parsing Line: Sink: 71
+23:17:284 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:17:284 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:17:284 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""
+23:17:284 [DEBUG]: Parsing Line: Corked: no
+23:17:284 [DEBUG]: Parsing Line: Mute: no
+23:17:284 [DEBUG]: Parsing Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:17:284 [DEBUG]: Found Volume Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:17:284 [DEBUG]: Detected & Stored Volume: 100
+23:17:284 [DEBUG]: Parsing Line: balance 0.00
+23:17:284 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:17:284 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:17:284 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:17:284 [DEBUG]: Parsing Line: Properties:
+23:17:284 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:17:284 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:17:284 [DEBUG]: Parsing Line: application.name = "spotify"
+23:17:284 [DEBUG]: Detected & Stored App Name: spotify
+23:17:284 [DEBUG]: Parsing Line: application.process.id = "1111"
+23:17:284 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:17:284 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:17:284 [DEBUG]: Parsing Line: application.process.binary = "spotify"
+23:17:284 [DEBUG]: Parsing Line: application.language = "en_US.UTF-8"
+23:17:284 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:17:284 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:17:284 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:17:284 [DEBUG]: Parsing Line: media.role = "music"
+23:17:284 [DEBUG]: Parsing Line: media.name = "Spotify"
+23:17:284 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:17:284 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:17:284 [DEBUG]: Parsing Line: node.latency = "8192/44100"
+23:17:284 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:17:284 [DEBUG]: Parsing Line: node.name = "spotify"
+23:17:284 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:17:284 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:17:284 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:17:284 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:17:284 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:17:284 [DEBUG]: Parsing Line: object.register = "false"
+23:17:284 [DEBUG]: Parsing Line: factory.id = "7"
+23:17:284 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:17:285 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:17:285 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:17:285 [DEBUG]: Parsing Line: client.id = "64"
+23:17:285 [DEBUG]: Parsing Line: object.id = "65"
+23:17:285 [DEBUG]: Parsing Line: object.serial = "65"
+23:17:285 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:17:285 [DEBUG]: Parsing Line: pulse.attr.tlength = "640064"
+23:17:285 [DEBUG]: Parsing Line: pulse.attr.prebuf = "0"
+23:17:285 [DEBUG]: Parsing Line: pulse.attr.minreq = "7056"
+23:17:285 [DEBUG]: Parsing Line: node.driver-id = "72"
+23:17:285 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-media-role:music"
+23:17:285 [DEBUG]: Parsing Line: 
+23:17:285 [DEBUG]: Parsing Line: Sink Input #87
+23:17:285 [DEBUG]: Finalizing previous app: {'id': '65', 'volume': 100, 'name': 'spotify'}
+23:17:285 [DEBUG]: New app detected with ID: 87
+23:17:285 [DEBUG]: Parsing Line: Driver: PipeWire
+23:17:285 [DEBUG]: Parsing Line: Owner Module: n/a
+23:17:285 [DEBUG]: Parsing Line: Client: 86
+23:17:285 [DEBUG]: Parsing Line: Sink: 71
+23:17:285 [DEBUG]: Parsing Line: Sample Specification: s16le 1ch 44100Hz
+23:17:285 [DEBUG]: Parsing Line: Channel Map: mono
+23:17:285 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"s16le\""  format.rate = "44100"  format.channels = "1"  format.channel_map = "\"mono\""
+23:17:285 [DEBUG]: Parsing Line: Corked: no
+23:17:285 [DEBUG]: Parsing Line: Mute: no
+23:17:285 [DEBUG]: Parsing Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:17:285 [DEBUG]: Found Volume Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:17:285 [DEBUG]: Detected & Stored Volume: 153
+23:17:285 [DEBUG]: Parsing Line: balance 0.00
+23:17:285 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:17:285 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:17:285 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:17:285 [DEBUG]: Parsing Line: Properties:
+23:17:285 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:17:285 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:17:285 [DEBUG]: Parsing Line: application.name = "speech-dispatcher-dummy"
+23:17:285 [DEBUG]: Detected & Stored App Name: speech-dispatcher-dummy
+23:17:285 [DEBUG]: Parsing Line: application.process.id = "1765"
+23:17:285 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:17:285 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:17:285 [DEBUG]: Parsing Line: application.process.binary = "sd_dummy"
+23:17:285 [DEBUG]: Parsing Line: application.language = "C"
+23:17:285 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:17:285 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:17:285 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:17:285 [DEBUG]: Parsing Line: pulse.min.req = "512/48000"
+23:17:285 [DEBUG]: Parsing Line: pulse.min.quantum = "512/48000"
+23:17:285 [DEBUG]: Parsing Line: pulse.idle.timeout = "5"
+23:17:285 [DEBUG]: Parsing Line: media.name = "playback"
+23:17:285 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:17:285 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:17:285 [DEBUG]: Parsing Line: node.latency = "471/44100"
+23:17:285 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:17:285 [DEBUG]: Parsing Line: node.name = "speech-dispatcher-dummy"
+23:17:285 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:17:285 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:17:285 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:17:285 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:17:285 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:17:285 [DEBUG]: Parsing Line: object.register = "false"
+23:17:285 [DEBUG]: Parsing Line: factory.id = "7"
+23:17:285 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:17:285 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:17:285 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:17:285 [DEBUG]: Parsing Line: client.id = "78"
+23:17:285 [DEBUG]: Parsing Line: object.id = "79"
+23:17:285 [DEBUG]: Parsing Line: object.serial = "87"
+23:17:285 [DEBUG]: Parsing Line: pulse.attr.minreq = "942"
+23:17:285 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:17:285 [DEBUG]: Parsing Line: pulse.attr.tlength = "2826"
+23:17:285 [DEBUG]: Parsing Line: pulse.attr.prebuf = "1886"
+23:17:285 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-application-name:speech-dispatcher-dummy"
+23:17:285 [DEBUG]: Finalizing last app: {current_app}
+23:17:285 [DEBUG]: Parsed Applications: [{'id': '65', 'volume': 100, 'name': 'spotify'}, {'id': '87', 'volume': 153, 'name': 'speech-dispatcher-dummy'}]
+23:17:367 [DEBUG]: Parsing Line: Sink Input #65
+23:17:367 [DEBUG]: New app detected with ID: 65
+23:17:367 [DEBUG]: Parsing Line: Driver: PipeWire
+23:17:367 [DEBUG]: Parsing Line: Owner Module: n/a
+23:17:367 [DEBUG]: Parsing Line: Client: 64
+23:17:367 [DEBUG]: Parsing Line: Sink: 71
+23:17:367 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:17:367 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:17:367 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""
+23:17:367 [DEBUG]: Parsing Line: Corked: no
+23:17:367 [DEBUG]: Parsing Line: Mute: no
+23:17:367 [DEBUG]: Parsing Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:17:367 [DEBUG]: Found Volume Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:17:367 [DEBUG]: Detected & Stored Volume: 100
+23:17:367 [DEBUG]: Parsing Line: balance 0.00
+23:17:367 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:17:367 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:17:367 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:17:367 [DEBUG]: Parsing Line: Properties:
+23:17:367 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:17:367 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:17:367 [DEBUG]: Parsing Line: application.name = "spotify"
+23:17:367 [DEBUG]: Detected & Stored App Name: spotify
+23:17:367 [DEBUG]: Parsing Line: application.process.id = "1111"
+23:17:367 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:17:367 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:17:367 [DEBUG]: Parsing Line: application.process.binary = "spotify"
+23:17:367 [DEBUG]: Parsing Line: application.language = "en_US.UTF-8"
+23:17:367 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:17:367 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:17:367 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:17:367 [DEBUG]: Parsing Line: media.role = "music"
+23:17:367 [DEBUG]: Parsing Line: media.name = "Spotify"
+23:17:367 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:17:367 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:17:367 [DEBUG]: Parsing Line: node.latency = "8192/44100"
+23:17:367 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:17:367 [DEBUG]: Parsing Line: node.name = "spotify"
+23:17:367 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:17:367 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:17:367 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:17:367 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:17:367 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:17:367 [DEBUG]: Parsing Line: object.register = "false"
+23:17:367 [DEBUG]: Parsing Line: factory.id = "7"
+23:17:367 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:17:367 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:17:367 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:17:367 [DEBUG]: Parsing Line: client.id = "64"
+23:17:367 [DEBUG]: Parsing Line: object.id = "65"
+23:17:367 [DEBUG]: Parsing Line: object.serial = "65"
+23:17:367 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:17:367 [DEBUG]: Parsing Line: pulse.attr.tlength = "640064"
+23:17:367 [DEBUG]: Parsing Line: pulse.attr.prebuf = "0"
+23:17:367 [DEBUG]: Parsing Line: pulse.attr.minreq = "7056"
+23:17:367 [DEBUG]: Parsing Line: node.driver-id = "72"
+23:17:367 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-media-role:music"
+23:17:367 [DEBUG]: Parsing Line: 
+23:17:367 [DEBUG]: Parsing Line: Sink Input #87
+23:17:367 [DEBUG]: Finalizing previous app: {'id': '65', 'volume': 100, 'name': 'spotify'}
+23:17:367 [DEBUG]: New app detected with ID: 87
+23:17:367 [DEBUG]: Parsing Line: Driver: PipeWire
+23:17:367 [DEBUG]: Parsing Line: Owner Module: n/a
+23:17:367 [DEBUG]: Parsing Line: Client: 86
+23:17:367 [DEBUG]: Parsing Line: Sink: 71
+23:17:367 [DEBUG]: Parsing Line: Sample Specification: s16le 1ch 44100Hz
+23:17:367 [DEBUG]: Parsing Line: Channel Map: mono
+23:17:368 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"s16le\""  format.rate = "44100"  format.channels = "1"  format.channel_map = "\"mono\""
+23:17:368 [DEBUG]: Parsing Line: Corked: no
+23:17:368 [DEBUG]: Parsing Line: Mute: no
+23:17:368 [DEBUG]: Parsing Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:17:368 [DEBUG]: Found Volume Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:17:368 [DEBUG]: Detected & Stored Volume: 153
+23:17:368 [DEBUG]: Parsing Line: balance 0.00
+23:17:368 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:17:368 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:17:368 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:17:368 [DEBUG]: Parsing Line: Properties:
+23:17:368 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:17:368 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:17:368 [DEBUG]: Parsing Line: application.name = "speech-dispatcher-dummy"
+23:17:368 [DEBUG]: Detected & Stored App Name: speech-dispatcher-dummy
+23:17:368 [DEBUG]: Parsing Line: application.process.id = "1765"
+23:17:368 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:17:368 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:17:368 [DEBUG]: Parsing Line: application.process.binary = "sd_dummy"
+23:17:368 [DEBUG]: Parsing Line: application.language = "C"
+23:17:368 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:17:368 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:17:368 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:17:368 [DEBUG]: Parsing Line: pulse.min.req = "512/48000"
+23:17:368 [DEBUG]: Parsing Line: pulse.min.quantum = "512/48000"
+23:17:368 [DEBUG]: Parsing Line: pulse.idle.timeout = "5"
+23:17:368 [DEBUG]: Parsing Line: media.name = "playback"
+23:17:368 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:17:368 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:17:368 [DEBUG]: Parsing Line: node.latency = "471/44100"
+23:17:368 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:17:368 [DEBUG]: Parsing Line: node.name = "speech-dispatcher-dummy"
+23:17:368 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:17:368 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:17:368 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:17:368 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:17:368 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:17:368 [DEBUG]: Parsing Line: object.register = "false"
+23:17:368 [DEBUG]: Parsing Line: factory.id = "7"
+23:17:368 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:17:368 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:17:368 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:17:368 [DEBUG]: Parsing Line: client.id = "78"
+23:17:368 [DEBUG]: Parsing Line: object.id = "79"
+23:17:368 [DEBUG]: Parsing Line: object.serial = "87"
+23:17:368 [DEBUG]: Parsing Line: pulse.attr.minreq = "942"
+23:17:368 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:17:368 [DEBUG]: Parsing Line: pulse.attr.tlength = "2826"
+23:17:368 [DEBUG]: Parsing Line: pulse.attr.prebuf = "1886"
+23:17:368 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-application-name:speech-dispatcher-dummy"
+23:17:368 [DEBUG]: Finalizing last app: {current_app}
+23:17:368 [DEBUG]: Parsed Applications: [{'id': '65', 'volume': 100, 'name': 'spotify'}, {'id': '87', 'volume': 153, 'name': 'speech-dispatcher-dummy'}]
+23:20:370 [INFO]: Auto-refreshing audio settings...
+23:20:370 [INFO]: Updating audio device lists...
+23:20:385 [INFO]: Current active output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0
+23:20:400 [INFO]: Adding output sink: alsa_output.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:20:400 [INFO]: Adding output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0 (G435 Wireless Gaming Headset Pro)
+23:20:462 [INFO]: Current active input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0
+23:20:475 [INFO]: Adding input source: alsa_input.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:20:475 [INFO]: Adding input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0 (G435 Wireless Gaming Headset Pro)
+23:20:488 [DEBUG]: Parsing Line: Sink Input #65
+23:20:488 [DEBUG]: New app detected with ID: 65
+23:20:488 [DEBUG]: Parsing Line: Driver: PipeWire
+23:20:488 [DEBUG]: Parsing Line: Owner Module: n/a
+23:20:488 [DEBUG]: Parsing Line: Client: 64
+23:20:488 [DEBUG]: Parsing Line: Sink: 71
+23:20:488 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:20:488 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:20:488 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""
+23:20:488 [DEBUG]: Parsing Line: Corked: no
+23:20:488 [DEBUG]: Parsing Line: Mute: no
+23:20:488 [DEBUG]: Parsing Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:20:488 [DEBUG]: Found Volume Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:20:488 [DEBUG]: Detected & Stored Volume: 100
+23:20:488 [DEBUG]: Parsing Line: balance 0.00
+23:20:488 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:20:488 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:20:488 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:20:488 [DEBUG]: Parsing Line: Properties:
+23:20:488 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:20:488 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:20:488 [DEBUG]: Parsing Line: application.name = "spotify"
+23:20:488 [DEBUG]: Detected & Stored App Name: spotify
+23:20:488 [DEBUG]: Parsing Line: application.process.id = "1111"
+23:20:488 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:20:488 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:20:488 [DEBUG]: Parsing Line: application.process.binary = "spotify"
+23:20:488 [DEBUG]: Parsing Line: application.language = "en_US.UTF-8"
+23:20:488 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:20:488 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:20:488 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:20:488 [DEBUG]: Parsing Line: media.role = "music"
+23:20:488 [DEBUG]: Parsing Line: media.name = "Spotify"
+23:20:488 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:20:489 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:20:489 [DEBUG]: Parsing Line: node.latency = "8192/44100"
+23:20:489 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:20:489 [DEBUG]: Parsing Line: node.name = "spotify"
+23:20:489 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:20:489 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:20:489 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:20:489 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:20:489 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:20:489 [DEBUG]: Parsing Line: object.register = "false"
+23:20:489 [DEBUG]: Parsing Line: factory.id = "7"
+23:20:489 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:20:489 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:20:489 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:20:489 [DEBUG]: Parsing Line: client.id = "64"
+23:20:489 [DEBUG]: Parsing Line: object.id = "65"
+23:20:489 [DEBUG]: Parsing Line: object.serial = "65"
+23:20:489 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:20:489 [DEBUG]: Parsing Line: pulse.attr.tlength = "640064"
+23:20:489 [DEBUG]: Parsing Line: pulse.attr.prebuf = "0"
+23:20:489 [DEBUG]: Parsing Line: pulse.attr.minreq = "7056"
+23:20:489 [DEBUG]: Parsing Line: node.driver-id = "72"
+23:20:489 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-media-role:music"
+23:20:489 [DEBUG]: Parsing Line: 
+23:20:489 [DEBUG]: Parsing Line: Sink Input #87
+23:20:489 [DEBUG]: Finalizing previous app: {'id': '65', 'volume': 100, 'name': 'spotify'}
+23:20:489 [DEBUG]: New app detected with ID: 87
+23:20:489 [DEBUG]: Parsing Line: Driver: PipeWire
+23:20:489 [DEBUG]: Parsing Line: Owner Module: n/a
+23:20:489 [DEBUG]: Parsing Line: Client: 86
+23:20:489 [DEBUG]: Parsing Line: Sink: 71
+23:20:489 [DEBUG]: Parsing Line: Sample Specification: s16le 1ch 44100Hz
+23:20:489 [DEBUG]: Parsing Line: Channel Map: mono
+23:20:489 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"s16le\""  format.rate = "44100"  format.channels = "1"  format.channel_map = "\"mono\""
+23:20:489 [DEBUG]: Parsing Line: Corked: no
+23:20:489 [DEBUG]: Parsing Line: Mute: no
+23:20:489 [DEBUG]: Parsing Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:20:489 [DEBUG]: Found Volume Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:20:489 [DEBUG]: Detected & Stored Volume: 153
+23:20:489 [DEBUG]: Parsing Line: balance 0.00
+23:20:489 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:20:489 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:20:489 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:20:489 [DEBUG]: Parsing Line: Properties:
+23:20:489 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:20:489 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:20:489 [DEBUG]: Parsing Line: application.name = "speech-dispatcher-dummy"
+23:20:489 [DEBUG]: Detected & Stored App Name: speech-dispatcher-dummy
+23:20:489 [DEBUG]: Parsing Line: application.process.id = "1765"
+23:20:489 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:20:489 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:20:489 [DEBUG]: Parsing Line: application.process.binary = "sd_dummy"
+23:20:489 [DEBUG]: Parsing Line: application.language = "C"
+23:20:489 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:20:489 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:20:489 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:20:489 [DEBUG]: Parsing Line: pulse.min.req = "512/48000"
+23:20:489 [DEBUG]: Parsing Line: pulse.min.quantum = "512/48000"
+23:20:489 [DEBUG]: Parsing Line: pulse.idle.timeout = "5"
+23:20:489 [DEBUG]: Parsing Line: media.name = "playback"
+23:20:489 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:20:489 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:20:489 [DEBUG]: Parsing Line: node.latency = "471/44100"
+23:20:489 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:20:489 [DEBUG]: Parsing Line: node.name = "speech-dispatcher-dummy"
+23:20:489 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:20:489 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:20:489 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:20:489 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:20:489 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:20:489 [DEBUG]: Parsing Line: object.register = "false"
+23:20:489 [DEBUG]: Parsing Line: factory.id = "7"
+23:20:489 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:20:489 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:20:489 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:20:489 [DEBUG]: Parsing Line: client.id = "78"
+23:20:489 [DEBUG]: Parsing Line: object.id = "79"
+23:20:489 [DEBUG]: Parsing Line: object.serial = "87"
+23:20:489 [DEBUG]: Parsing Line: pulse.attr.minreq = "942"
+23:20:489 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:20:489 [DEBUG]: Parsing Line: pulse.attr.tlength = "2826"
+23:20:489 [DEBUG]: Parsing Line: pulse.attr.prebuf = "1886"
+23:20:489 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-application-name:speech-dispatcher-dummy"
+23:20:489 [DEBUG]: Finalizing last app: {current_app}
+23:20:489 [DEBUG]: Parsed Applications: [{'id': '65', 'volume': 100, 'name': 'spotify'}, {'id': '87', 'volume': 153, 'name': 'speech-dispatcher-dummy'}]
+23:20:570 [DEBUG]: Parsing Line: Sink Input #65
+23:20:570 [DEBUG]: New app detected with ID: 65
+23:20:570 [DEBUG]: Parsing Line: Driver: PipeWire
+23:20:570 [DEBUG]: Parsing Line: Owner Module: n/a
+23:20:570 [DEBUG]: Parsing Line: Client: 64
+23:20:570 [DEBUG]: Parsing Line: Sink: 71
+23:20:570 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:20:570 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:20:570 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""
+23:20:570 [DEBUG]: Parsing Line: Corked: no
+23:20:570 [DEBUG]: Parsing Line: Mute: no
+23:20:570 [DEBUG]: Parsing Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:20:570 [DEBUG]: Found Volume Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:20:570 [DEBUG]: Detected & Stored Volume: 100
+23:20:570 [DEBUG]: Parsing Line: balance 0.00
+23:20:570 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:20:570 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:20:570 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:20:570 [DEBUG]: Parsing Line: Properties:
+23:20:570 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:20:570 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:20:570 [DEBUG]: Parsing Line: application.name = "spotify"
+23:20:570 [DEBUG]: Detected & Stored App Name: spotify
+23:20:570 [DEBUG]: Parsing Line: application.process.id = "1111"
+23:20:570 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:20:570 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:20:570 [DEBUG]: Parsing Line: application.process.binary = "spotify"
+23:20:570 [DEBUG]: Parsing Line: application.language = "en_US.UTF-8"
+23:20:570 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:20:570 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:20:570 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:20:570 [DEBUG]: Parsing Line: media.role = "music"
+23:20:570 [DEBUG]: Parsing Line: media.name = "Spotify"
+23:20:570 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:20:570 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:20:570 [DEBUG]: Parsing Line: node.latency = "8192/44100"
+23:20:570 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:20:570 [DEBUG]: Parsing Line: node.name = "spotify"
+23:20:570 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:20:570 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:20:570 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:20:570 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:20:570 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:20:570 [DEBUG]: Parsing Line: object.register = "false"
+23:20:570 [DEBUG]: Parsing Line: factory.id = "7"
+23:20:570 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:20:570 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:20:570 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:20:570 [DEBUG]: Parsing Line: client.id = "64"
+23:20:570 [DEBUG]: Parsing Line: object.id = "65"
+23:20:570 [DEBUG]: Parsing Line: object.serial = "65"
+23:20:570 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:20:570 [DEBUG]: Parsing Line: pulse.attr.tlength = "640064"
+23:20:570 [DEBUG]: Parsing Line: pulse.attr.prebuf = "0"
+23:20:570 [DEBUG]: Parsing Line: pulse.attr.minreq = "7056"
+23:20:570 [DEBUG]: Parsing Line: node.driver-id = "72"
+23:20:570 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-media-role:music"
+23:20:570 [DEBUG]: Parsing Line: 
+23:20:570 [DEBUG]: Parsing Line: Sink Input #87
+23:20:570 [DEBUG]: Finalizing previous app: {'id': '65', 'volume': 100, 'name': 'spotify'}
+23:20:570 [DEBUG]: New app detected with ID: 87
+23:20:570 [DEBUG]: Parsing Line: Driver: PipeWire
+23:20:570 [DEBUG]: Parsing Line: Owner Module: n/a
+23:20:570 [DEBUG]: Parsing Line: Client: 86
+23:20:570 [DEBUG]: Parsing Line: Sink: 71
+23:20:570 [DEBUG]: Parsing Line: Sample Specification: s16le 1ch 44100Hz
+23:20:570 [DEBUG]: Parsing Line: Channel Map: mono
+23:20:570 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"s16le\""  format.rate = "44100"  format.channels = "1"  format.channel_map = "\"mono\""
+23:20:570 [DEBUG]: Parsing Line: Corked: no
+23:20:570 [DEBUG]: Parsing Line: Mute: no
+23:20:570 [DEBUG]: Parsing Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:20:570 [DEBUG]: Found Volume Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:20:571 [DEBUG]: Detected & Stored Volume: 153
+23:20:571 [DEBUG]: Parsing Line: balance 0.00
+23:20:571 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:20:571 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:20:571 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:20:571 [DEBUG]: Parsing Line: Properties:
+23:20:571 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:20:571 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:20:571 [DEBUG]: Parsing Line: application.name = "speech-dispatcher-dummy"
+23:20:571 [DEBUG]: Detected & Stored App Name: speech-dispatcher-dummy
+23:20:571 [DEBUG]: Parsing Line: application.process.id = "1765"
+23:20:571 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:20:571 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:20:571 [DEBUG]: Parsing Line: application.process.binary = "sd_dummy"
+23:20:571 [DEBUG]: Parsing Line: application.language = "C"
+23:20:571 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:20:571 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:20:571 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:20:571 [DEBUG]: Parsing Line: pulse.min.req = "512/48000"
+23:20:571 [DEBUG]: Parsing Line: pulse.min.quantum = "512/48000"
+23:20:571 [DEBUG]: Parsing Line: pulse.idle.timeout = "5"
+23:20:571 [DEBUG]: Parsing Line: media.name = "playback"
+23:20:571 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:20:571 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:20:571 [DEBUG]: Parsing Line: node.latency = "471/44100"
+23:20:571 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:20:571 [DEBUG]: Parsing Line: node.name = "speech-dispatcher-dummy"
+23:20:571 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:20:571 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:20:571 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:20:571 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:20:571 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:20:571 [DEBUG]: Parsing Line: object.register = "false"
+23:20:571 [DEBUG]: Parsing Line: factory.id = "7"
+23:20:571 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:20:571 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:20:571 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:20:571 [DEBUG]: Parsing Line: client.id = "78"
+23:20:571 [DEBUG]: Parsing Line: object.id = "79"
+23:20:571 [DEBUG]: Parsing Line: object.serial = "87"
+23:20:571 [DEBUG]: Parsing Line: pulse.attr.minreq = "942"
+23:20:571 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:20:571 [DEBUG]: Parsing Line: pulse.attr.tlength = "2826"
+23:20:571 [DEBUG]: Parsing Line: pulse.attr.prebuf = "1886"
+23:20:571 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-application-name:speech-dispatcher-dummy"
+23:20:571 [DEBUG]: Finalizing last app: {current_app}
+23:20:571 [DEBUG]: Parsed Applications: [{'id': '65', 'volume': 100, 'name': 'spotify'}, {'id': '87', 'volume': 153, 'name': 'speech-dispatcher-dummy'}]
+23:23:573 [INFO]: Auto-refreshing audio settings...
+23:23:573 [INFO]: Updating audio device lists...
+23:23:587 [INFO]: Current active output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0
+23:23:600 [INFO]: Adding output sink: alsa_output.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:23:600 [INFO]: Adding output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0 (G435 Wireless Gaming Headset Pro)
+23:23:653 [INFO]: Current active input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0
+23:23:666 [INFO]: Adding input source: alsa_input.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:23:667 [INFO]: Adding input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0 (G435 Wireless Gaming Headset Pro)
+23:23:679 [DEBUG]: Parsing Line: Sink Input #65
+23:23:680 [DEBUG]: New app detected with ID: 65
+23:23:680 [DEBUG]: Parsing Line: Driver: PipeWire
+23:23:680 [DEBUG]: Parsing Line: Owner Module: n/a
+23:23:680 [DEBUG]: Parsing Line: Client: 64
+23:23:680 [DEBUG]: Parsing Line: Sink: 71
+23:23:680 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:23:680 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:23:680 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""
+23:23:680 [DEBUG]: Parsing Line: Corked: no
+23:23:680 [DEBUG]: Parsing Line: Mute: no
+23:23:680 [DEBUG]: Parsing Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:23:680 [DEBUG]: Found Volume Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:23:680 [DEBUG]: Detected & Stored Volume: 100
+23:23:680 [DEBUG]: Parsing Line: balance 0.00
+23:23:680 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:23:680 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:23:680 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:23:680 [DEBUG]: Parsing Line: Properties:
+23:23:680 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:23:680 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:23:680 [DEBUG]: Parsing Line: application.name = "spotify"
+23:23:680 [DEBUG]: Detected & Stored App Name: spotify
+23:23:680 [DEBUG]: Parsing Line: application.process.id = "1111"
+23:23:680 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:23:680 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:23:680 [DEBUG]: Parsing Line: application.process.binary = "spotify"
+23:23:680 [DEBUG]: Parsing Line: application.language = "en_US.UTF-8"
+23:23:680 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:23:680 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:23:680 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:23:680 [DEBUG]: Parsing Line: media.role = "music"
+23:23:680 [DEBUG]: Parsing Line: media.name = "Spotify"
+23:23:680 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:23:680 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:23:680 [DEBUG]: Parsing Line: node.latency = "8192/44100"
+23:23:680 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:23:680 [DEBUG]: Parsing Line: node.name = "spotify"
+23:23:680 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:23:680 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:23:680 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:23:680 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:23:680 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:23:680 [DEBUG]: Parsing Line: object.register = "false"
+23:23:680 [DEBUG]: Parsing Line: factory.id = "7"
+23:23:680 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:23:680 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:23:680 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:23:680 [DEBUG]: Parsing Line: client.id = "64"
+23:23:680 [DEBUG]: Parsing Line: object.id = "65"
+23:23:680 [DEBUG]: Parsing Line: object.serial = "65"
+23:23:680 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:23:680 [DEBUG]: Parsing Line: pulse.attr.tlength = "640064"
+23:23:680 [DEBUG]: Parsing Line: pulse.attr.prebuf = "0"
+23:23:680 [DEBUG]: Parsing Line: pulse.attr.minreq = "7056"
+23:23:680 [DEBUG]: Parsing Line: node.driver-id = "72"
+23:23:680 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-media-role:music"
+23:23:680 [DEBUG]: Parsing Line: 
+23:23:680 [DEBUG]: Parsing Line: Sink Input #87
+23:23:680 [DEBUG]: Finalizing previous app: {'id': '65', 'volume': 100, 'name': 'spotify'}
+23:23:680 [DEBUG]: New app detected with ID: 87
+23:23:680 [DEBUG]: Parsing Line: Driver: PipeWire
+23:23:680 [DEBUG]: Parsing Line: Owner Module: n/a
+23:23:680 [DEBUG]: Parsing Line: Client: 86
+23:23:680 [DEBUG]: Parsing Line: Sink: 71
+23:23:680 [DEBUG]: Parsing Line: Sample Specification: s16le 1ch 44100Hz
+23:23:680 [DEBUG]: Parsing Line: Channel Map: mono
+23:23:680 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"s16le\""  format.rate = "44100"  format.channels = "1"  format.channel_map = "\"mono\""
+23:23:680 [DEBUG]: Parsing Line: Corked: no
+23:23:680 [DEBUG]: Parsing Line: Mute: no
+23:23:680 [DEBUG]: Parsing Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:23:680 [DEBUG]: Found Volume Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:23:680 [DEBUG]: Detected & Stored Volume: 153
+23:23:680 [DEBUG]: Parsing Line: balance 0.00
+23:23:680 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:23:680 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:23:680 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:23:680 [DEBUG]: Parsing Line: Properties:
+23:23:680 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:23:680 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:23:680 [DEBUG]: Parsing Line: application.name = "speech-dispatcher-dummy"
+23:23:680 [DEBUG]: Detected & Stored App Name: speech-dispatcher-dummy
+23:23:680 [DEBUG]: Parsing Line: application.process.id = "1765"
+23:23:680 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:23:680 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:23:680 [DEBUG]: Parsing Line: application.process.binary = "sd_dummy"
+23:23:680 [DEBUG]: Parsing Line: application.language = "C"
+23:23:680 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:23:680 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:23:680 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:23:680 [DEBUG]: Parsing Line: pulse.min.req = "512/48000"
+23:23:680 [DEBUG]: Parsing Line: pulse.min.quantum = "512/48000"
+23:23:680 [DEBUG]: Parsing Line: pulse.idle.timeout = "5"
+23:23:680 [DEBUG]: Parsing Line: media.name = "playback"
+23:23:680 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:23:680 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:23:680 [DEBUG]: Parsing Line: node.latency = "471/44100"
+23:23:680 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:23:680 [DEBUG]: Parsing Line: node.name = "speech-dispatcher-dummy"
+23:23:680 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:23:680 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:23:680 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:23:680 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:23:680 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:23:680 [DEBUG]: Parsing Line: object.register = "false"
+23:23:680 [DEBUG]: Parsing Line: factory.id = "7"
+23:23:680 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:23:680 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:23:681 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:23:681 [DEBUG]: Parsing Line: client.id = "78"
+23:23:681 [DEBUG]: Parsing Line: object.id = "79"
+23:23:681 [DEBUG]: Parsing Line: object.serial = "87"
+23:23:681 [DEBUG]: Parsing Line: pulse.attr.minreq = "942"
+23:23:681 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:23:681 [DEBUG]: Parsing Line: pulse.attr.tlength = "2826"
+23:23:681 [DEBUG]: Parsing Line: pulse.attr.prebuf = "1886"
+23:23:681 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-application-name:speech-dispatcher-dummy"
+23:23:681 [DEBUG]: Finalizing last app: {current_app}
+23:23:681 [DEBUG]: Parsed Applications: [{'id': '65', 'volume': 100, 'name': 'spotify'}, {'id': '87', 'volume': 153, 'name': 'speech-dispatcher-dummy'}]
+23:23:771 [DEBUG]: Parsing Line: Sink Input #65
+23:23:771 [DEBUG]: New app detected with ID: 65
+23:23:771 [DEBUG]: Parsing Line: Driver: PipeWire
+23:23:771 [DEBUG]: Parsing Line: Owner Module: n/a
+23:23:771 [DEBUG]: Parsing Line: Client: 64
+23:23:771 [DEBUG]: Parsing Line: Sink: 71
+23:23:771 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:23:771 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:23:771 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""
+23:23:771 [DEBUG]: Parsing Line: Corked: no
+23:23:772 [DEBUG]: Parsing Line: Mute: no
+23:23:772 [DEBUG]: Parsing Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:23:772 [DEBUG]: Found Volume Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:23:772 [DEBUG]: Detected & Stored Volume: 100
+23:23:772 [DEBUG]: Parsing Line: balance 0.00
+23:23:772 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:23:772 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:23:772 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:23:772 [DEBUG]: Parsing Line: Properties:
+23:23:772 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:23:772 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:23:772 [DEBUG]: Parsing Line: application.name = "spotify"
+23:23:772 [DEBUG]: Detected & Stored App Name: spotify
+23:23:772 [DEBUG]: Parsing Line: application.process.id = "1111"
+23:23:772 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:23:772 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:23:772 [DEBUG]: Parsing Line: application.process.binary = "spotify"
+23:23:772 [DEBUG]: Parsing Line: application.language = "en_US.UTF-8"
+23:23:772 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:23:772 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:23:772 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:23:772 [DEBUG]: Parsing Line: media.role = "music"
+23:23:772 [DEBUG]: Parsing Line: media.name = "Spotify"
+23:23:772 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:23:772 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:23:772 [DEBUG]: Parsing Line: node.latency = "8192/44100"
+23:23:772 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:23:772 [DEBUG]: Parsing Line: node.name = "spotify"
+23:23:772 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:23:772 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:23:772 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:23:772 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:23:772 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:23:772 [DEBUG]: Parsing Line: object.register = "false"
+23:23:772 [DEBUG]: Parsing Line: factory.id = "7"
+23:23:772 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:23:772 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:23:772 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:23:772 [DEBUG]: Parsing Line: client.id = "64"
+23:23:772 [DEBUG]: Parsing Line: object.id = "65"
+23:23:772 [DEBUG]: Parsing Line: object.serial = "65"
+23:23:772 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:23:772 [DEBUG]: Parsing Line: pulse.attr.tlength = "640064"
+23:23:772 [DEBUG]: Parsing Line: pulse.attr.prebuf = "0"
+23:23:772 [DEBUG]: Parsing Line: pulse.attr.minreq = "7056"
+23:23:772 [DEBUG]: Parsing Line: node.driver-id = "72"
+23:23:772 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-media-role:music"
+23:23:772 [DEBUG]: Parsing Line: 
+23:23:772 [DEBUG]: Parsing Line: Sink Input #87
+23:23:772 [DEBUG]: Finalizing previous app: {'id': '65', 'volume': 100, 'name': 'spotify'}
+23:23:772 [DEBUG]: New app detected with ID: 87
+23:23:772 [DEBUG]: Parsing Line: Driver: PipeWire
+23:23:772 [DEBUG]: Parsing Line: Owner Module: n/a
+23:23:772 [DEBUG]: Parsing Line: Client: 86
+23:23:772 [DEBUG]: Parsing Line: Sink: 71
+23:23:772 [DEBUG]: Parsing Line: Sample Specification: s16le 1ch 44100Hz
+23:23:772 [DEBUG]: Parsing Line: Channel Map: mono
+23:23:772 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"s16le\""  format.rate = "44100"  format.channels = "1"  format.channel_map = "\"mono\""
+23:23:772 [DEBUG]: Parsing Line: Corked: no
+23:23:772 [DEBUG]: Parsing Line: Mute: no
+23:23:772 [DEBUG]: Parsing Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:23:772 [DEBUG]: Found Volume Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:23:772 [DEBUG]: Detected & Stored Volume: 153
+23:23:772 [DEBUG]: Parsing Line: balance 0.00
+23:23:772 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:23:772 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:23:772 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:23:772 [DEBUG]: Parsing Line: Properties:
+23:23:772 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:23:772 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:23:772 [DEBUG]: Parsing Line: application.name = "speech-dispatcher-dummy"
+23:23:772 [DEBUG]: Detected & Stored App Name: speech-dispatcher-dummy
+23:23:772 [DEBUG]: Parsing Line: application.process.id = "1765"
+23:23:772 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:23:772 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:23:772 [DEBUG]: Parsing Line: application.process.binary = "sd_dummy"
+23:23:772 [DEBUG]: Parsing Line: application.language = "C"
+23:23:772 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:23:772 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:23:772 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:23:772 [DEBUG]: Parsing Line: pulse.min.req = "512/48000"
+23:23:772 [DEBUG]: Parsing Line: pulse.min.quantum = "512/48000"
+23:23:772 [DEBUG]: Parsing Line: pulse.idle.timeout = "5"
+23:23:772 [DEBUG]: Parsing Line: media.name = "playback"
+23:23:772 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:23:772 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:23:772 [DEBUG]: Parsing Line: node.latency = "471/44100"
+23:23:772 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:23:772 [DEBUG]: Parsing Line: node.name = "speech-dispatcher-dummy"
+23:23:772 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:23:772 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:23:772 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:23:772 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:23:772 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:23:772 [DEBUG]: Parsing Line: object.register = "false"
+23:23:772 [DEBUG]: Parsing Line: factory.id = "7"
+23:23:772 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:23:772 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:23:772 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:23:772 [DEBUG]: Parsing Line: client.id = "78"
+23:23:772 [DEBUG]: Parsing Line: object.id = "79"
+23:23:772 [DEBUG]: Parsing Line: object.serial = "87"
+23:23:772 [DEBUG]: Parsing Line: pulse.attr.minreq = "942"
+23:23:772 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:23:772 [DEBUG]: Parsing Line: pulse.attr.tlength = "2826"
+23:23:772 [DEBUG]: Parsing Line: pulse.attr.prebuf = "1886"
+23:23:772 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-application-name:speech-dispatcher-dummy"
+23:23:772 [DEBUG]: Finalizing last app: {current_app}
+23:23:772 [DEBUG]: Parsed Applications: [{'id': '65', 'volume': 100, 'name': 'spotify'}, {'id': '87', 'volume': 153, 'name': 'speech-dispatcher-dummy'}]
+23:26:775 [INFO]: Auto-refreshing audio settings...
+23:26:775 [INFO]: Updating audio device lists...
+23:26:789 [INFO]: Current active output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0
+23:26:803 [INFO]: Adding output sink: alsa_output.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:26:803 [INFO]: Adding output sink: alsa_output.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-output-0 (G435 Wireless Gaming Headset Pro)
+23:26:857 [INFO]: Current active input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0
+23:26:870 [INFO]: Adding input source: alsa_input.pci-0000_00_1f.3.analog-stereo (Built-in Audio Analog Stereo)
+23:26:871 [INFO]: Adding input source: alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.pro-input-0 (G435 Wireless Gaming Headset Pro)
+23:26:883 [DEBUG]: Parsing Line: Sink Input #65
+23:26:883 [DEBUG]: New app detected with ID: 65
+23:26:883 [DEBUG]: Parsing Line: Driver: PipeWire
+23:26:883 [DEBUG]: Parsing Line: Owner Module: n/a
+23:26:883 [DEBUG]: Parsing Line: Client: 64
+23:26:883 [DEBUG]: Parsing Line: Sink: 71
+23:26:883 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:26:883 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:26:883 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""
+23:26:883 [DEBUG]: Parsing Line: Corked: no
+23:26:883 [DEBUG]: Parsing Line: Mute: no
+23:26:883 [DEBUG]: Parsing Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:26:883 [DEBUG]: Found Volume Line: Volume: front-left: 65535 / 100% / -0.00 dB,   front-right: 65535 / 100% / -0.00 dB
+23:26:883 [DEBUG]: Detected & Stored Volume: 100
+23:26:883 [DEBUG]: Parsing Line: balance 0.00
+23:26:883 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:26:883 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:26:883 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:26:883 [DEBUG]: Parsing Line: Properties:
+23:26:883 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:26:883 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:26:883 [DEBUG]: Parsing Line: application.name = "spotify"
+23:26:883 [DEBUG]: Detected & Stored App Name: spotify
+23:26:883 [DEBUG]: Parsing Line: application.process.id = "1111"
+23:26:883 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:26:883 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:26:883 [DEBUG]: Parsing Line: application.process.binary = "spotify"
+23:26:883 [DEBUG]: Parsing Line: application.language = "en_US.UTF-8"
+23:26:883 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:26:883 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:26:883 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:26:883 [DEBUG]: Parsing Line: media.role = "music"
+23:26:883 [DEBUG]: Parsing Line: media.name = "Spotify"
+23:26:883 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:26:883 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:26:883 [DEBUG]: Parsing Line: node.latency = "8192/44100"
+23:26:883 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:26:883 [DEBUG]: Parsing Line: node.name = "spotify"
+23:26:883 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:26:883 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:26:883 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:26:883 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:26:883 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:26:883 [DEBUG]: Parsing Line: object.register = "false"
+23:26:883 [DEBUG]: Parsing Line: factory.id = "7"
+23:26:883 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:26:883 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:26:883 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:26:883 [DEBUG]: Parsing Line: client.id = "64"
+23:26:883 [DEBUG]: Parsing Line: object.id = "65"
+23:26:883 [DEBUG]: Parsing Line: object.serial = "65"
+23:26:883 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:26:883 [DEBUG]: Parsing Line: pulse.attr.tlength = "640064"
+23:26:883 [DEBUG]: Parsing Line: pulse.attr.prebuf = "0"
+23:26:883 [DEBUG]: Parsing Line: pulse.attr.minreq = "7056"
+23:26:883 [DEBUG]: Parsing Line: node.driver-id = "72"
+23:26:883 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-media-role:music"
+23:26:883 [DEBUG]: Parsing Line: 
+23:26:884 [DEBUG]: Parsing Line: Sink Input #87
+23:26:884 [DEBUG]: Finalizing previous app: {'id': '65', 'volume': 100, 'name': 'spotify'}
+23:26:884 [DEBUG]: New app detected with ID: 87
+23:26:884 [DEBUG]: Parsing Line: Driver: PipeWire
+23:26:884 [DEBUG]: Parsing Line: Owner Module: n/a
+23:26:884 [DEBUG]: Parsing Line: Client: 86
+23:26:884 [DEBUG]: Parsing Line: Sink: 71
+23:26:884 [DEBUG]: Parsing Line: Sample Specification: s16le 1ch 44100Hz
+23:26:884 [DEBUG]: Parsing Line: Channel Map: mono
+23:26:884 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"s16le\""  format.rate = "44100"  format.channels = "1"  format.channel_map = "\"mono\""
+23:26:884 [DEBUG]: Parsing Line: Corked: no
+23:26:884 [DEBUG]: Parsing Line: Mute: no
+23:26:884 [DEBUG]: Parsing Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:26:884 [DEBUG]: Found Volume Line: Volume: mono: 99957 / 153% / 11.00 dB
+23:26:884 [DEBUG]: Detected & Stored Volume: 153
+23:26:884 [DEBUG]: Parsing Line: balance 0.00
+23:26:884 [DEBUG]: Parsing Line: Buffer Latency: 0 usec
+23:26:884 [DEBUG]: Parsing Line: Sink Latency: 0 usec
+23:26:884 [DEBUG]: Parsing Line: Resample method: PipeWire
+23:26:884 [DEBUG]: Parsing Line: Properties:
+23:26:884 [DEBUG]: Parsing Line: client.api = "pipewire-pulse"
+23:26:884 [DEBUG]: Parsing Line: pulse.server.type = "unix"
+23:26:884 [DEBUG]: Parsing Line: application.name = "speech-dispatcher-dummy"
+23:26:884 [DEBUG]: Detected & Stored App Name: speech-dispatcher-dummy
+23:26:884 [DEBUG]: Parsing Line: application.process.id = "1765"
+23:26:884 [DEBUG]: Parsing Line: application.process.user = "rquarx"
+23:26:884 [DEBUG]: Parsing Line: application.process.host = "archlinux"
+23:26:884 [DEBUG]: Parsing Line: application.process.binary = "sd_dummy"
+23:26:884 [DEBUG]: Parsing Line: application.language = "C"
+23:26:884 [DEBUG]: Parsing Line: window.x11.display = ":0"
+23:26:884 [DEBUG]: Parsing Line: application.process.machine_id = "3dc5a04a2ae64610be2d2adaf9732768"
+23:26:884 [DEBUG]: Parsing Line: application.process.session_id = "3"
+23:26:884 [DEBUG]: Parsing Line: pulse.min.req = "512/48000"
+23:26:884 [DEBUG]: Parsing Line: pulse.min.quantum = "512/48000"
+23:26:884 [DEBUG]: Parsing Line: pulse.idle.timeout = "5"
+23:26:884 [DEBUG]: Parsing Line: media.name = "playback"
+23:26:884 [DEBUG]: Parsing Line: pulse.corked = "false"
+23:26:884 [DEBUG]: Parsing Line: node.rate = "1/44100"
+23:26:884 [DEBUG]: Parsing Line: node.latency = "471/44100"
+23:26:884 [DEBUG]: Parsing Line: stream.is-live = "true"
+23:26:884 [DEBUG]: Parsing Line: node.name = "speech-dispatcher-dummy"
+23:26:884 [DEBUG]: Parsing Line: node.want-driver = "true"
+23:26:884 [DEBUG]: Parsing Line: node.autoconnect = "true"
+23:26:884 [DEBUG]: Parsing Line: media.class = "Stream/Output/Audio"
+23:26:884 [DEBUG]: Parsing Line: port.group = "stream.0"
+23:26:884 [DEBUG]: Parsing Line: adapt.follower.spa-node = ""
+23:26:884 [DEBUG]: Parsing Line: object.register = "false"
+23:26:884 [DEBUG]: Parsing Line: factory.id = "7"
+23:26:884 [DEBUG]: Parsing Line: clock.quantum-limit = "8192"
+23:26:884 [DEBUG]: Parsing Line: node.loop.name = "data-loop.0"
+23:26:884 [DEBUG]: Parsing Line: library.name = "audioconvert/libspa-audioconvert"
+23:26:884 [DEBUG]: Parsing Line: client.id = "78"
+23:26:884 [DEBUG]: Parsing Line: object.id = "79"
+23:26:884 [DEBUG]: Parsing Line: object.serial = "87"
+23:26:884 [DEBUG]: Parsing Line: pulse.attr.minreq = "942"
+23:26:884 [DEBUG]: Parsing Line: pulse.attr.maxlength = "4194304"
+23:26:884 [DEBUG]: Parsing Line: pulse.attr.tlength = "2826"
+23:26:884 [DEBUG]: Parsing Line: pulse.attr.prebuf = "1886"
+23:26:884 [DEBUG]: Parsing Line: module-stream-restore.id = "sink-input-by-application-name:speech-dispatcher-dummy"
+23:26:884 [DEBUG]: Finalizing last app: {current_app}
+23:26:884 [DEBUG]: Parsed Applications: [{'id': '65', 'volume': 100, 'name': 'spotify'}, {'id': '87', 'volume': 153, 'name': 'speech-dispatcher-dummy'}]
+23:26:975 [DEBUG]: Parsing Line: Sink Input #65
+23:26:975 [DEBUG]: New app detected with ID: 65
+23:26:975 [DEBUG]: Parsing Line: Driver: PipeWire
+23:26:975 [DEBUG]: Parsing Line: Owner Module: n/a
+23:26:975 [DEBUG]: Parsing Line: Client: 64
+23:26:975 [DEBUG]: Parsing Line: Sink: 71
+23:26:975 [DEBUG]: Parsing Line: Sample Specification: float32le 2ch 44100Hz
+23:26:975 [DEBUG]: Parsing Line: Channel Map: front-left,front-right
+23:26:975 [DEBUG]: Parsing Line: Format: pcm, format.sample_format = "\"float32le\""  format.rate = "44100"  format.channels = "2"  format.channel_map = "\"front-left,front-right\""

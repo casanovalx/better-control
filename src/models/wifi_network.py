@@ -1,12 +1,16 @@
-import logging
 import subprocess
-import gi # type: ignore
+import gi
+
+from utils.logger import LogLevel, Logger  # type: ignore
+
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk # type: ignore
+from gi.repository import Gtk  # type: ignore
+
 
 class WiFiNetworkRow(Gtk.ListBoxRow):
-    def __init__(self, network_info):
+    def __init__(self, network_info, logging: Logger):
         super().__init__()
+        self.logging = logging
         self.set_margin_top(5)
         self.set_margin_bottom(5)
         self.set_margin_start(10)
@@ -36,7 +40,9 @@ class WiFiNetworkRow(Gtk.ListBoxRow):
                         # Fallback to position-based extraction
                         self.ssid = parts[1]
                 except Exception as e:
-                    logging.error(f"Error getting active connection name: {e}")
+                    self.logging.log(
+                        LogLevel.Error, f"Failed getting active connection name: {e}"
+                    )
                     self.ssid = parts[1]
             else:
                 # For non-connected networks, use the second column
@@ -77,7 +83,9 @@ class WiFiNetworkRow(Gtk.ListBoxRow):
                     # No valid signal found
                     self.signal_strength = "0%"
         except (IndexError, ValueError) as e:
-            logging.error(f"Error parsing signal strength from {parts}: {e}")
+            self.logging.log(
+                LogLevel.Error, f"Failed parsing signal strength from {parts}: {e}"
+            )
             self.signal_strength = "0%"
             signal_value = 0
 
