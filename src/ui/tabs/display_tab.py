@@ -20,6 +20,7 @@ class DisplayTab(Gtk.Box):
         self.logging = logging
         self.update_timeout_id = None
         self.update_interval = 500  # milliseconds
+        self.is_visible = False
 
         self.set_margin_start(15)
         self.set_margin_end(15)
@@ -151,8 +152,14 @@ class DisplayTab(Gtk.Box):
         # Connect destroy signal to cleanup
         self.connect("destroy", self.on_destroy)
         
-        # Start auto-refresh immediately
-        self.start_auto_update()
+        # Connect visibility signals
+        self.connect("map", self.on_mapped)
+        self.connect("unmap", self.on_unmapped)
+        
+        # Only start auto-refresh when the tab becomes visible
+        if self.get_mapped():
+            self.is_visible = True
+            self.start_auto_update()
 
     def on_brightness_changed(self, scale):
         """Handle brightness scale changes"""
@@ -221,9 +228,21 @@ class DisplayTab(Gtk.Box):
         # Return True to keep the timer running if this was called by the timer
         return True
     
+    def on_mapped(self, widget):
+        """Called when the widget becomes visible"""
+        self.is_visible = True
+        self.start_auto_update()
+        self.logging.log(LogLevel.Info, "Display tab became visible, starting auto-update")
+    
+    def on_unmapped(self, widget):
+        """Called when the widget is hidden"""
+        self.is_visible = False
+        self.stop_auto_update()
+        self.logging.log(LogLevel.Info, "Display tab hidden, stopping auto-update")
+    
     def start_auto_update(self):
         """Start auto-updating display settings"""
-        if self.update_timeout_id is None:
+        if self.update_timeout_id is None and self.is_visible:
             self.update_timeout_id = GLib.timeout_add(
                 self.update_interval, self.refresh_display_settings
             )
