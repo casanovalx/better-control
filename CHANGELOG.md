@@ -3,8 +3,10 @@
 ####     '# Change: <version>'
 ####     '- <changes>'
 
+
 # Change 5.2.5
 - Removed a lot of whitespaces from the files
+- Fixed float (again)
 - Removed all 'print' statements, and changed them into logs
 
 # Change: 5.2.0
