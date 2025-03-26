@@ -14,27 +14,19 @@ from ui.main_window import BetterControl
 from utils.dependencies import check_all_dependencies
 
 
-def parse_arguments() -> argparse.Namespace:
-    """Parse command line arguments
-
-    Returns:
-        argparse.Namespace: Parsed arguments
-    """
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Better Control - A system control center."
     )
 
-    # Volume
     parser.add_argument(
         "--volume", "-v", action="store_true", help="Start with the Volume tab open."
     )
 
-    # Wifi
     parser.add_argument(
         "--wifi", "-w", action="store_true", help="Start with the Wi-Fi tab open."
     )
 
-    # Bluetooth
     parser.add_argument(
         "--bluetooth",
         "-b",
@@ -42,17 +34,14 @@ def parse_arguments() -> argparse.Namespace:
         help="Start with the Bluetooth tab open.",
     )
 
-    # Battery
     parser.add_argument(
         "--battery", "-B", action="store_true", help="Start with the Battery tab open."
     )
 
-    # Display
     parser.add_argument(
         "--display", "-d", action="store_true", help="Start with the Display tab open."
     )
 
-    # Force dependencies
     parser.add_argument(
         "--force",
         "-f",
@@ -60,13 +49,7 @@ def parse_arguments() -> argparse.Namespace:
         help="Forces all dependencies to be installed.",
     )
 
-    return parser.parse_args()
-
-
-if __name__ == "__main__":
-    """Main entry point of the application"""
-    # Parse command line arguments
-    args = parse_arguments()
+    args = parser.parse_args()
 
     # Configure logging
     logging.basicConfig(

@@ -3,8 +3,10 @@
 import json
 import os
 import logging
-import constants
-from constants import CONFIG_PATH, SETTINGS_FILE
+
+CONFIG_DIR = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+CONFIG_PATH = os.path.join(CONFIG_DIR, "better-control")
+SETTINGS_FILE = os.path.join(CONFIG_PATH, "settings.json")
 
 def load_settings() -> dict:
     """Load settings from the settings file

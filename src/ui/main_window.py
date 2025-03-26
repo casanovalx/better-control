@@ -14,7 +14,7 @@ from ui.tabs.display_tab import DisplayTab
 from ui.tabs.volume_tab import VolumeTab
 from ui.tabs.wifi_tab import WiFiTab
 from ui.tabs.settings_tab import SettingsTab
-from config.settings import load_settings, save_settings
+from utils.settings import load_settings, save_settings
 
 class BetterControl(Gtk.Window):
     """Main application window"""

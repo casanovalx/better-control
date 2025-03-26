@@ -6,7 +6,7 @@ import gi # type: ignore
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject # type: ignore
 
-from config.settings import load_settings, save_settings
+from utils.settings import load_settings, save_settings
 
 
 class SettingsTab(Gtk.Box):

@@ -2,13 +2,12 @@
 
 import gi # type: ignore
 import subprocess
-import os
 import logging
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk # type: ignore
 
-from config.settings import load_settings, save_settings
+from utils.settings import load_settings, save_settings
 
 class DisplayTab(Gtk.Box):
     """Display settings tab"""
