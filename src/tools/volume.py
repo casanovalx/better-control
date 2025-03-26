@@ -114,57 +114,63 @@ def get_sources() -> List[Dict[str, str]]:
         logging.error(f"Error getting sources: {e}")
         return []
 
+import subprocess
+import re
+from typing import List, Dict
+
 def get_applications() -> List[Dict[str, str]]:
-    """Get list of applications playing audio
+    output = subprocess.getoutput("pactl list sink-inputs")
+    apps = []
+    current_app = {}
 
-    Returns:
-        List[Dict[str, str]]: List of application dictionaries
-    """
-    try:
-        output = subprocess.getoutput("pactl list sink-inputs")
-        apps = []
-        current_app = {}
-        for line in output.split("\n"):
-            line = line.strip()
-            if line.startswith("Sink Input #"):
-                if current_app:
-                    # Only add apps that have a name and volume
-                    if "name" in current_app and "volume" in current_app:
-                        apps.append(current_app)
-                current_app = {"id": line.split("#")[1].strip()}
-            elif ":" in line and current_app:
-                key, value = [x.strip() for x in line.split(":", 1)]
-                # Application name
-                if "application.name" in key:
-                    current_app["name"] = value.strip('"')
-                elif "media.name" in key and "name" not in current_app:
-                    # Fallback to media.name if application.name is not available
-                    current_app["name"] = value.strip('"')
-                elif "application.process.binary" in key and "name" not in current_app:
-                    # Fallback to process name if no other name is available
-                    current_app["name"] = value.strip('"')
-                # Application icon
-                elif "application.icon_name" in key:
-                    current_app["icon"] = value.strip('"')
-                # Volume
-                elif "Volume:" in key:
-                    try:
-                        # Extract volume percentage from format like "front-left: 65536 / 100% / -0.00 dB,   front-right: 65536 / 100% / -0.00 dB"
-                        volume_match = re.search(r"(\d+)%", value)
-                        if volume_match:
-                            current_app["volume"] = int(volume_match.group(1)) # type: ignore
-                    except (ValueError, IndexError) as e:
-                        logging.warning(f"Error parsing volume from '{value}': {e}")
-                        current_app["volume"] = 100  # Default to 100% if parsing fails # type: ignore
+    for line in output.split("\n"):
+        line = line.strip()
+        print(f"Parsing Line: {line}")  # Debugging
 
-        # Add the last app if it exists and has required fields
-        if current_app and "name" in current_app and "volume" in current_app:
+        if line.startswith("Sink Input #"):
+            if current_app:  # Finalize previous app before moving to a new one
+                print("Finalizing previous app:", current_app)  
+                if "name" in current_app and "volume" in current_app:
+                    apps.append(current_app)  
+                else:
+                    print("Skipping app due to missing name or volume!", current_app)
+            
+            current_app = {"id": line.split("#")[1].strip()}  # New app entry
+            print("New app detected with ID:", current_app["id"])
+
+        elif "application.name" in line:
+            current_app["name"] = line.split("=", 1)[1].strip().strip('"')
+            print("Detected & Stored App Name:", current_app["name"])
+
+        elif "media.name" in line and "name" not in current_app:
+            current_app["name"] = line.split("=", 1)[1].strip().strip('"')
+            print("Using Media Name:", current_app["name"])
+
+        elif "application.process.binary" in line and "name" not in current_app:
+            current_app["name"] = line.split("=", 1)[1].strip().strip('"')
+            print("Using Process Binary Name:", current_app["name"])
+
+        elif "Volume:" in line:
+            print("Found Volume Line:", line)
+            match = re.search(r"(\d+)%", line)
+            if match:
+                current_app["volume"] = int(match.group(1))
+                print("Detected & Stored Volume:", current_app["volume"])
+            else:
+                print("Failed to parse volume from:", line)
+
+    # Final app processing
+    if current_app:
+        print("Finalizing last app:", current_app)
+        if "name" in current_app and "volume" in current_app:
             apps.append(current_app)
+        else:
+            print("Skipping last app due to missing name or volume!", current_app)
 
-        return apps
-    except Exception as e:
-        logging.error(f"Error getting applications: {e}")
-        return []
+    print("Parsed Applications:", apps)
+    return apps
+
+
 
 def set_application_volume(app_id: str, value: int) -> None:
     """Set volume for a specific application
