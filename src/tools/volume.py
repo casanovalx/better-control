@@ -307,3 +307,30 @@ def toggle_mic_mute(logging: Logger) -> None:
         subprocess.run(["pactl", "set-source-mute", "@DEFAULT_SOURCE@", "toggle"], check=True)
     except subprocess.CalledProcessError as e:
         logging.log(LogLevel.Error, f"Failed toggling mic mute: {e}")
+
+def get_application_mute_state(app_id: str, logging: Logger) -> bool:
+    """Get mute state for a specific application
+
+    Args:
+        app_id (str): Application sink input ID
+
+    Returns:
+        bool: True if muted, False otherwise
+    """
+    try:
+        output = subprocess.getoutput(f"pactl list sink-inputs | grep -A 15 'Sink Input #{app_id}'")
+        return "Mute: yes" in output
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Failed getting application mute state: {e}")
+        return False
+
+def toggle_application_mute(app_id: str, logging: Logger) -> None:
+    """Toggle mute state for a specific application
+
+    Args:
+        app_id (str): Application sink input ID
+    """
+    try:
+        subprocess.run(["pactl", "set-sink-input-mute", app_id, "toggle"], check=True)
+    except subprocess.CalledProcessError as e:
+        logging.log(LogLevel.Error, f"Failed toggling application mute: {e}")

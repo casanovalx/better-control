@@ -25,6 +25,8 @@ from tools.volume import (
     get_mic_mute_state,
     toggle_mic_mute,
     get_sink_name_by_id,
+    get_application_mute_state,
+    toggle_application_mute,
 )
 
 class VolumeTab(Gtk.Box):
@@ -388,6 +390,19 @@ class VolumeTab(Gtk.Box):
                 scale.connect("value-changed", self.on_app_volume_changed, app["id"])
                 box.pack_start(scale, False, True, 0)
                 
+                # App mute button
+                app_muted = get_application_mute_state(app["id"], self.logging)
+                app_mute_button = Gtk.Button()
+                if app_muted:
+                    mute_icon = Gtk.Image.new_from_icon_name("audio-volume-muted-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+                    app_mute_button.set_tooltip_text("Unmute")
+                else:
+                    mute_icon = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+                    app_mute_button.set_tooltip_text("Mute")
+                app_mute_button.set_image(mute_icon)
+                app_mute_button.connect("clicked", self.on_app_mute_clicked, app["id"])
+                box.pack_start(app_mute_button, False, False, 0)
+                
                 # Output device selector
                 output_combo = Gtk.ComboBoxText()
                 output_combo.set_tooltip_text("Select output device for this application")
@@ -496,6 +511,11 @@ class VolumeTab(Gtk.Box):
         if device_id:
             move_application_to_sink(app_id, device_id, self.logging)
             self.logging.log(LogLevel.Info, f"Moving application {app_id} to sink {device_id}")
+
+    def on_app_mute_clicked(self, button, app_id):
+        """Handle application mute button clicks"""
+        toggle_application_mute(app_id, self.logging)
+        self.update_application_list()
 
     def on_refresh_clicked(self, button=None):
         """Handle refresh button click"""
