@@ -22,6 +22,7 @@ Before installing, make sure you have `git` and `base-devel` installed.
 - **PipeWire or PulseAudio** - Audio control
 - **brightnessctl** - Screen brightness control
 - **power-profiles-daemon** - Power management
+- **upower** - Battery information
 - **gammastep** - Blue light filter
 - **Python Libraries** - python-gobject, python-dbus, python-psutil
 
