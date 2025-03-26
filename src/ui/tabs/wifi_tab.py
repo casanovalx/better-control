@@ -419,7 +419,7 @@ class WiFiTab(Gtk.Box):
         thread.daemon = True
         thread.start()
 
-    def on_refresh_clicked(self):
+    def on_refresh_clicked(self, button):
         """Handle refresh button click"""
         self.logging.log(LogLevel.Info, "Manual refresh of WiFi networks requested")
         self.update_network_list()
