@@ -156,6 +156,8 @@ class BluetoothManager:
             )
             device.Connect()
 
+            # Fetch device name
+            device_name = "Bluetooth Device"
             # Fetch battery percentage
             battery_level = "Unknown"
             try:
@@ -163,13 +165,14 @@ class BluetoothManager:
                     self.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
                     DBUS_PROP_IFACE
                 )
+                device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Name")
                 battery_level = properties.Get(BLUEZ_DEVICE_INTERFACE, "BatteryPercentage")
             except Exception:
                 logging.warning(f"Battery percentage not available for device: {device_path}")
 
             # Send notification with battery percentage
             subprocess.run(["notify-send", "Control Center",
-                            f"Bluetooth Device Connected\nBattery: {battery_level}%"])
+                            f"{device_name} Connected\nBattery: {battery_level}%"])
 
             return True
         except Exception as e:
@@ -191,8 +194,15 @@ class BluetoothManager:
                 self.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
                 BLUEZ_DEVICE_INTERFACE
             )
+            properties = dbus.Interface(
+                self.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
+                DBUS_PROP_IFACE
+            )
+            # Fetch device name
+            device_name = "Bluetooth Device"
+            device_name = properties.Get(BLUEZ_DEVICE_INTERFACE, "Name")
             device.Disconnect()
-            subprocess.run(["notify-send", "Control Center","Bluetooth Device Disconnected"])
+            subprocess.run(["notify-send", "Control Center", f"{device_name} Disconnected"])
             return True
         except Exception as e:
             logging.error(f"Error disconnecting from device: {e}")
