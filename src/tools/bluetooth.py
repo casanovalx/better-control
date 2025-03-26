@@ -172,7 +172,7 @@ class BluetoothManager:
 
             # Send notification with battery percentage
             subprocess.run(["notify-send", "Control Center",
-                            f"{device_name} Connected\nBattery: {battery_level}%"])
+                            f"{device_name} Connected{"" if battery_level == "Unknown" else "\nBattery: {battery_level}%"}"])
 
             return True
         except Exception as e:
