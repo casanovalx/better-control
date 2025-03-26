@@ -36,6 +36,8 @@ class VolumeTab(Gtk.Box):
         self.set_hexpand(True)
         self.set_vexpand(True)
 
+        GLib.timeout_add(3000, self.on_auto_refresh)
+
         # Create header box with title and refresh button
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         header_box.set_hexpand(True)
@@ -402,3 +404,18 @@ class VolumeTab(Gtk.Box):
         self.update_application_list()
         self.update_mute_buttons()
         self.update_volumes()
+
+    def on_auto_refresh(self):
+        """Automatically refresh audio device lists and UI every 3 seconds."""
+        logging.info("Auto-refreshing audio settings...")
+        self.update_device_lists()
+        self.update_application_list()
+        self.update_mute_buttons()
+        self.update_volumes()
+        
+        # 🔹 Re-run this function every 3 seconds (3000ms)
+        GLib.timeout_add(3000, self.on_auto_refresh)
+
+
+
+
