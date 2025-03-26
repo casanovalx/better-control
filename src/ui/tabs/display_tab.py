@@ -6,9 +6,10 @@ import subprocess
 from utils.logger import LogLevel, Logger
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # type: ignore
+from gi.repository import Gtk, GLib  # type: ignore
 
 from utils.settings import load_settings, save_settings
+from tools.display import get_brightness, set_brightness
 
 
 class DisplayTab(Gtk.Box):
@@ -17,6 +18,8 @@ class DisplayTab(Gtk.Box):
     def __init__(self, logging: Logger):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.logging = logging
+        self.update_timeout_id = None
+        self.update_interval = 500  # milliseconds
 
         self.set_margin_start(15)
         self.set_margin_end(15)
@@ -25,7 +28,7 @@ class DisplayTab(Gtk.Box):
         self.set_hexpand(True)
         self.set_vexpand(True)
 
-        # Create header box with title and refresh button
+        # Create header box with title
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         header_box.set_hexpand(True)
 
@@ -47,16 +50,6 @@ class DisplayTab(Gtk.Box):
         title_box.pack_start(display_label, False, False, 0)
 
         header_box.pack_start(title_box, True, True, 0)
-
-        # Add refresh button
-        refresh_button = Gtk.Button()
-        refresh_icon = Gtk.Image.new_from_icon_name(
-            "view-refresh-symbolic", Gtk.IconSize.BUTTON
-        )
-        refresh_button.set_image(refresh_icon)
-        refresh_button.set_tooltip_text("Refresh Display Settings")
-        refresh_button.connect("clicked", self.refresh_display_settings)
-        header_box.pack_end(refresh_button, False, False, 0)
 
         self.pack_start(header_box, False, False, 0)
 
@@ -92,7 +85,7 @@ class DisplayTab(Gtk.Box):
         self.brightness_scale = Gtk.Scale.new_with_range(
             Gtk.Orientation.HORIZONTAL, 0, 100, 1
         )
-        self.brightness_scale.set_value(self.get_current_brightness())
+        self.brightness_scale.set_value(get_brightness(self.logging))
         self.brightness_scale.set_value_pos(Gtk.PositionType.RIGHT)
         self.brightness_scale.connect("value-changed", self.on_brightness_changed)
         brightness_box.pack_start(self.brightness_scale, True, True, 0)
@@ -154,37 +147,22 @@ class DisplayTab(Gtk.Box):
 
         scroll_window.add(content_box)
         self.pack_start(scroll_window, True, True, 0)
-
-    def get_current_brightness(self):
-        """Get current brightness level"""
-        try:
-            output = subprocess.getoutput("brightnessctl get")
-            max_brightness = subprocess.getoutput("brightnessctl max")
-            return int((int(output) / int(max_brightness)) * 100)
-        except Exception as e:
-            self.logging.log(LogLevel.Error, f"Failed getting brightness: {e}")
-            return 50
-
-    def set_brightness(self, value):
-        """Set brightness level"""
-        try:
-            max_brightness = int(subprocess.getoutput("brightnessctl max"))
-            actual_value = int((value / 100) * max_brightness)
-            subprocess.run(
-                ["brightnessctl", "s", f"{actual_value}"], stdout=subprocess.DEVNULL
-            )
-        except Exception as e:
-            self.logging.log(LogLevel.Error, f"Failed setting brightness: {e}")
+        
+        # Connect destroy signal to cleanup
+        self.connect("destroy", self.on_destroy)
+        
+        # Start auto-refresh immediately
+        self.start_auto_update()
 
     def on_brightness_changed(self, scale):
         """Handle brightness scale changes"""
-        value = scale.get_value()
-        self.set_brightness(value)
+        value = int(scale.get_value())
+        set_brightness(value, self.logging)
 
     def on_brightness_button_clicked(self, button, value):
         """Handle brightness button clicks"""
         self.brightness_scale.set_value(value)
-        self.set_brightness(value)
+        set_brightness(value, self.logging)
 
     def set_bluelight(self, temperature):
         """Set blue light level"""
@@ -219,15 +197,15 @@ class DisplayTab(Gtk.Box):
         temperature = int(2500 + (value * 40))
         self.set_bluelight(temperature)
 
-    def refresh_display_settings(self):
+    def refresh_display_settings(self, *args):
         """Refresh display settings"""
-        self.logging.log(LogLevel.Info, "Manual refresh of display settings requested")
+        self.logging.log(LogLevel.Info, "Refreshing display settings")
 
         # Block the value-changed signal before updating the brightness slider
         self.brightness_scale.disconnect_by_func(self.on_brightness_changed)
 
         # Update brightness slider with current value
-        current_brightness = self.get_current_brightness()
+        current_brightness = get_brightness(self.logging)
         self.brightness_scale.set_value(current_brightness)
 
         # Reconnect the value-changed signal
@@ -240,7 +218,24 @@ class DisplayTab(Gtk.Box):
         percentage = (saved_gamma - 2500) / 40  # (6500-2500)/100 = 40
         self.bluelight_scale.set_value(percentage)
 
-        self.logging.log(
-            LogLevel.Info,
-            f"Display settings refreshed - Brightness: {current_brightness}%, Blue light: {saved_gamma}K",
-        )
+        # Return True to keep the timer running if this was called by the timer
+        return True
+    
+    def start_auto_update(self):
+        """Start auto-updating display settings"""
+        if self.update_timeout_id is None:
+            self.update_timeout_id = GLib.timeout_add(
+                self.update_interval, self.refresh_display_settings
+            )
+            self.logging.log(LogLevel.Info, f"Auto-update started with {self.update_interval}ms interval")
+    
+    def stop_auto_update(self):
+        """Stop auto-updating display settings"""
+        if self.update_timeout_id is not None:
+            GLib.source_remove(self.update_timeout_id)
+            self.update_timeout_id = None
+            self.logging.log(LogLevel.Info, "Auto-update stopped")
+    
+    def on_destroy(self, widget):
+        """Clean up resources when widget is destroyed"""
+        self.stop_auto_update()
