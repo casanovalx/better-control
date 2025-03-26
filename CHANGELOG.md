@@ -9,6 +9,8 @@
 
 # Change: 5.2.0
 - Async loading
+- Bluetooth notifications
+- floating window
 
 # Change: 5.1.0
 - Code refactor
