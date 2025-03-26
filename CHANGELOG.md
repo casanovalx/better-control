@@ -3,7 +3,7 @@
 ####     '# Change: <version>'
 ####     '- <changes>'
 
-# Change in 5.7
+# Change in 5.3
 - Changed logging and argument parsers, they should be more advanced now
 - Add a -l, --log argument, check --help for more information
 - Supress outputs from brightnessctl
