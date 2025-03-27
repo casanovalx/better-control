@@ -32,7 +32,7 @@ if __name__ == "__main__":
     audio_thread.start()
 
     try:
-        win = BetterControl(arg_parser)  
+        win = BetterControl(arg_parser, None)  # Pass None as logging is removed
         win.set_default_size(1000, 700)
         win.resize(1000, 700)
         win.connect("destroy", Gtk.main_quit)
