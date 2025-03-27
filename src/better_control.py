@@ -15,6 +15,7 @@ from ui.main_window import BetterControl
 from utils.dependencies import check_all_dependencies
 from tools.bluetooth import restore_last_sink
 
+logging = Logging(arg_parser) 
 localdesktop = "/usr/share/applications/better-control.desktop"
 githubdesktop = "https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/src/control.desktop"
 
