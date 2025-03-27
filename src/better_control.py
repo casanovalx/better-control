@@ -3,6 +3,7 @@ import subprocess
 import gi  
 import sys
 import threading
+import logger
 import requests  # GET THIS
 from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
