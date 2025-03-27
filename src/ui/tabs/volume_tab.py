@@ -3,6 +3,7 @@
 import gi  # type: ignore
 import subprocess
 import threading
+import time
 
 from utils.logger import LogLevel, Logger
 
@@ -131,6 +132,10 @@ class VolumeTab(Gtk.Box):
         )
         self.volume_scale.set_value(get_volume(self.logging))
         self.volume_scale.connect("value-changed", self.on_volume_changed)
+        # Improve slider responsiveness
+        self.volume_scale.set_draw_value(True)
+        self.volume_scale.set_value_pos(Gtk.PositionType.RIGHT)
+        self.volume_scale.set_increments(1, 5)  # Small step, page increment
         volume_control_box.pack_start(self.volume_scale, True, True, 0)
 
         # Mute button
@@ -192,6 +197,10 @@ class VolumeTab(Gtk.Box):
         self.mic_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
         self.mic_scale.set_value(get_mic_volume(self.logging))
         self.mic_scale.connect("value-changed", self.on_mic_volume_changed)
+        # Improve slider responsiveness
+        self.mic_scale.set_draw_value(True)
+        self.mic_scale.set_value_pos(Gtk.PositionType.RIGHT)
+        self.mic_scale.set_increments(1, 5)  # Small step, page increment
         mic_control_box.pack_start(self.mic_scale, True, True, 0)
 
         # Mic mute button
@@ -317,153 +326,75 @@ class VolumeTab(Gtk.Box):
         self.logging.log(LogLevel.Info, "Stopped PulseAudio monitoring")
 
     def monitor_pulse_events(self):
-        """Monitor PulseAudio events using pactl subscribe and update UI in real-time"""
+        """Simple periodic monitoring instead of event-based monitoring"""
         try:
-            # Open pactl subscribe process to monitor audio events
-            proc = subprocess.Popen(
-                ["pactl", "subscribe"], stdout=subprocess.PIPE, text=True, bufsize=1
-            )
-
-            self.logging.log(LogLevel.Info, "Subscribed to PulseAudio events")
-
-            # Process events as they occur
-            for line in iter(proc.stdout.readline, ""):  # type: ignore
-                if not self.should_monitor:
-                    break
-
-                # Only log debug messages if tab is visible
-                if self.is_visible:
-                    self.logging.log(
-                        LogLevel.Debug, f"PulseAudio event: {line.strip()}"
-                    )
-
-                try:
-                    # For volume change events, update immediately without delay
-                    if "sink" in line and "change" in line:
-                        # Use direct update for volume changes for immediate feedback
-                        GLib.idle_add(self.update_on_pulse_event, line)
-                    else:
-                        # Use small delay for other events to avoid UI freezing
-                        GLib.timeout_add(5, self.update_on_pulse_event, line)
-                except Exception as e:
-                    self.logging.log(
-                        LogLevel.Error, f"Failed to schedule UI update: {e}"
-                    )
-
-            proc.terminate()
-            self.logging.log(LogLevel.Info, "PulseAudio monitoring stopped")
-
+            # Use a simple timeout-based refresh approach
+            self.logging.log(LogLevel.Info, "Starting periodic (1-second) audio refresh")
+            
+            # Set up the periodic refresh
+            refresh_counter = 0
+            while self.should_monitor:
+                # Sleep for a second
+                time.sleep(1)
+                
+                # Skip updates if the tab is not visible
+                if not self.is_visible:
+                    continue
+                    
+                # Schedule UI update on the main thread
+                GLib.idle_add(self.refresh_audio_state, refresh_counter)
+                
+                # Increment counter for selective updates
+                refresh_counter = (refresh_counter + 1) % 10
+                
+            self.logging.log(LogLevel.Info, "Periodic audio refresh stopped")
+            
         except Exception as e:
-            self.logging.log(LogLevel.Error, f"Error in PulseAudio monitor: {e}")
+            self.logging.log(LogLevel.Error, f"Error in audio monitor: {e}")
             # Attempt to restart the monitoring after a short delay
             if self.should_monitor:
                 GLib.timeout_add(5000, self.restart_pulse_monitoring)
-
+    
+    def refresh_audio_state(self, counter):
+        """Update audio state based on a counter (to distribute heavy operations)"""
+        try:
+            # Always update volume and mute states unless user is actively adjusting them
+            updating_volume = hasattr(self, "_volume_change_timeout_id") and self._volume_change_timeout_id
+            updating_mic = hasattr(self, "_mic_volume_change_timeout_id") and self._mic_volume_change_timeout_id
+            
+            # Update main volume if not being adjusted by user
+            if not updating_volume:
+                self.volume_scale.set_value(get_volume(self.logging))
+                self.update_mute_button()
+                
+            # Update mic volume if not being adjusted by user
+            if not updating_mic:
+                self.mic_scale.set_value(get_mic_volume(self.logging))
+                self.update_mic_mute_button()
+            
+            # Distribute heavier operations across different refresh cycles
+            if counter % 3 == 0:  # Every 3 seconds
+                self.update_device_lists()
+                
+            if counter % 2 == 0:  # Every 2 seconds
+                self.update_application_list()
+                
+            if counter % 2 == 1:  # Alternate with app list (also every 2 seconds)
+                self.update_mic_application_list()
+                
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Error refreshing audio state: {e}")
+            
+        return False  # Don't repeat via GLib (we're manually scheduling)
+        
     def restart_pulse_monitoring(self):
         """Restart the pulse monitoring if it crashed"""
         if self.should_monitor and (
             not self.pulse_thread or not self.pulse_thread.is_alive()
         ):
-            self.logging.log(LogLevel.Info, "Restarting PulseAudio monitoring")
+            self.logging.log(LogLevel.Info, "Restarting audio monitoring")
             self.start_pulse_monitoring()
         return False  # Don't repeat this timeout
-
-    def update_on_pulse_event(self, event_line):
-        """Update UI based on PulseAudio event type"""
-        try:
-            # Check if this is a volume-related event, which needs immediate update
-            is_volume_event = "sink" in event_line and "change" in event_line
-
-            # For volume changes, use minimal throttling
-            if is_volume_event:
-                # Very minimal throttling for volume events to make them feel responsive
-                if hasattr(self, "_last_volume_event_time"):
-                    now = GLib.get_monotonic_time()
-                    if (
-                        now - self._last_volume_event_time < 10000
-                    ):  # 10ms throttle for volume
-                        return False
-                self._last_volume_event_time = GLib.get_monotonic_time()
-            # Regular event throttling for non-volume events
-            elif hasattr(self, "_last_event_time"):
-                now = GLib.get_monotonic_time()
-                if (
-                    now - self._last_event_time < 50000
-                ):  # 50ms throttle for other events
-                    return False
-                self._last_event_time = GLib.get_monotonic_time()
-            else:
-                self._last_event_time = GLib.get_monotonic_time()
-                if not hasattr(self, "_last_volume_event_time"):
-                    self._last_volume_event_time = self._last_event_time
-
-            # Handle different event types
-            if "sink" in event_line:
-                # Sink events (output devices, main volume changes)
-                try:
-                    # Prioritize volume slider updates for immediate feedback
-                    if "change" in event_line:
-                        # Update volume immediately to feel responsive
-                        self.volume_scale.set_value(get_volume(self.logging))
-
-                    # Only update mute button for regular changes
-                    self.update_mute_button()
-                except Exception as e:
-                    self.logging.log(LogLevel.Error, f"Error updating sink UI: {e}")
-
-                # If there was a change or removal, update device list
-                if "remove" in event_line or "change" in event_line:
-                    try:
-                        self.update_device_lists()
-                    except Exception as e:
-                        self.logging.log(
-                            LogLevel.Error, f"Error updating device lists: {e}"
-                        )
-
-            if "source" in event_line:
-                # Source events (input devices, mic changes)
-                try:
-                    # Update mic volume with priority for changes
-                    if "change" in event_line:
-                        self.mic_scale.set_value(get_mic_volume(self.logging))
-
-                    # Update mute button for all events
-                    self.update_mic_mute_button()
-                except Exception as e:
-                    self.logging.log(LogLevel.Error, f"Error updating source UI: {e}")
-
-                # If there was a change or removal, update device list
-                if "remove" in event_line or "change" in event_line:
-                    try:
-                        self.update_device_lists()
-                    except Exception as e:
-                        self.logging.log(
-                            LogLevel.Error, f"Error updating device lists: {e}"
-                        )
-
-            if "sink-input" in event_line:
-                # Application audio events
-                try:
-                    self.update_application_list()
-                except Exception as e:
-                    self.logging.log(
-                        LogLevel.Error, f"Error updating application list: {e}"
-                    )
-
-            if "source-output" in event_line:
-                # Application using microphone events
-                try:
-                    self.update_mic_application_list()
-                except Exception as e:
-                    self.logging.log(
-                        LogLevel.Error, f"Error updating mic application list: {e}"
-                    )
-
-        except Exception as e:
-            self.logging.log(LogLevel.Error, f"Error handling PulseAudio event: {e}")
-
-        # Return False to not repeat this callback
-        return False
 
     def update_device_lists(self):
         """Update output and input device lists and sync dropdown with the actual default sink."""
@@ -558,6 +489,14 @@ class VolumeTab(Gtk.Box):
             self.mute_button.set_tooltip_text("Mute Speakers")
         self.mute_button.set_image(mute_icon)
 
+    def _configure_slider(self, scale):
+        """Configure a volume slider with common settings for better performance"""
+        scale.set_draw_value(True)
+        scale.set_value_pos(Gtk.PositionType.RIGHT)
+        scale.set_increments(1, 5)  # Small step, page increment
+        scale.set_size_request(150, -1)  # Set minimum width
+        return scale
+        
     def update_application_list(self):
         """Update application volume controls"""
         # Remove existing controls
@@ -672,9 +611,9 @@ class VolumeTab(Gtk.Box):
                     orientation=Gtk.Orientation.HORIZONTAL, spacing=5
                 )
 
-                # Volume slider
+                # Volume slider - use the helper method
                 scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
-                scale.set_size_request(150, -1)  # Set minimum width
+                self._configure_slider(scale)
                 scale.set_value(app["volume"])
                 scale.connect("value-changed", self.on_app_volume_changed, app["id"])
                 volume_control_box.pack_start(scale, True, True, 0)
@@ -763,11 +702,29 @@ class VolumeTab(Gtk.Box):
     def on_volume_changed(self, scale):
         """Handle volume scale changes"""
         value = int(scale.get_value())
-        # Update the volume immediately when user changes slider
-        set_volume(value, self.logging)
-        # Force update of mute button to ensure it's in sync when unmuting via volume change
-        if value > 0 and get_mute_state(self.logging):
-            GLib.idle_add(self.update_mute_button)
+        
+        # Use debounce mechanism to avoid excessive updates
+        if hasattr(self, "_volume_change_timeout_id") and self._volume_change_timeout_id:
+            GLib.source_remove(self._volume_change_timeout_id)
+            
+        # Set a small timeout to aggregate rapid changes
+        # Store the current value for the delayed handler
+        self._pending_volume = value
+        self._volume_change_timeout_id = GLib.timeout_add(50, self._apply_volume_change)
+            
+    def _apply_volume_change(self):
+        """Apply the volume change after debouncing"""
+        if hasattr(self, "_pending_volume"):
+            value = self._pending_volume
+            # Update the volume immediately when user changes slider
+            set_volume(value, self.logging)
+            # Force update of mute button to ensure it's in sync when unmuting via volume change
+            if value > 0 and get_mute_state(self.logging):
+                GLib.idle_add(self.update_mute_button)
+            
+        # Reset the timeout ID
+        self._volume_change_timeout_id = None
+        return False  # Don't repeat
 
     def on_mute_clicked(self, button):
         """Handle mute button clicks"""
@@ -782,7 +739,26 @@ class VolumeTab(Gtk.Box):
     def on_mic_volume_changed(self, scale):
         """Handle microphone volume scale changes"""
         value = int(scale.get_value())
-        set_mic_volume(value, self.logging)
+        
+        # Use debounce mechanism to avoid excessive updates
+        if hasattr(self, "_mic_volume_change_timeout_id") and self._mic_volume_change_timeout_id:
+            GLib.source_remove(self._mic_volume_change_timeout_id)
+            
+        # Set a small timeout to aggregate rapid changes
+        # Store the current value for the delayed handler
+        self._pending_mic_volume = value
+        self._mic_volume_change_timeout_id = GLib.timeout_add(50, self._apply_mic_volume_change)
+            
+    def _apply_mic_volume_change(self):
+        """Apply the microphone volume change after debouncing"""
+        if hasattr(self, "_pending_mic_volume"):
+            value = self._pending_mic_volume
+            # Update the volume with the aggregated value
+            set_mic_volume(value, self.logging)
+            
+        # Reset the timeout ID
+        self._mic_volume_change_timeout_id = None
+        return False  # Don't repeat
 
     def on_mic_mute_clicked(self, button):
         """Handle microphone mute button clicks"""
@@ -809,7 +785,36 @@ class VolumeTab(Gtk.Box):
     def on_app_volume_changed(self, scale, app_id):
         """Handle application volume changes"""
         value = int(scale.get_value())
-        set_application_volume(app_id, value, self.logging)
+        
+        # Use per-app debouncing mechanism with a dictionary
+        # Create the tracking dictionary if it doesn't exist
+        if not hasattr(self, "_app_volume_timeouts"):
+            self._app_volume_timeouts = {}
+            self._pending_app_volumes = {}
+            
+        # Cancel previous timeout if exists
+        if app_id in self._app_volume_timeouts and self._app_volume_timeouts[app_id]:
+            GLib.source_remove(self._app_volume_timeouts[app_id])
+            
+        # Store the pending value and create a new timeout
+        self._pending_app_volumes[app_id] = value
+        self._app_volume_timeouts[app_id] = GLib.timeout_add(
+            50, 
+            lambda: self._apply_app_volume_change(app_id)
+        )
+            
+    def _apply_app_volume_change(self, app_id):
+        """Apply the application volume change after debouncing"""
+        if hasattr(self, "_pending_app_volumes") and app_id in self._pending_app_volumes:
+            value = self._pending_app_volumes[app_id]
+            # Apply the volume change
+            set_application_volume(app_id, value, self.logging)
+            
+        # Reset the timeout ID
+        if hasattr(self, "_app_volume_timeouts"):
+            self._app_volume_timeouts[app_id] = None
+            
+        return False  # Don't repeat
 
     def on_app_output_changed(self, combo, app_id):
         """Handle application output device changes"""
@@ -852,7 +857,36 @@ class VolumeTab(Gtk.Box):
     def on_app_mic_volume_changed(self, scale, app_id):
         """Handle application microphone volume changes"""
         value = int(scale.get_value())
-        set_application_mic_volume(app_id, value, self.logging)
+        
+        # Use per-app debouncing mechanism with a dictionary
+        # Create the tracking dictionary if it doesn't exist
+        if not hasattr(self, "_app_mic_volume_timeouts"):
+            self._app_mic_volume_timeouts = {}
+            self._pending_app_mic_volumes = {}
+            
+        # Cancel previous timeout if exists
+        if app_id in self._app_mic_volume_timeouts and self._app_mic_volume_timeouts[app_id]:
+            GLib.source_remove(self._app_mic_volume_timeouts[app_id])
+            
+        # Store the pending value and create a new timeout
+        self._pending_app_mic_volumes[app_id] = value
+        self._app_mic_volume_timeouts[app_id] = GLib.timeout_add(
+            50, 
+            lambda: self._apply_app_mic_volume_change(app_id)
+        )
+            
+    def _apply_app_mic_volume_change(self, app_id):
+        """Apply the application microphone volume change after debouncing"""
+        if hasattr(self, "_pending_app_mic_volumes") and app_id in self._pending_app_mic_volumes:
+            value = self._pending_app_mic_volumes[app_id]
+            # Apply the volume change
+            set_application_mic_volume(app_id, value, self.logging)
+            
+        # Reset the timeout ID
+        if hasattr(self, "_app_mic_volume_timeouts"):
+            self._app_mic_volume_timeouts[app_id] = None
+            
+        return False  # Don't repeat
 
     def on_app_mic_mute_clicked(self, button, app_id):
         """Handle application microphone mute button clicks"""
@@ -948,7 +982,7 @@ class VolumeTab(Gtk.Box):
                 # Volume slider
                 volume = get_application_mic_volume(app["id"], self.logging)
                 scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
-                scale.set_size_request(150, -1)  # Set minimum width
+                self._configure_slider(scale)
                 scale.set_value(volume)
                 scale.connect(
                     "value-changed", self.on_app_mic_volume_changed, app["id"]
