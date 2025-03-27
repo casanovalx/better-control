@@ -24,12 +24,7 @@ Before installing, make sure you have `git` and `base-devel` installed.
 - **power-profiles-daemon** - Power management
 - **upower** - Battery information
 - **gammastep** - Blue light filter
-- **Python Libraries** - python-gobject, python-dbus, python-psutil
-
-#### For users who would like to use a virtual enviroment
-- pygobject
-- dbus-python
-- psutil
+- **Python Libraries** - python-gobject (pygobject), python-dbus (dbus-python), python-psutil (psutil)
 
 > [!TIP]
 > If you don't need a specific feature, you can safely omit its corresponding dependency and hide its tab in the settings.
