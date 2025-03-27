@@ -4,6 +4,7 @@ import timeit
 import traceback
 import gi  # type: ignore
 import threading
+import sys
 
 from utils.arg_parser import ArgParse
 
@@ -373,14 +374,28 @@ class BetterControl(Gtk.Window):
         box.show_all()
         return box
 
-    def on_destroy(self, window):
-        """Save settings and quit"""
-        self.settings["last_active_tab"] = self.notebook.get_current_page()
-        save_settings(self.settings, self.logging)
-        self.logging.log(LogLevel.Info, "Application shutting down, settings saved")
 
     def on_tab_switched(self, notebook, page, page_num):
         """Handle tab switching"""
 
         self.settings["last_active_tab"] = page_num
         save_settings(self.settings, self.logging)
+            
+    def on_destroy(self, window):
+        """Save settings and quit"""
+        self.settings["last_active_tab"] = self.notebook.get_current_page()
+
+        if hasattr(self, "monitor_pulse_events_running"):
+            self.monitor_pulse_events_running = False  
+
+        if hasattr(self, "load_networks_thread_running"):
+            self.load_networks_thread_running = False
+
+        save_thread = threading.Thread(target=save_settings, args=(self.settings, self.logging), daemon=True)
+        save_thread.start()
+        save_thread.join()  
+
+        threading.Thread(target=self.logging.log, args=(LogLevel.Info, "Application shutting down, settings saved"), daemon=True).start()
+
+        Gtk.main_quit()
+        sys.exit(0)  
