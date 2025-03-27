@@ -75,7 +75,7 @@ if __name__ == "__main__":
         sprint(sys.stdout, "5.3")
         exit(0)
 
-    logging = Logger(arg_parser)
+    logging = Logging(arg_parser)
 
     if arg_parser.find_arg(("-f", "--force")) and not check_all_dependencies(logging):
         logging.log(
