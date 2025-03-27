@@ -313,9 +313,9 @@ class VolumeTab(Gtk.Box):
                 target=self.monitor_pulse_events, daemon=True
             )
             self.pulse_thread.start()
-            self.logging.log(LogLevel.Info, "Started real-time PulseAudio monitoring")
+            self.logging.log(LogLevel.Info, "Started periodic (500ms) audio monitoring")
         else:
-            self.logging.log(LogLevel.Info, "PulseAudio monitoring already active")
+            self.logging.log(LogLevel.Info, "Audio monitoring already active")
 
     def stop_pulse_monitoring(self):
         """Stop the PulseAudio monitoring thread"""
@@ -323,19 +323,19 @@ class VolumeTab(Gtk.Box):
         if self.pulse_thread and self.pulse_thread.is_alive():
             self.pulse_thread.join(1.0)  # Wait for the thread to terminate with timeout
             self.pulse_thread = None
-        self.logging.log(LogLevel.Info, "Stopped PulseAudio monitoring")
+        self.logging.log(LogLevel.Info, "Stopped audio monitoring")
 
     def monitor_pulse_events(self):
         """Simple periodic monitoring instead of event-based monitoring"""
         try:
             # Use a simple timeout-based refresh approach
-            self.logging.log(LogLevel.Info, "Starting periodic (1-second) audio refresh")
+            self.logging.log(LogLevel.Info, "Starting periodic (500ms) audio refresh")
             
             # Set up the periodic refresh
             refresh_counter = 0
             while self.should_monitor:
-                # Sleep for a second
-                time.sleep(1)
+                # Sleep for half a second
+                time.sleep(0.5)
                 
                 # Skip updates if the tab is not visible
                 if not self.is_visible:
@@ -373,13 +373,14 @@ class VolumeTab(Gtk.Box):
                 self.update_mic_mute_button()
             
             # Distribute heavier operations across different refresh cycles
-            if counter % 3 == 0:  # Every 3 seconds
+            # Adjust cycle counts for the new 500ms refresh rate
+            if counter % 6 == 0:  # Every 3 seconds (6 * 500ms)
                 self.update_device_lists()
                 
-            if counter % 2 == 0:  # Every 2 seconds
+            if counter % 4 == 0:  # Every 2 seconds (4 * 500ms)
                 self.update_application_list()
                 
-            if counter % 2 == 1:  # Alternate with app list (also every 2 seconds)
+            if counter % 4 == 2:  # Alternate with app list (also every 2 seconds)
                 self.update_mic_application_list()
                 
         except Exception as e:
