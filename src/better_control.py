@@ -17,7 +17,7 @@ from tools.bluetooth import restore_last_sink
 
 if __name__ == "__main__":
     arg_parser = ArgParse(sys.argv)  
-    logger = Logging(arg_parser)  
+    logger = logging(arg_parser)  
 
     if arg_parser.find_arg(("-h", "--help")):
         arg_parser.print_help_msg(sys.stdout)
@@ -54,5 +54,6 @@ if __name__ == "__main__":
 
         Gtk.main()
     except Exception as e:
-        logger.log(LogLevel.Error, f"Error starting application: {e}")  
+        logger.error(f"Error starting application: {e}")
+
         sys.exit(1)
