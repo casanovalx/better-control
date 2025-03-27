@@ -386,16 +386,21 @@ class BetterControl(Gtk.Window):
         self.settings["last_active_tab"] = self.notebook.get_current_page()
 
         if hasattr(self, "monitor_pulse_events_running"):
-            self.monitor_pulse_events_running = False  
-
+            self.monitor_pulse_events_running = False
         if hasattr(self, "load_networks_thread_running"):
             self.load_networks_thread_running = False
 
-        save_thread = threading.Thread(target=save_settings, args=(self.settings, self.logging), daemon=True)
+        save_thread = threading.Thread(target=save_settings, args=(self.settings,))
         save_thread.start()
-        save_thread.join()  
+        save_thread.join()
 
-        threading.Thread(target=self.logging.log, args=(LogLevel.Info, "Application shutting down, settings saved"), daemon=True).start()
+        if hasattr(self, "logging"):
+            self.logging = None
 
+        sys.stdout = open('/dev/null', 'w')
+        sys.stderr = open('/dev/null', 'w')
+
+        print("Stopping threads and quitting GTK... (Logs disabled)")
+        
         Gtk.main_quit()
         sys.exit(0)  
