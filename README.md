@@ -24,6 +24,7 @@ Before installing, make sure you have `git` and `base-devel` installed.
 - **power-profiles-daemon** - Power management
 - **upower** - Battery information
 - **gammastep** - Blue light filter
+- **Requests** - For checking updates
 - **Python Libraries** - python-gobject (pygobject), python-dbus (dbus-python), python-psutil (psutil)
 
 > [!TIP]
@@ -45,22 +46,22 @@ https://github.com/Rishabh5321/better-control-flake
 
 #### Debian-based Distributions
 ```
-sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep
+sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep python3-requests
 ```
 
 #### Fedora-based Distributions
 ```
-sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep
+sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests
 ```
 
 #### Void Linux
 ```
-sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep
+sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests
 ```
 
 #### Alpine Linux
 ```
-sudo apk add gtk3 networkmanager bluez bluez-utils pulseaudio brightnessctl py3-gobject py3-dbus python3 power-profiles-daemon gammastep
+sudo apk add gtk3 networkmanager bluez bluez-utils pulseaudio brightnessctl py3-gobject py3-dbus python3 power-profiles-daemon gammastep py3-requests
 ```
 
 ### Installation Steps
