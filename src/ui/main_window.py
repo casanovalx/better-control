@@ -399,8 +399,5 @@ class BetterControl(Gtk.Window):
 
         sys.stdout = open('/dev/null', 'w')
         sys.stderr = open('/dev/null', 'w')
-
-        print("Stopping threads and quitting GTK... (Logs disabled)")
-        
         Gtk.main_quit()
         sys.exit(0)  
