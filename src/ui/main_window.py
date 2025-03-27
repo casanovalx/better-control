@@ -5,7 +5,7 @@ import traceback
 import gi  # type: ignore
 import threading
 import sys
-
+ 
 from utils.arg_parser import ArgParse
 
 gi.require_version("Gtk", "3.0")
@@ -380,7 +380,8 @@ class BetterControl(Gtk.Window):
 
         self.settings["last_active_tab"] = page_num
         save_settings(self.settings, self.logging)
-            
+
+
     def on_destroy(self, window):
         """Save settings and quit"""
         self.settings["last_active_tab"] = self.notebook.get_current_page()
@@ -390,14 +391,25 @@ class BetterControl(Gtk.Window):
         if hasattr(self, "load_networks_thread_running"):
             self.load_networks_thread_running = False
 
-        save_thread = threading.Thread(target=save_settings, args=(self.settings,))
+        if not hasattr(self, "logging") or not self.logging:
+            self.logging = logging.getLogger("BetterControl")
+            handler = logging.StreamHandler(sys.__stdout__)  
+            handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s]: %(message)s", "%H:%M:%S"))
+            self.logging.addHandler(handler)
+            self.logging.setLevel(logging.Info)
+
+        save_thread = threading.Thread(target=save_settings, args=(self.settings, self.logging))
         save_thread.start()
         save_thread.join()
 
-        if hasattr(self, "logging"):
-            self.logging = None
+        self.logging.log(LogLevel.Info, "Application quitted")
+
+        if hasattr(self.logging, "flush"):
+            self.logging.flush()
+
 
         sys.stdout = open('/dev/null', 'w')
         sys.stderr = open('/dev/null', 'w')
+
         Gtk.main_quit()
         sys.exit(0)  
