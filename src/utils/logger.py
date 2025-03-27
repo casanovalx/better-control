@@ -78,22 +78,6 @@ class Logger:
             else:
                 self.log(LogLevel.Error, "Invalid option for argument log")
 
-    def get_level(self) -> int:
-        """Get the current log level
-        
-        Returns:
-            int: The current log level value
-        """
-        return self.__log_level
-    
-    def set_level(self, level: int) -> None:
-        """Set the log level
-        
-        Args:
-            level (int): New log level value
-        """
-        self.__log_level = level
-
     def __del__(self):
         if hasattr(self, '_Logger__log_file') and self.__log_file is not None:
             self.__log_file.close()
@@ -105,35 +89,37 @@ class Logger:
             log_level (LogLevel): the log level, which consists of Debug, Info, Warn, Error
             message (str): the log message
         """
-        if self.__should_log == False and log_level != LogLevel.Error:
-            return
-
-        if self.__log_file_name != "":
-            self.__log_to_file(log_level, message)
-
         label = (
             self.__labels[log_level].first
             if self.__add_color
             else self.__labels[log_level].second
         )
 
+        fmt = f"{get_current_time()} {label} {message}"
+
+        self.__last_log_msg = fmt
+
+        if self.__should_log == False:
+            return
+
+        if self.__log_file_name != "":
+            self.__log_to_file(fmt)
+
         if log_level == LogLevel.Error:
-            print(f"{get_current_time()} {label} {message}", file=stderr)
+            print(fmt, file=stderr)
             exit(1)
         elif log_level == LogLevel.Warn and self.__log_level < 3:
-            print(f"{get_current_time()} {label} {message}", file=stdout)
+            print(fmt, file=stdout)
         elif log_level == LogLevel.Info and self.__log_level < 2:
-            print(f"{get_current_time()} {label} {message}", file=stdout)
+            print(fmt, file=stdout)
         elif log_level == LogLevel.Debug and self.__log_level < 1:
-            print(f"{get_current_time()} {label} {message}", file=stdout)
+            print(fmt, file=stdout)
 
-    def __log_to_file(self, log_level: LogLevel, message: str):
+    def get_last_log_msg(self) -> str:
+        return self.__last_log_msg
+
+    def __log_to_file(self, message: str):
         if not hasattr(self, '_Logger__log_file') or self.__log_file is None:
             return
-            
-        label = self.__labels[log_level].second
 
-        if log_level == LogLevel.Error:
-            print(f"{get_current_time()} {label} {message}", file=self.__log_file)
-        else:
-            print(f"{get_current_time()} {label} {message}", file=self.__log_file)
+        print(message, file=self.__log_file)

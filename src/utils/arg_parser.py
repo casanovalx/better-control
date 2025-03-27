@@ -5,7 +5,7 @@ from sys import stderr, stdout
 from typing import Dict, List, Optional, TextIO, Tuple
 
 
-def sprint(file: Optional[TextIO], *args, **kwargs) -> None:
+def sprint(file: Optional[TextIO], *args) -> None:
     """a 'print' statement macro with the 'file' parameter placed on the beggining
 
     Args:
@@ -13,7 +13,7 @@ def sprint(file: Optional[TextIO], *args, **kwargs) -> None:
     """
     if file is None:
         file = stdout
-    print(*args, file=file, **kwargs)
+    print(*args, file=file, flush=True)
 
 
 class ArgParse:
