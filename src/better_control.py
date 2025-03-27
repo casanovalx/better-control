@@ -41,7 +41,7 @@ def get_latest_version_from_github(logger):
     return None
 
 def check_for_updates(logger, win):
-    """Comare installed and latest versions, and show update popup if needed"""
+    """Comapre installed and latest versions, and show update popup if needed"""
     installed_version = get_version_from_desktop(localdesktop)
     latest_version = get_latest_version_from_github(logger)
 
