@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import timeit
 import traceback
 import gi  # type: ignore
 import threading
