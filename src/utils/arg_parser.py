@@ -1,18 +1,50 @@
 from ctypes.util import test
+from math import e
+from operator import ne
 from sys import stderr, stdout
-from typing import List, Optional, TextIO, Tuple
+from typing import Dict, List, Optional, TextIO, Tuple
 
 
-def eprint(file: Optional[TextIO], *args, **kwargs):
+def sprint(file: Optional[TextIO], *args, **kwargs) -> None:
+    """a 'print' statement macro with the 'file' parameter placed on the beggining
+
+    Args:
+        file (Optional[TextIO]): the file stream to output to
+    """
     if file is None:
         file = stdout
     print(*args, file=file, **kwargs)
 
+
 class ArgParse:
     def __init__(self, args: List[str]) -> None:
-        self.args: List[str] = args
+        self.__bin: str = ""
+        self.__args: Dict[str, List[str | Dict[str, str]]] = {"long": [], "short": []}
+        previous_arg_type: str = ""
 
-    def find_arg(self, arg: Tuple[str, str]) -> bool:
+        # ? This makes sure that detecting -ai as -a -i works
+        # ? and also makes it not dependant on a lot of string operations
+        for i, arg in enumerate(args):
+            if i == 0:
+                self.__bin = arg
+
+            elif arg.startswith("--"):
+                self.__args["long"].append(arg[2:])
+                previous_arg_type = "long"
+
+            elif arg.startswith("-"):
+                self.__args["short"].append(arg[1:])
+                previous_arg_type = "short"
+
+            # ? If an arg reaches this statement,
+            # ? that means the arg doesnt have a prefix of '-'.
+            # ? Which would mean that it is an option
+            elif previous_arg_type == "short":
+                self.__args["short"].append({"option": arg})
+            elif previous_arg_type == "long":
+                self.__args["long"].append({"option": arg})
+
+    def find_arg(self, __arg: Tuple[str, str]) -> bool:
         """tries to find 'arg' inside the argument list
 
         Args:
@@ -21,21 +53,18 @@ class ArgParse:
         Returns:
             bool: true if one of the arg is found, or false
         """
-        #? Check for short arg
-        for i in self.args:
-            if not i.startswith('-'):
-                continue
-
-            if i[:2] == "--":
-                continue
-
-            if arg[0][1:] in i:
+        # ? Check for short arg
+        for arg in self.__args["short"]:
+            if not isinstance(arg, Dict) and __arg[0][1:] in arg:
                 return True
 
-        #? Check for long arg
-        return arg[1] in self.args
+        # ? Check for long arg
+        for arg in self.__args["long"]:
+            if not isinstance(arg, Dict) and __arg[1][2:] == arg:
+                return True
+        return False
 
-    def option_arg(self, arg: Tuple[str, str]) -> Optional[str]:
+    def option_arg(self, __arg: Tuple[str, str]) -> Optional[str]:
         """tries to find and return an option from a given argument
 
         Args:
@@ -44,48 +73,98 @@ class ArgParse:
         Returns:
             Optional[str]: the option given or None
         """
-        for i, test_arg in enumerate(self.args):
-            if not test_arg.startswith('-'):
-                continue
-            eq_index = -1
-
-            if '=' in test_arg:
-                eq_index = test_arg.index('=')
-                test_arg = test_arg[:eq_index]
-
-            if '=' not in test_arg:
-                if test_arg[:2] != "--" and len(test_arg) > 2:
-                    return test_arg[2:]
-
-            if test_arg != arg[0] and test_arg != arg[1]:
+        # ? Check for short arg
+        for i, arg in enumerate(self.__args["short"]):
+            if isinstance(arg, Dict):
                 continue
 
-            if eq_index != -1:
-                return self.args[i][eq_index + 1:]
+            # ? Checks for equal signs, which allow us to check for -lo=a and -o=a
+            if "=" in arg:
+                eq_index: int = arg.index("=")
+                split_arg: Tuple[str, str] = (arg[:eq_index], arg[eq_index + 1 :])
 
-            if i + 1 < len(self.args):
-                next_arg = self.args[i + 1]
-                if not next_arg.startswith('-'):
-                    return next_arg
+                # ? Check for -lo=a and -o=a
+                if (len(split_arg[0]) > 1 and split_arg[0][-1] == __arg[0][1:]) or (
+                    len(split_arg[0]) == 1 and split_arg[0][0] == __arg[0][1:]
+                ):
+                    return split_arg[1]
+
+            # ? Check for -oa
+            if len(arg) > 1 and arg[0] == __arg[0][1:]:
+                return arg[1:]
+
+            # ? Check for -lo a
+            if len(arg) > 1:
+                for _, c in enumerate(arg):
+                    if c == __arg[0][1:] and i + 1 < len(self.__args["short"]):
+                        next_arg = self.__args["short"][i + 1]
+                        if isinstance(next_arg, Dict):
+                            return next_arg["option"]
+
+            # ? Check for -o a
+            if arg == __arg[0][1:] and i + 1 < len(self.__args["short"]):
+                next_arg = self.__args["short"][i + 1]
+
+                if isinstance(next_arg, Dict):
+                    return next_arg["option"]
+
+        # ? Check for long arg
+        for i, arg in enumerate(self.__args["long"]):
+            if isinstance(arg, Dict):
+                continue
+
+            if "=" in arg:
+                eq_index: int = arg.index("=")
+                split_arg: Tuple[str, str] = (arg[:eq_index], arg[eq_index + 1 :])
+
+                # ? Check for --option=a
+                if split_arg[0] == __arg[1][2:]:
+                    return split_arg[1]
+
+            # ? Check for --option a
+            if arg == __arg[1][2:] and i + 1 < len(self.__args["long"]):
+                next_arg = self.__args["long"][i + 1]
+
+                if isinstance(next_arg, Dict):
+                    return next_arg["option"]
         return None
 
+    def arg_print(self, msg: str) -> None:
+        sprint(self.__help_stream, msg)
+
     def print_help_msg(self, stream: Optional[TextIO]):
-        eprint(stream, f"Usage: {self.args[0]} <options>\n")
-        eprint(stream, "Options:")
-        eprint(stream, f"   -v, --version                   Shows the version of the program")
-        eprint(stream, f"   -h, --help                      Prints this message")
-        eprint(stream, f"   -B, --battery                   Starts with the battery tab open")
-        eprint(stream, f"   -b, --bluetooth                 Starts with the bluetooth tab open")
-        eprint(stream, f"   -d, --display                   Starts with the display tab open")
-        eprint(stream, f"   -f, --force                     Makes the app force to have all dependencies installed")
-        eprint(stream, f"   -V, --volume                    Starts with the volume tab open")
-        eprint(stream, f"   -w, --wifi                      Starts with the wifi tab open")
-        eprint(stream, f"   -l, --log                       The program will either log to a file if given a file path,")
-        eprint(stream, f"                                       or output to stdout based on the log level if given a value between 0, 1, 2.")
-        eprint(stream, f"                                       0 = debug, info, warning, and error logs will be printed")
-        eprint(stream, f"                                       1 = info, warning and error logs will be printed")
-        eprint(stream, f"                                       2 = warning, and error logs will be printed")
-        eprint(stream, f"                                       3 = only error logs will be printed (default)")
+        self.__help_stream = stream
+
+        self.arg_print(f"Usage: {self.__bin} <options>\n")
+        self.arg_print("Options:")
+        self.arg_print(
+            f"   -v, --version                   Shows the version of the program",
+        )
+        self.arg_print(f"   -h, --help                      Prints this message")
+        self.arg_print(
+            f"   -B, --battery                   Starts with the battery tab open",
+        )
+        self.arg_print(
+            f"   -b, --bluetooth                 Starts with the bluetooth tab open",
+        )
+        self.arg_print(
+            f"   -d, --display                   Starts with the display tab open",
+        )
+        self.arg_print(
+            f"   -f, --force                     Makes the app force to have all dependencies installed",
+        )
+        self.arg_print(
+            f"   -V, --volume                    Starts with the volume tab open",
+        )
+        self.arg_print(
+            f"   -w, --wifi                      Starts with the wifi tab open"
+        )
+        self.arg_print(
+            f"   -l, --log                       The program will either log to a file if given a file path,",
+        )
+        self.arg_print(
+            f"                                       or output to stdout based on the log level if given a value between 0, and 3.",
+        )
 
         if stream == stderr:
             exit(1)

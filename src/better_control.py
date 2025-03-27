@@ -5,7 +5,7 @@ import subprocess
 import gi  # type: ignore
 import sys
 import threading
-from utils.arg_parser import ArgParse, eprint
+from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
 from utils.logger import LogLevel, Logger
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         arg_parser.print_help_msg(sys.stdout)
 
     if arg_parser.find_arg(("-v", "--version")):
-        eprint(sys.stdout, "5.3")
+        sprint(sys.stdout, "5.3")
         exit(0)
 
     logging = Logger(arg_parser)
@@ -34,7 +34,7 @@ if __name__ == "__main__":
             "Missing required dependencies. Please install them and try again.",
         )
 
-    # Run restore_last_sink in a background thread to prevent startup delay
+    # ? Prevents startup delay
     audio_thread = threading.Thread(target=restore_last_sink, args=(logging,), daemon=True)
     audio_thread.start()
 
