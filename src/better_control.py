@@ -4,7 +4,7 @@ import gi
 import sys
 import threading
 import logging
-import requests  # GET THIS
+import requests 
 from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
 from utils.logger import LogLevel, Logger
