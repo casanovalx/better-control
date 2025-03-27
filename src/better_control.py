@@ -7,7 +7,7 @@ import logging
 import requests 
 from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
-from utils.logger import LogLevel, Logger
+from utils.logging import LogLevel, Logging
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  
