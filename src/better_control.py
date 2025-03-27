@@ -17,7 +17,9 @@ from tools.bluetooth import restore_last_sink
 
 if __name__ == "__main__":
     arg_parser = ArgParse(sys.argv)  
-    logger = logging(arg_parser)  
+    logging.basicConfig(level=logging.INFO)  
+    logger = logging.getLogger(__name__)  
+
 
     if arg_parser.find_arg(("-h", "--help")):
         arg_parser.print_help_msg(sys.stdout)
