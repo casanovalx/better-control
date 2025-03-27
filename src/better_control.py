@@ -1,20 +1,67 @@
-#!/usr/bin/env python3
-
 import os
 import subprocess
-import gi  # type: ignore
+import gi  
 import sys
 import threading
+import requests  # GET THIS
 from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
 from utils.logger import LogLevel, Logger
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # type: ignore
+from gi.repository import Gtk  
 from ui.main_window import BetterControl
 from utils.dependencies import check_all_dependencies
 from tools.bluetooth import restore_last_sink
 
+localdesktop = "/usr/share/applications/better-control.desktop"
+githubdesktop = "https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/src/control.desktop"
+
+def get_version_from_desktop(file_path):
+    try:
+        with open(file_path, "r") as f:
+            for line in f:
+                if line.startswith("Version="):
+                    return line.strip().split("=")[1]
+    except Exception as e:
+        return None  
+
+def get_latest_version_from_github(logger):
+    """Fetches the latest .desktop file from GiHub and extracts the version."""
+    try:
+        response = requests.get(githubdesktop, timeout=5)
+        response.raise_for_status()
+
+        for line in response.text.splitlines():
+            if line.startswith("Version="):
+                return line.strip().split("=")[1]
+    except Exception as e:
+        logger.log(LogLevel.Warn, f"Failed to fetch latest version from GitHub: {e}")
+    return None
+
+def check_for_updates(logger, win):
+    """Comare installed and latest versions, and show update popup if needed"""
+    installed_version = get_version_from_desktop(localdesktop)
+    latest_version = get_latest_version_from_github(logger)
+
+    if installed_version and latest_version:
+        logger.log(LogLevel.Info, f"Installed: {installed_version}, Latest: {latest_version}")
+        if installed_version != latest_version:
+            show_update_popup(win, latest_version)
+
+def show_update_popup(win, new_version):
+    """Displays a GTK popup when an update is available"""
+    dialog = Gtk.MessageDialog(
+        transient_for=win,  
+        flags=0,
+        message_type=Gtk.MessageType.INFO,
+        buttons=Gtk.ButtonsType.OK,
+        text="New Update Available!",
+    )
+    logger.log(LogLevel.Warn, "update available")
+    dialog.format_secondary_text(f"A new version ({new_version}) is available.\nPlease update via GitHub or AUR.")
+    dialog.run()
+    dialog.destroy()
 
 if __name__ == "__main__":
     arg_parser = ArgParse(sys.argv)
@@ -34,7 +81,7 @@ if __name__ == "__main__":
             "Missing required dependencies. Please install them and try again.",
         )
 
-    # ? Prevents startup delay
+    # Prevents startup delay
     audio_thread = threading.Thread(target=restore_last_sink, args=(logging,), daemon=True)
     audio_thread.start()
 
@@ -45,15 +92,13 @@ if __name__ == "__main__":
         win.connect("destroy", Gtk.main_quit)
         win.show_all()
 
-        #? Hyprland shenanigans
+        # Check for updates
+        check_for_updates(logging, win)
+
+        # Hyprland floating window rule
         if "hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
             subprocess.run(
-                [
-                    "hyprctl",
-                    "keyword",
-                    "windowrule",
-                    "float,class:^(better_control.py)$",
-                ]
+                ["hyprctl", "keyword", "windowrule", "float,class:^(better_control.py)$"]
             )
 
         Gtk.main()
