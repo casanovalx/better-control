@@ -20,7 +20,7 @@ BLUEZ_ADAPTER_INTERFACE = 'org.bluez.Adapter1'
 BLUEZ_DEVICE_INTERFACE = 'org.bluez.Device1'
 DBUS_OM_IFACE = 'org.freedesktop.DBus.ObjectManager'
 DBUS_PROP_IFACE = 'org.freedesktop.DBus.Properties'
-DEFAULT_NOTIFY_SUBJECT='Control Center'
+DEFAULT_NOTIFY_SUBJECT='Better Control'
 
 
 class BluetoothManager:
