@@ -3,7 +3,6 @@ import subprocess
 import gi  
 import sys
 import threading
-import logging  
 import requests 
 from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
@@ -14,12 +13,8 @@ from ui.main_window import BetterControl
 from utils.dependencies import check_all_dependencies
 from tools.bluetooth import restore_last_sink
 
-
 if __name__ == "__main__":
     arg_parser = ArgParse(sys.argv)  
-    logging.basicConfig(level=logging.INFO)  
-    logger = logging.getLogger(__name__)  
-
 
     if arg_parser.find_arg(("-h", "--help")):
         arg_parser.print_help_msg(sys.stdout)
@@ -28,25 +23,23 @@ if __name__ == "__main__":
         sprint(sys.stdout, "5.3")
         exit(0)
 
-    if arg_parser.find_arg(("-f", "--force")) and not check_all_dependencies(logger):
-        logger.log(
-            LogLevel.Error,
-            "Missing required dependencies. Please install them and try again.",
-        )
+    if arg_parser.find_arg(("-f", "--force")) and not check_all_dependencies():
+        print("Missing required dependencies. Please install them and try again.")
+        exit(1)
 
     # Prevents startup delay
-    audio_thread = threading.Thread(target=restore_last_sink, args=(logger,), daemon=True)
+    audio_thread = threading.Thread(target=restore_last_sink, daemon=True)
     audio_thread.start()
 
     try:
-        win = BetterControl(arg_parser, logger)  
+        win = BetterControl(arg_parser)  
         win.set_default_size(1000, 700)
         win.resize(1000, 700)
         win.connect("destroy", Gtk.main_quit)
         win.show_all()
 
         # Check for updates
-        check_for_updates(logger, win)
+        check_for_updates(win)
 
         # Hyprland floating window rule
         if "hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
@@ -56,6 +49,5 @@ if __name__ == "__main__":
 
         Gtk.main()
     except Exception as e:
-        logger.error(f"Error starting application: {e}")
-
+        print(f"Error starting application: {e}")
         sys.exit(1)
