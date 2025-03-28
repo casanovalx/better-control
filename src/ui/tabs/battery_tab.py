@@ -420,7 +420,7 @@ class BatteryTab(Gtk.Box):
         mode_icons = {
             "Power Saving": "battery-good-symbolic",
             "Balanced": "preferences-system-symbolic",
-            "Performance": "system-run-symbolic"
+            "Performance": "thunderbolt-symbolic"
         }
         
         # Get current active mode
