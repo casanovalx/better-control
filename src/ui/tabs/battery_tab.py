@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 
 import gi  # type: ignore
+gi.require_version('Gtk', '3.0')
 import subprocess
 import os
 import re
-from gi.repository import Gtk, GLib  # type: ignore
+import math
+import time
+import threading
+from datetime import datetime
+from gi.repository import Gtk, GLib, Gdk, Pango  # type: ignore
 from utils.logger import LogLevel, Logger
 
 
@@ -12,6 +17,10 @@ class BatteryTab(Gtk.Box):
     def __init__(self, logging: Logger, parent=None):
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.logging = logging
+
+        # History data for battery stats
+        self.battery_history = {}
+        self.last_refresh_time = datetime.now()
 
         self.__load_gui(parent)
 
@@ -62,6 +71,7 @@ class BatteryTab(Gtk.Box):
                 list(self.power_modes.keys()).index("Balanced")
             )
 
+        # Add dropdown to the UI
         self.dropdown_box.pack_start(self.power_mode_dropdown, True, True, 0)
         self.power_mode_box.pack_start(self.dropdown_box, False, False, 0)
 
@@ -78,37 +88,52 @@ class BatteryTab(Gtk.Box):
         selected_mode = widget.get_active_text()
         if selected_mode in self.power_modes:
             mode_value = self.power_modes[selected_mode]
-
-            try:
-                command = f"powerprofilesctl set {mode_value}"
-                result = subprocess.run(
-                    command, shell=True, capture_output=True, text=True
-                )
-
-                if result.returncode != 0:
-                    error_message = "powerprofilesctl is missing. Please check our GitHub page to see all dependencies and install them."
-                    self.logging.log(LogLevel.Error, error_message)
-                    if self.parent:
-                        self.parent.show_error_dialog(error_message)
-                else:
-                    self.logging.log(
-                        LogLevel.Info,
-                        f"Power mode changed to: {selected_mode} ({mode_value})",
+            
+            # Disable dropdown while processing
+            self.power_mode_dropdown.set_sensitive(False)
+            
+            # Create and start thread for async operation
+            def run_power_change():
+                try:
+                    command = f"powerprofilesctl set {mode_value}"
+                    result = subprocess.run(
+                        command, shell=True, capture_output=True, text=True
                     )
 
-            except subprocess.CalledProcessError as e:
-                error_message = f"Failed to set power mode: {e}"
-                self.logging.log(LogLevel.Error, error_message)
-                if self.parent:
-                    self.parent.show_error_dialog(error_message)
-
-            except FileNotFoundError:
-                error_message = (
-                    "powerprofilesctl is not installed or not found in PATH."
-                )
-                self.logging.log(LogLevel.Error, error_message)
-                if self.parent:
-                    self.parent.show_error_dialog(error_message)
+                    # Use GLib.idle_add to update UI from the main thread
+                    def update_ui():
+                        self.power_mode_dropdown.set_sensitive(True)
+                        
+                        if result.returncode != 0:
+                            error_message = "powerprofilesctl is missing. Please check our GitHub page to see all dependencies and install them."
+                            self.logging.log(LogLevel.Error, error_message)
+                            if self.parent:
+                                self.parent.show_error_dialog(error_message)
+                        else:
+                            self.logging.log(
+                                LogLevel.Info,
+                                f"Power mode changed to: {selected_mode} ({mode_value})",
+                            )
+                            # Refresh the UI to update button styles
+                            self.refresh_battery_info()
+                        return False
+                    
+                    GLib.idle_add(update_ui)
+                    
+                except Exception as e:
+                    def handle_error():
+                        self.power_mode_dropdown.set_sensitive(True)
+                        error_message = f"Failed to set power mode: {e}"
+                        self.logging.log(LogLevel.Error, error_message)
+                        if self.parent:
+                            self.parent.show_error_dialog(error_message)
+                        return False
+                    
+                    GLib.idle_add(handle_error)
+            
+            # Start the thread
+            thread = threading.Thread(target=run_power_change, daemon=True)
+            thread.start()
 
     def get_battery_devices(self):
         """Get list of battery devices from UPower."""
@@ -190,8 +215,207 @@ class BatteryTab(Gtk.Box):
             grid.hide()
             grid.set_no_show_all(True)
         
+    def create_battery_card(self, battery_info, device_path):
+        """Create a modern card-style widget for battery information."""
+        # Main card container
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        card.set_margin_top(10)
+        card.set_margin_bottom(10)
+        card.set_margin_start(10)
+        card.set_margin_end(10)
+        
+        # Card header
+        header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
+        header.set_margin_top(15)
+        header.set_margin_bottom(15)
+        header.set_margin_start(15)
+        header.set_margin_end(15)
+        
+        # Battery info
+        info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        info_box.set_hexpand(True)
+        
+        # Battery title
+        title = f"Battery {os.path.basename(device_path)}"
+        if "Model" in battery_info:
+            title = f"{battery_info['Model']}"
+        
+        title_label = Gtk.Label(xalign=0)
+        title_label.set_markup(f"<span weight='bold' size='large'>{title}</span>")
+        
+        # Manufacturer
+        manufacturer = battery_info.get("Manufacturer", "Unknown")
+        manufacturer_label = Gtk.Label(xalign=0)
+        manufacturer_label.set_markup(f"<span size='small'>{manufacturer}</span>")
+        
+        # Add labels to info box
+        info_box.pack_start(title_label, False, False, 0)
+        info_box.pack_start(manufacturer_label, False, False, 0)
+        
+        # Battery charge indicator
+        charge_percentage = 0
+        if "Charge" in battery_info:
+            try:
+                charge_text = battery_info["Charge"]
+                charge_percentage = int(charge_text.split("%")[0])
+            except (ValueError, IndexError):
+                charge_percentage = 0
+                
+        # Battery status info
+        status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
+        status_box.set_margin_top(10)
+        
+        # Left: Battery level/icon
+        icon_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        
+        # Battery icon based on charge level
+        icon_name = "battery-empty-symbolic"
+        if charge_percentage > 10:
+            icon_name = "battery-low-symbolic"
+        if charge_percentage > 30:
+            icon_name = "battery-good-symbolic" 
+        if charge_percentage > 60:
+            icon_name = "battery-full-symbolic"
+            
+        # If charging, use charging icon
+        if "State" in battery_info and "charging" in battery_info["State"].lower():
+            icon_name = "battery-good-charging-symbolic"
+            
+        battery_icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.LARGE_TOOLBAR)
+        icon_box.pack_start(battery_icon, False, False, 0)
+        
+        # Charge percentage label
+        charge_label = Gtk.Label()
+        charge_label.set_markup(f"<span size='large'><b>{charge_percentage}%</b></span>")
+        icon_box.pack_start(charge_label, False, False, 5)
+        
+        # State label
+        state_text = battery_info.get("State", "Unknown")
+        state_label = Gtk.Label()
+        state_label.set_markup(f"<span>{state_text.capitalize()}</span>")
+        icon_box.pack_start(state_label, False, False, 5)
+        
+        status_box.pack_start(icon_box, False, False, 0)
+        
+        # Right: Time estimates
+        if "Time to Empty" in battery_info and "discharging" in state_text.lower():
+            time_label = Gtk.Label(xalign=0)
+            time_label.set_markup(f"<span weight='bold'>Time remaining:</span> {battery_info['Time to Empty']}")
+            status_box.pack_end(time_label, False, False, 0)
+        elif "Time to Full" in battery_info and "charging" in state_text.lower():
+            time_label = Gtk.Label(xalign=0)
+            time_label.set_markup(f"<span weight='bold'>Full in:</span> {battery_info['Time to Full']}")
+            status_box.pack_end(time_label, False, False, 0)
+        
+        info_box.pack_start(status_box, False, False, 0)
+        
+        # Battery level bar
+        level_bar = Gtk.LevelBar()
+        level_bar.set_min_value(0.0)
+        level_bar.set_max_value(100.0)
+        level_bar.set_value(charge_percentage)
+        level_bar.set_size_request(-1, 10)  # Only set height, let width expand
+        level_bar.set_hexpand(True)
+        
+        # Set custom level bar colors
+        level_bar.add_offset_value("low", 20.0)
+        level_bar.add_offset_value("high", 50.0)
+        level_bar.add_offset_value("full", 90.0)
+        
+        # Style the level bar based on state
+        level_bar_context = level_bar.get_style_context()
+        if "charging" in state_text.lower():
+            level_bar_context.add_class("charging")
+        elif "fully-charged" in state_text.lower():
+            level_bar_context.add_class("full")
+        elif charge_percentage <= 20:
+            level_bar_context.add_class("critical")
+        
+        info_box.pack_start(level_bar, False, False, 5)
+        
+        # Pack the header
+        header.pack_start(info_box, True, True, 0)
+        card.pack_start(header, False, False, 0)
+        
+        # Card content - tabs for different categories of information
+        notebook = Gtk.Notebook()
+        notebook.set_margin_start(15)
+        notebook.set_margin_end(15)
+        notebook.set_margin_bottom(15)
+        
+        # Create tabs for different categories
+        self.add_info_tab(notebook, "Overview", battery_info, [
+            "Charge", "State", "Capacity", "Technology", 
+            "Energy Rate", "Voltage"
+        ])
+        
+        self.add_info_tab(notebook, "Details", battery_info, [
+            "Energy", "Energy Empty", "Energy Full", 
+            "Energy Full Design", "Warning Level"
+        ])
+        
+        # Add the notebook to the card
+        card.pack_start(notebook, True, True, 0)
+        
+        # Store current battery data for history
+        device_id = os.path.basename(device_path)
+        if device_id not in self.battery_history:
+            self.battery_history[device_id] = []
+            
+        # Add current data point to history
+        time_now = datetime.now()
+        self.battery_history[device_id].append({
+            'timestamp': time_now,
+            'charge': charge_percentage,
+            'state': state_text
+        })
+        
+        # Limit history to last hour (assuming 10-second refresh)
+        one_hour_ago = time_now.timestamp() - 3600
+        self.battery_history[device_id] = [
+            point for point in self.battery_history[device_id]
+            if point['timestamp'].timestamp() > one_hour_ago
+        ]
+        
+        return card
+        
+    def add_info_tab(self, notebook, title, battery_info, fields):
+        """Add a tab with styled grid of battery information."""
+        grid = Gtk.Grid()
+        grid.set_column_spacing(20)
+        grid.set_row_spacing(12)
+        grid.set_margin_top(15)
+        grid.set_margin_bottom(15)
+        grid.set_margin_start(15)
+        grid.set_margin_end(15)
+        
+        row = 0
+        for key in fields:
+            if key in battery_info:
+                key_label = Gtk.Label(xalign=0)
+                key_label.set_markup(f"<b>{key}:</b>")
+                grid.attach(key_label, 0, row, 1, 1)
+                
+                value_label = Gtk.Label(xalign=0)
+                value_label.set_text(battery_info[key])
+                value_label.set_hexpand(True)
+                grid.attach(value_label, 1, row, 1, 1)
+                row += 1
+        
+        # If there are no fields with data, show a message
+        if row == 0:
+            no_data_label = Gtk.Label()
+            no_data_label.set_text("No data available")
+            no_data_label.set_margin_top(20)
+            no_data_label.set_margin_bottom(20)
+            grid.attach(no_data_label, 0, 0, 2, 1)
+        
+        # Add tab
+        tab_label = Gtk.Label(title)
+        notebook.append_page(grid, tab_label)
+        
     def refresh_battery_info(self, button=None):
-        """Refresh battery information using UPower."""
+        """Refresh battery information using UPower with improved visual representation."""
         if button:
             self.logging.log(
                 LogLevel.Info, "Manual refresh of battery information requested"
@@ -200,26 +424,99 @@ class BatteryTab(Gtk.Box):
         for child in self.content_box.get_children():
             self.content_box.remove(child)
 
-        self.content_box.pack_start(self.power_mode_box, False, False, 0)
+        # Add power mode selector with simpler style suitable for dark themes
+        mode_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        mode_container.set_margin_top(10)
+        mode_container.set_margin_bottom(15)
+        
+        # Power mode selector with streamlined buttons
+        mode_selector = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        mode_selector.set_homogeneous(True)  # Make all buttons equal width
+        
+        mode_icons = {
+            "Power Saving": "battery-good-symbolic",
+            "Balanced": "preferences-system-symbolic",
+            "Performance": "system-run-symbolic"
+        }
+        
+        # Get current active mode
+        active_mode = self.power_mode_dropdown.get_active_text()
+        
+        for mode, profile in self.power_modes.items():
+            mode_button = Gtk.Button()
+            
+            # Button content
+            button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+            button_box.set_margin_top(8)
+            button_box.set_margin_bottom(8)
+            
+            # Icon
+            icon = Gtk.Image.new_from_icon_name(mode_icons.get(mode, "dialog-question-symbolic"), Gtk.IconSize.BUTTON)
+            button_box.pack_start(icon, False, False, 0)
+            
+            # Label - only show text when there's enough space
+            label = Gtk.Label(mode)
+            button_box.pack_start(label, True, False, 0)
+            
+            mode_button.add(button_box)
+            mode_button.connect("clicked", self.on_power_mode_button_clicked, mode)
+            
+            # First remove all style classes related to selection
+            context = mode_button.get_style_context()
+            context.remove_class("suggested-action")
+                
+            # Style active button
+            if mode == active_mode:
+                context.add_class("suggested-action")
+                
+            mode_selector.pack_start(mode_button, True, True, 0)
+            
+        mode_container.pack_start(mode_selector, False, False, 0)
+        
+        # Add power mode to content
+        self.content_box.pack_start(mode_container, False, False, 0)
 
+        # Add separator
         separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        self.content_box.pack_start(separator, False, False, 10)
+        self.content_box.pack_start(separator, False, False, 0)
 
+        # Get battery devices
         battery_devices = self.get_battery_devices()
 
         if not battery_devices:
-            no_battery_label = Gtk.Label(xalign=0)
-            no_battery_label.set_text("No battery detected")
-            no_battery_label.set_margin_top(10)
-            no_battery_label.set_margin_bottom(10)
-            self.content_box.pack_start(no_battery_label, False, False, 0)
+            # Create styled "no battery" message
+            no_battery_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+            no_battery_box.set_halign(Gtk.Align.CENTER)
+            no_battery_box.set_valign(Gtk.Align.CENTER)
+            no_battery_box.set_margin_top(50)
+            
+            # Icon
+            no_battery_icon = Gtk.Image.new_from_icon_name(
+                "battery-missing-symbolic", Gtk.IconSize.DIALOG
+            )
+            no_battery_box.pack_start(no_battery_icon, False, False, 0)
+            
+            # Message
+            no_battery_label = Gtk.Label()
+            no_battery_label.set_markup("<span size='large'>No battery detected</span>")
+            no_battery_box.pack_start(no_battery_label, False, False, 10)
+            
+            self.content_box.pack_start(no_battery_box, True, True, 0)
         else:
-            batteries_grid = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-            batteries_grid.set_halign(Gtk.Align.FILL)
-            batteries_grid.set_hexpand(True)
-            self.content_box.pack_start(batteries_grid, False, False, 0)
-
-            for i, device_path in enumerate(battery_devices):
+            # Create a container for battery cards
+            batteries_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+            batteries_container.set_halign(Gtk.Align.FILL)
+            batteries_container.set_hexpand(True)
+            
+            # Title for batteries section
+            batteries_title = Gtk.Label(xalign=0)
+            batteries_title.set_markup("<span weight='bold' size='large'>Batteries</span>")
+            batteries_title.set_margin_top(5)
+            batteries_title.set_margin_bottom(5)
+            batteries_container.pack_start(batteries_title, False, False, 0)
+            
+            # Process each battery
+            for device_path in battery_devices:
                 try:
                     # Run upower command for this battery
                     result = subprocess.run(
@@ -230,139 +527,40 @@ class BatteryTab(Gtk.Box):
                     )
                     if result.returncode == 0:
                         battery_info = self.parse_upower_output(result.stdout)
-
-                        # Create a frame for this battery
-                        battery_frame = Gtk.Frame()
-                        battery_frame.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
-                        battery_frame.set_hexpand(True)
                         
-                        # Use a vertical box for the battery container
-                        battery_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-                        battery_frame.add(battery_vbox)
-
-                        # Get the battery title
-                        title = f"Battery {os.path.basename(device_path)}"
-                        if "Model" in battery_info:
-                            title = f"{battery_info['Model']}"
-                            
-                        # Extract battery charge if available for the summary
-                        charge_info = ""
-                        if "Charge" in battery_info:
-                            charge_info = f" - {battery_info['Charge']}"
-                        if "State" in battery_info:
-                            charge_info += f" - {battery_info['State']}"
-                            
-                        # Create an expander for toggling - make sure label has enough room
-                        expander = Gtk.Expander()
-                        expander.set_label(f"{title}{charge_info}")
-                        expander.set_margin_top(5)
-                        expander.set_margin_bottom(5)
-                        expander.set_margin_start(10)
-                        expander.set_margin_end(10)
-                        
-                        # Forcefully ensure default collapsed state
-                        expander.set_expanded(False)
-                        
-                        # Create grid for battery info (detailed view)
-                        battery_grid = Gtk.Grid()
-                        battery_grid.set_column_spacing(15)
-                        battery_grid.set_row_spacing(8)
-                        battery_grid.set_margin_top(10)
-                        battery_grid.set_margin_bottom(10)
-                        battery_grid.set_margin_start(10)
-                        battery_grid.set_margin_end(10)
-                        
-                        # Use no_show_all to properly handle initial hidden state
-                        battery_grid.set_no_show_all(True)
-                        
-                        # Display priority fields first
-                        priority_fields = [
-                            "Charge",
-                            "State",
-                            "Capacity",
-                            "Time to Empty",
-                            "Time to Full",
-                            "Energy Rate",
-                            "Voltage",
-                            "Technology",
-                            "Manufacturer",
-                        ]
-
-                        row = 0
-                        # First add priority fields
-                        for key in priority_fields:
-                            if key in battery_info:
-                                key_label = Gtk.Label(xalign=0)
-                                key_label.set_markup(f"<b>{key}:</b>")
-                                battery_grid.attach(key_label, 0, row, 1, 1)
-
-                                value_label = Gtk.Label(xalign=0)
-                                value_label.set_text(battery_info[key])
-                                battery_grid.attach(value_label, 1, row, 1, 1)
-                                row += 1
-
-                        # Then add remaining fields
-                        for key, value in battery_info.items():
-                            if (
-                                key not in priority_fields and key != "Model"
-                            ):  # Skip model as it's in the title
-                                key_label = Gtk.Label(xalign=0)
-                                key_label.set_markup(f"<b>{key}:</b>")
-                                battery_grid.attach(key_label, 0, row, 1, 1)
-
-                                value_label = Gtk.Label(xalign=0)
-                                value_label.set_text(value)
-                                battery_grid.attach(value_label, 1, row, 1, 1)
-                                row += 1
-
-                        # Add the expander and grid to the battery container
-                        battery_vbox.pack_start(expander, False, False, 0)
-                        battery_vbox.pack_start(battery_grid, False, False, 0)
-                        
-                        # Connect the expander to toggle the visibility - do this after setup
-                        expander.connect("notify::expanded", self.toggle_battery_details, battery_grid)
-                        
-                        batteries_grid.pack_start(battery_frame, True, True, 0)
-
+                        # Create a styled card for this battery
+                        battery_card = self.create_battery_card(battery_info, device_path)
+                        batteries_container.pack_start(battery_card, False, False, 0)
                 except Exception as e:
                     self.logging.log(
                         LogLevel.Error, f"Error processing battery {device_path}: {e}"
                     )
+            
+            # Add battery container to the main content
+            self.content_box.pack_start(batteries_container, False, False, 0)
 
-        # Show the container but not the hidden grids
+        # Show all widgets
         self.content_box.show_all()
         
-        # Ensure hidden state is respected
-        for child in self.content_box.get_children():
-            if isinstance(child, Gtk.Box):  # batteries_grid box
-                for frame in child.get_children():
-                    if isinstance(frame, Gtk.Frame):
-                        vbox = frame.get_child()
-                        if vbox and isinstance(vbox, Gtk.Box) and len(vbox.get_children()) >= 2:
-                            grid = vbox.get_children()[1]
-                            if isinstance(grid, Gtk.Grid):
-                                grid.hide()
-            
-        return True
+        # Update refresh time
+        self.last_refresh_time = datetime.now()
         
-    def ensure_collapsed_state(self):
-        """Ensure all battery detail grids are hidden by default."""
-        # Traverse the widget hierarchy to find all expanders and hide their grids
-        for child in self.content_box.get_children():
-            if isinstance(child, Gtk.Box):  # batteries_grid box
-                for frame in child.get_children():
-                    if isinstance(frame, Gtk.Frame):
-                        vbox = frame.get_child()
-                        if vbox and isinstance(vbox, Gtk.Box) and len(vbox.get_children()) >= 2:
-                            # First child is expander, second is the grid
-                            expander = vbox.get_children()[0]
-                            grid = vbox.get_children()[1]
-                            if isinstance(expander, Gtk.Expander):
-                                # Force expander to collapsed state
-                                expander.set_expanded(False)
-                                grid.hide()
-                                grid.set_no_show_all(True)
-        return False  # Don't repeat
+        return True
+    
+    def on_power_mode_button_clicked(self, button, mode):
+        """Handle click on power mode button."""
+        # Disable all mode buttons while processing
+        for child in button.get_parent().get_children():
+            child.set_sensitive(False)
+            
+        # Find index of the selected mode
+        if mode in self.power_modes:
+            index = list(self.power_modes.keys()).index(mode)
+            # Set the dropdown to this index (will trigger the "changed" signal)
+            self.power_mode_dropdown.set_active(index)
+            
+            # Note: No need to call refresh_battery_info here as it will be called 
+            # when the async operation completes in set_power_mode
 
     def __load_gui(self, parent):
         self.set_margin_top(15)
@@ -390,14 +588,14 @@ class BatteryTab(Gtk.Box):
         # Add title
         self.battery_label = Gtk.Label()
         self.battery_label.set_markup(
-            "<span weight='bold' size='large'>Battery Metrics</span>"
+            "<span weight='bold' size='large'>Battery Dashboard</span>"
         )
         self.battery_label.set_halign(Gtk.Align.START)
         title_box.pack_start(self.battery_label, False, False, 0)
 
         header_box.pack_start(title_box, True, True, 0)
 
-        # Add refresh button
+        # Add refresh button with modern styling
         refresh_button = Gtk.Button()
         refresh_icon = Gtk.Image.new_from_icon_name(
             "view-refresh-symbolic", Gtk.IconSize.BUTTON
@@ -415,22 +613,22 @@ class BatteryTab(Gtk.Box):
         self.scroll_window.set_vexpand(True)
 
         # Create main content box - store as instance variable to update later
-        self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         self.content_box.set_margin_top(10)
         self.content_box.set_margin_bottom(10)
         self.content_box.set_margin_start(10)
         self.content_box.set_margin_end(10)
-        self.content_box.set_hexpand(False)
-        self.content_box.set_vexpand(False)
+        self.content_box.set_hexpand(True)
+        self.content_box.set_vexpand(True)
 
-        # Power mode section
+        # Power mode section (hidden as we'll create this dynamically)
         self.power_mode_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-
         self.power_mode_label = Gtk.Label(label="Select Power Mode:")
         self.power_mode_label.set_halign(Gtk.Align.START)
         self.power_mode_label.set_markup("<b>Select Power Mode:</b>")
         self.power_mode_box.pack_start(self.power_mode_label, False, False, 0)
 
-        # Mode selection dropdown
+        # Mode selection dropdown (hidden but functional for logic)
         self.dropdown_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         self.dropdown_box.set_margin_top(5)
+        # Note: The dropdown is not visible but set active in code to trigger mode change
