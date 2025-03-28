@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚙️ Better Control
+# ⚙️ Better Control ⚙️
 
 ### *A sleek GTK-themed control panel for Linux* 🐧
 
