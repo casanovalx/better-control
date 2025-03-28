@@ -4,12 +4,9 @@ import gi  # type: ignore
 gi.require_version('Gtk', '3.0')
 import subprocess
 import os
-import re
-import math
-import time
 import threading
 from datetime import datetime
-from gi.repository import Gtk, GLib, Gdk, Pango  # type: ignore
+from gi.repository import Gtk, GLib  # type: ignore
 from utils.logger import LogLevel, Logger
 
 
@@ -18,8 +15,6 @@ class BatteryTab(Gtk.Box):
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.logging = logging
 
-        # History data for battery stats
-        self.battery_history = {}
         self.last_refresh_time = datetime.now()
 
         self.__load_gui(parent)
@@ -174,16 +169,8 @@ class BatteryTab(Gtk.Box):
 
                 # Map UPower keys to more user-friendly labels
                 key_mapping = {
-                    "native-path": "Path",
                     "vendor": "Manufacturer",
                     "model": "Model",
-                    "serial": "Serial",
-                    "power supply": "Power Supply",
-                    "updated": "Last Updated",
-                    "has history": "Has History",
-                    "has statistics": "Has Statistics",
-                    "present": "Present",
-                    "rechargeable": "Rechargeable",
                     "state": "State",
                     "warning-level": "Warning Level",
                     "energy": "Energy",
@@ -197,23 +184,12 @@ class BatteryTab(Gtk.Box):
                     "percentage": "Charge",
                     "capacity": "Capacity",
                     "technology": "Technology",
-                    "icon-name": "Icon Name",
                 }
 
                 display_key = key_mapping.get(key, key.capitalize())
                 info[display_key] = value
 
         return info
-
-    def toggle_battery_details(self, expander, param_spec, grid):
-        """Toggle the visibility of battery details when the expander is clicked."""
-        # Use no_show_all property to properly control visibility with expanders
-        if expander.get_expanded():
-            grid.set_no_show_all(False)
-            grid.show_all()
-        else:
-            grid.hide()
-            grid.set_no_show_all(True)
         
     def create_battery_card(self, battery_info, device_path):
         """Create a modern card-style widget for battery information."""
@@ -356,26 +332,6 @@ class BatteryTab(Gtk.Box):
         
         # Add the notebook to the card
         card.pack_start(notebook, True, True, 0)
-        
-        # Store current battery data for history
-        device_id = os.path.basename(device_path)
-        if device_id not in self.battery_history:
-            self.battery_history[device_id] = []
-            
-        # Add current data point to history
-        time_now = datetime.now()
-        self.battery_history[device_id].append({
-            'timestamp': time_now,
-            'charge': charge_percentage,
-            'state': state_text
-        })
-        
-        # Limit history to last hour (assuming 10-second refresh)
-        one_hour_ago = time_now.timestamp() - 3600
-        self.battery_history[device_id] = [
-            point for point in self.battery_history[device_id]
-            if point['timestamp'].timestamp() > one_hour_ago
-        ]
         
         return card
         
@@ -558,9 +514,6 @@ class BatteryTab(Gtk.Box):
             index = list(self.power_modes.keys()).index(mode)
             # Set the dropdown to this index (will trigger the "changed" signal)
             self.power_mode_dropdown.set_active(index)
-            
-            # Note: No need to call refresh_battery_info here as it will be called 
-            # when the async operation completes in set_power_mode
 
     def __load_gui(self, parent):
         self.set_margin_top(15)
