@@ -418,9 +418,9 @@ class BatteryTab(Gtk.Box):
         mode_selector.set_homogeneous(True)  # Make all buttons equal width
         
         mode_icons = {
-            "Power Saving": "battery-good-symbolic",
-            "Balanced": "preferences-system-symbolic",
-            "Performance": "thunderbolt-symbolic"
+            "Power Saving": "power-profile-power-saver-symbolic",
+            "Balanced": "power-profile-balanced-symbolic",
+            "Performance": "power-profile-performance-symbolic"
         }
         
         # Get current active mode
