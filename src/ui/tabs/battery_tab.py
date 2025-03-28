@@ -204,10 +204,9 @@ class BatteryTab(Gtk.Box):
             no_battery_label.set_margin_bottom(10)
             self.content_box.pack_start(no_battery_label, False, False, 0)
         else:
-            batteries_grid = Gtk.Grid()
-            batteries_grid.set_column_spacing(20)
-            batteries_grid.set_row_spacing(20)
-            batteries_grid.set_halign(Gtk.Align.CENTER)
+            batteries_grid = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+            batteries_grid.set_halign(Gtk.Align.FILL)
+            batteries_grid.set_hexpand(True)
             self.content_box.pack_start(batteries_grid, False, False, 0)
 
             for i, device_path in enumerate(battery_devices):
@@ -222,13 +221,10 @@ class BatteryTab(Gtk.Box):
                     if result.returncode == 0:
                         battery_info = self.parse_upower_output(result.stdout)
 
-                        # Calculate grid position (2x2 layout)
-                        grid_x = i % 2
-                        grid_y = i // 2
-
                         # Create a frame for this battery
                         battery_frame = Gtk.Frame()
                         battery_frame.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
+                        battery_frame.set_hexpand(True)
 
                         # Create grid for battery info
                         battery_grid = Gtk.Grid()
@@ -289,7 +285,7 @@ class BatteryTab(Gtk.Box):
                                 row += 1
 
                         battery_frame.add(battery_grid)
-                        batteries_grid.attach(battery_frame, grid_x, grid_y, 1, 1)
+                        batteries_grid.pack_start(battery_frame, True, True, 0)
 
                 except Exception as e:
                     self.logging.log(
@@ -355,6 +351,8 @@ class BatteryTab(Gtk.Box):
         self.content_box.set_margin_bottom(10)
         self.content_box.set_margin_start(10)
         self.content_box.set_margin_end(10)
+        self.content_box.set_hexpand(False)
+        self.content_box.set_vexpand(False)
 
         # Power mode section
         self.power_mode_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
