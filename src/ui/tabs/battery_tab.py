@@ -180,6 +180,16 @@ class BatteryTab(Gtk.Box):
 
         return info
 
+    def toggle_battery_details(self, expander, param_spec, grid):
+        """Toggle the visibility of battery details when the expander is clicked."""
+        # Use no_show_all property to properly control visibility with expanders
+        if expander.get_expanded():
+            grid.set_no_show_all(False)
+            grid.show_all()
+        else:
+            grid.hide()
+            grid.set_no_show_all(True)
+        
     def refresh_battery_info(self, button=None):
         """Refresh battery information using UPower."""
         if button:
@@ -225,8 +235,35 @@ class BatteryTab(Gtk.Box):
                         battery_frame = Gtk.Frame()
                         battery_frame.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
                         battery_frame.set_hexpand(True)
+                        
+                        # Use a vertical box for the battery container
+                        battery_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+                        battery_frame.add(battery_vbox)
 
-                        # Create grid for battery info
+                        # Get the battery title
+                        title = f"Battery {os.path.basename(device_path)}"
+                        if "Model" in battery_info:
+                            title = f"{battery_info['Model']}"
+                            
+                        # Extract battery charge if available for the summary
+                        charge_info = ""
+                        if "Charge" in battery_info:
+                            charge_info = f" - {battery_info['Charge']}"
+                        if "State" in battery_info:
+                            charge_info += f" - {battery_info['State']}"
+                            
+                        # Create an expander for toggling - make sure label has enough room
+                        expander = Gtk.Expander()
+                        expander.set_label(f"{title}{charge_info}")
+                        expander.set_margin_top(5)
+                        expander.set_margin_bottom(5)
+                        expander.set_margin_start(10)
+                        expander.set_margin_end(10)
+                        
+                        # Forcefully ensure default collapsed state
+                        expander.set_expanded(False)
+                        
+                        # Create grid for battery info (detailed view)
                         battery_grid = Gtk.Grid()
                         battery_grid.set_column_spacing(15)
                         battery_grid.set_row_spacing(8)
@@ -234,16 +271,10 @@ class BatteryTab(Gtk.Box):
                         battery_grid.set_margin_bottom(10)
                         battery_grid.set_margin_start(10)
                         battery_grid.set_margin_end(10)
-
-                        # Add battery title
-                        title = f"Battery {os.path.basename(device_path)}"
-                        if "Model" in battery_info:
-                            title = f"{battery_info['Model']}"
-
-                        title_label = Gtk.Label(xalign=0)
-                        title_label.set_markup(f"<span weight='bold'>{title}</span>")
-                        battery_grid.attach(title_label, 0, 0, 2, 1)
-
+                        
+                        # Use no_show_all to properly handle initial hidden state
+                        battery_grid.set_no_show_all(True)
+                        
                         # Display priority fields first
                         priority_fields = [
                             "Charge",
@@ -257,7 +288,7 @@ class BatteryTab(Gtk.Box):
                             "Manufacturer",
                         ]
 
-                        row = 1
+                        row = 0
                         # First add priority fields
                         for key in priority_fields:
                             if key in battery_info:
@@ -284,7 +315,13 @@ class BatteryTab(Gtk.Box):
                                 battery_grid.attach(value_label, 1, row, 1, 1)
                                 row += 1
 
-                        battery_frame.add(battery_grid)
+                        # Add the expander and grid to the battery container
+                        battery_vbox.pack_start(expander, False, False, 0)
+                        battery_vbox.pack_start(battery_grid, False, False, 0)
+                        
+                        # Connect the expander to toggle the visibility - do this after setup
+                        expander.connect("notify::expanded", self.toggle_battery_details, battery_grid)
+                        
                         batteries_grid.pack_start(battery_frame, True, True, 0)
 
                 except Exception as e:
@@ -292,8 +329,40 @@ class BatteryTab(Gtk.Box):
                         LogLevel.Error, f"Error processing battery {device_path}: {e}"
                     )
 
+        # Show the container but not the hidden grids
         self.content_box.show_all()
+        
+        # Ensure hidden state is respected
+        for child in self.content_box.get_children():
+            if isinstance(child, Gtk.Box):  # batteries_grid box
+                for frame in child.get_children():
+                    if isinstance(frame, Gtk.Frame):
+                        vbox = frame.get_child()
+                        if vbox and isinstance(vbox, Gtk.Box) and len(vbox.get_children()) >= 2:
+                            grid = vbox.get_children()[1]
+                            if isinstance(grid, Gtk.Grid):
+                                grid.hide()
+            
         return True
+        
+    def ensure_collapsed_state(self):
+        """Ensure all battery detail grids are hidden by default."""
+        # Traverse the widget hierarchy to find all expanders and hide their grids
+        for child in self.content_box.get_children():
+            if isinstance(child, Gtk.Box):  # batteries_grid box
+                for frame in child.get_children():
+                    if isinstance(frame, Gtk.Frame):
+                        vbox = frame.get_child()
+                        if vbox and isinstance(vbox, Gtk.Box) and len(vbox.get_children()) >= 2:
+                            # First child is expander, second is the grid
+                            expander = vbox.get_children()[0]
+                            grid = vbox.get_children()[1]
+                            if isinstance(expander, Gtk.Expander):
+                                # Force expander to collapsed state
+                                expander.set_expanded(False)
+                                grid.hide()
+                                grid.set_no_show_all(True)
+        return False  # Don't repeat
 
     def __load_gui(self, parent):
         self.set_margin_top(15)

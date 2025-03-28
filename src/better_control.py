@@ -34,18 +34,18 @@ if __name__ == "__main__":
             "Missing required dependencies. Please install them and try again.",
         )
 
-    # ? Prevents startup delay
+    # Prevents startup delay
     audio_thread = threading.Thread(target=restore_last_sink, args=(logging,), daemon=True)
     audio_thread.start()
 
     try:
         win = BetterControl(arg_parser, logging)
-        win.set_default_size(1000, 700)
-        win.resize(1000, 700)
+        win.set_default_size(900, 600)
+        win.resize(900, 600)
         win.connect("destroy", Gtk.main_quit)
         win.show_all()
 
-        #? Hyprland shenanigans
+        # Hyprland shenanigans
         if "hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
             subprocess.run(
                 [
