@@ -139,7 +139,11 @@ class WiFiTab(Gtk.Box):
         networks_frame.add(self.networks_box)
         content_box.pack_start(networks_frame, True, True, 0)
 
-        # Action buttons
+        # Add the content box to the scroll window
+        scroll_window.add(content_box)
+        self.pack_start(scroll_window, True, True, 0)
+
+        # Action buttons - moved outside of the scrollable area
         action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         action_box.set_margin_top(10)
         connect_button = Gtk.Button(label="Connect")
@@ -154,9 +158,8 @@ class WiFiTab(Gtk.Box):
         forget_button.connect("clicked", self.on_forget_clicked)
         action_box.pack_start(forget_button, True, True, 0)
 
-        content_box.pack_start(action_box, False, True, 0)
-        scroll_window.add(content_box)
-        self.pack_start(scroll_window, True, True, 0)
+        # Add action buttons directly to the main container (outside scroll window)
+        self.pack_start(action_box, False, True, 0)
 
         # Initial network list population is now deferred
         # self.update_network_list()  <- This line is removed
