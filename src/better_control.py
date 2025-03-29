@@ -60,7 +60,7 @@ if __name__ == "__main__":
         win.connect("destroy", Gtk.main_quit)
         win.show_all()
 
-        # Hyprland shenanigans
+        # Make the window float on hyprland
         if "hyprland" in os.environ.get("XDG_CURRENT_DESKTOP", "").lower():
             subprocess.run(
                 [
@@ -68,6 +68,18 @@ if __name__ == "__main__":
                     "keyword",
                     "windowrule",
                     "float,class:^(better_control.py)$",
+                ]
+            )
+
+        # Make the window float on sway
+        elif "sway" in os.environ.get("SWAYSOCK", "").lower():
+            subprocess.run(
+                [
+                    "swaymsg",
+                    "for_window",
+                    '[app_id="^better_control.py$"]',
+                    "floating",
+                    "enable"
                 ]
             )
 
