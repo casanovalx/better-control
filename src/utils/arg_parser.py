@@ -160,10 +160,13 @@ class ArgParse:
             f"   -w, --wifi                      Starts with the wifi tab open"
         )
         self.arg_print(
-            f"   -l, --log                       The program will either log to a file if given a file path,",
+            f"   -l, --log <lvl/file>            The program will either log to a file if given a file path,",
         )
         self.arg_print(
             f"                                       or output to stdout based on the log level if given a value between 0, and 3.",
+        )
+        self.arg_print(
+            f"    -s,--size <intxint>             Sets a custom window size"
         )
 
         if stream == stderr:

@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+from typing import Any
 import gi  # type: ignore
 import sys
 import threading
@@ -40,8 +41,22 @@ if __name__ == "__main__":
 
     try:
         win = BetterControl(arg_parser, logging)
-        win.set_default_size(1000, 700)
-        win.resize(1000, 700)
+
+        option: Any = []
+        if arg_parser.find_arg(("-s", "--size")):
+            option = arg_parser.option_arg(("-s", "--size"))
+
+            if option == None or 'x' not in option:
+                logging.log(LogLevel.Error, "Invalid window size")
+                exit(1)
+            else:
+                option = option.split('x')
+        else:
+            option = [1000, 700]
+
+
+        win.set_default_size(int(option[0]), int(option[1]))
+        win.resize(int(option[0]), int(option[1]))
         win.connect("destroy", Gtk.main_quit)
         win.show_all()
 

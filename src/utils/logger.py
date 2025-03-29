@@ -99,7 +99,7 @@ class Logger:
 
         self.__last_log_msg = fmt
 
-        if self.__should_log == False:
+        if log_level != LogLevel.Error and self.__should_log == False:
             return
 
         if self.__log_file_name != "":
