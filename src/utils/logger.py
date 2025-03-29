@@ -104,10 +104,7 @@ class Logger:
 
         if self.__log_file_name != "":
             self.__log_to_file(fmt)
-
-        if log_level == LogLevel.Error:
             print(fmt, file=stderr)
-            exit(1)
         elif log_level == LogLevel.Warn and self.__log_level < 3:
             print(fmt, file=stdout)
         elif log_level == LogLevel.Info and self.__log_level < 2:

@@ -17,6 +17,11 @@ def get_volume(logging: Logger) -> int:
     """
     try:
         output = subprocess.getoutput("pactl get-sink-volume @DEFAULT_SINK@")
+
+        if output == "":
+            logging.log(LogLevel.Error, "pactl couldnt get volume!")
+            return 0
+
         volume = int(output.split("/")[1].strip().strip("%"))
         return volume
     except Exception as e:
@@ -493,7 +498,7 @@ def get_source_outputs(logging: Logger) -> List[Dict[str, str]]:
                 )
 
             elif "Mute:" in line:
-                current_output["muted"] = "yes" in line.lower()
+                current_output["muted"] = "yes" in line.lower() # type: ignore
                 logging.log(
                     LogLevel.Debug,
                     f"Detected & Stored Source Output Mute State: {current_output["muted"]}",
