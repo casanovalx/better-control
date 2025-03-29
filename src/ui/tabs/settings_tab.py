@@ -27,21 +27,20 @@ class SettingsTab(Gtk.Box):
         self.set_margin_end(10)
         self.set_hexpand(True)
         self.set_vexpand(True)
-
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scrolled_window.set_hexpand(True)
-        scrolled_window.set_vexpand(True)
-        self.pack_start(scrolled_window, True, True, 0)
-
+        
+        # Load settings
+        self.settings = load_settings(logging)
+        
+        # No scroll window - pack content directly to ensure all is visible
         self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         self.content_box.set_margin_top(10)
         self.content_box.set_margin_bottom(10)
         self.content_box.set_margin_start(10)
         self.content_box.set_margin_end(10)
-        scrolled_window.add(self.content_box)
-
-        self.settings = load_settings(logging)
+        # Ensure content can expand properly
+        self.content_box.set_hexpand(True)
+        self.content_box.set_vexpand(True)
+        self.pack_start(self.content_box, True, True, 0)
 
         self.populate_settings()
 
@@ -58,6 +57,8 @@ class SettingsTab(Gtk.Box):
         # Header with Settings title and icon
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         header_box.set_margin_bottom(20)
+        header_box.set_halign(Gtk.Align.START)  # Align to start
+        header_box.set_hexpand(True)
 
         settings_icon = Gtk.Image.new_from_icon_name(
             "preferences-system-symbolic", Gtk.IconSize.DIALOG
@@ -73,13 +74,22 @@ class SettingsTab(Gtk.Box):
         # Create a frame for the tab settings section
         settings_frame = Gtk.Frame()
         settings_frame.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
-        self.content_box.pack_start(settings_frame, False, False, 10)
+        # Allow the frame to size to its contents
+        settings_frame.set_hexpand(True)
+        settings_frame.set_vexpand(True)
+        settings_frame.set_margin_top(5)
+        settings_frame.set_margin_bottom(5)
+        self.content_box.pack_start(settings_frame, True, True, 10)
+        
         # Tab settings section
         self.tab_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.tab_section.set_margin_top(10)
         self.tab_section.set_margin_bottom(10)
         self.tab_section.set_margin_start(10)
         self.tab_section.set_margin_end(10)
+        # Allow the section to size to its contents
+        self.tab_section.set_hexpand(True)
+        self.tab_section.set_vexpand(True)
         settings_frame.add(self.tab_section)
 
         section_label = Gtk.Label(label="Tab Settings")
@@ -94,6 +104,9 @@ class SettingsTab(Gtk.Box):
 
         for tab_name in tabs:
             row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+            row.set_hexpand(True)  # Allow the row to expand horizontally
+            row.set_margin_top(2)
+            row.set_margin_bottom(2)
 
             # Add up/down buttons
             button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
@@ -119,7 +132,9 @@ class SettingsTab(Gtk.Box):
             # Add tab name and switch
             label = Gtk.Label(label=f"Show {tab_name} tab")
             label.set_halign(Gtk.Align.START)
+            # Allow label to expand and fill horizontally
             row.pack_start(label, True, True, 0)
+            
             switch = Gtk.Switch()
             # Get visibility from settings or default to True
             visible = self.settings.get("visibility", {}).get(tab_name, True)
@@ -150,7 +165,11 @@ class SettingsTab(Gtk.Box):
         # Add rows back in the correct order
         for tab_name in tab_order:
             if tab_name in self.tab_rows:
-                self.tab_section.pack_start(self.tab_rows[tab_name], False, False, 5)
+                # Ensure each row has proper expansion properties
+                self.tab_rows[tab_name].set_hexpand(True)
+                self.tab_rows[tab_name].set_margin_top(4)
+                self.tab_rows[tab_name].set_margin_bottom(4)
+                self.tab_section.pack_start(self.tab_rows[tab_name], False, False, 2)
 
     def on_tab_visibility_changed(self, switch, gparam, tab_name):
         """Handle tab visibility changes"""
@@ -206,3 +225,20 @@ class SettingsTab(Gtk.Box):
 
             # Emit signal to notify the main window
             self.emit("tab-order-changed", tab_order)
+            
+    def save_window_size(self, width: int, height: int):
+        """Save window size to settings
+        
+        Args:
+            width (int): Window width
+            height (int): Window height
+        """
+        # We're no longer directly controlling size through settings,
+        # but we'll still save the last used size for reference
+        if "window_size" not in self.settings:
+            self.settings["window_size"] = {}
+            
+        self.settings["window_size"]["settings_width"] = width
+        self.settings["window_size"]["settings_height"] = height
+        save_settings(self.settings, self.logging)
+        self.logging.log(LogLevel.Info, f"Saved reference window size: {width}x{height}")
