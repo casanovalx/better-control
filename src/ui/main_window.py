@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import logging
 import timeit
 import traceback
 import gi  # type: ignore
@@ -11,6 +12,7 @@ from utils.arg_parser import ArgParse
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib  # type: ignore
 
+from ui.tabs.autostart_tab import AutostartTab
 from ui.tabs.battery_tab import BatteryTab
 from ui.tabs.bluetooth_tab import BluetoothTab
 from ui.tabs.display_tab import DisplayTab
@@ -76,6 +78,7 @@ class BetterControl(Gtk.Window):
             "Bluetooth": BluetoothTab,
             "Battery": BatteryTab,
             "Display": DisplayTab,
+            "Autostart": AutostartTab,
         }
         # Create tabs one by one
         for tab_name, tab_class in tab_classes.items():
@@ -135,6 +138,11 @@ class BetterControl(Gtk.Window):
             self.notebook.set_current_page(self.tab_pages["Volume"])
         elif self.arg_parser.find_arg(("-w", "--wifi")) and "Wi-Fi" in self.tab_pages:
             self.notebook.set_current_page(self.tab_pages["Wi-Fi"])
+        elif (
+            self.arg_parser.find_arg(("-a", "--autostart"))
+            and "Autostart" in self.tab_pages
+        ):
+            self.notebook.set_current_page(self.tab_pages["Autostart"])
         elif (
             self.arg_parser.find_arg(("-b", "--bluetooth"))
             and "Bluetooth" in self.tab_pages
@@ -198,7 +206,7 @@ class BetterControl(Gtk.Window):
         """Apply tab order settings"""
         # Get current tab order from settings or use default
         tab_order = self.settings.get(
-            "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display"]
+            "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"]
         )
         # Reorder tabs according to settings
         for tab_name in tab_order:
@@ -222,6 +230,7 @@ class BetterControl(Gtk.Window):
             "Battery": "battery-good-symbolic",
             "Display": "video-display-symbolic",
             "Settings": "preferences-system-symbolic",
+            "Autostart": "system-run-symbolic",
         }
         return icons.get(tab_name, "application-x-executable-symbolic")
 
@@ -315,7 +324,7 @@ class BetterControl(Gtk.Window):
 
                 # Then reorder it according to the tab_order setting
                 tab_order = self.settings.get(
-                    "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display"]
+                    "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"]
                 )
                 if tab_name in tab_order:
                     # Find the desired position for this tab

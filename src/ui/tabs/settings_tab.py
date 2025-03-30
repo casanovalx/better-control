@@ -98,7 +98,7 @@ class SettingsTab(Gtk.Box):
         self.tab_section.pack_start(section_label, False, False, 0)
 
         # Create a switch for each tab
-        tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display"]
+        tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"]
         self.tab_switches = {}
         self.tab_rows = {}
 
@@ -157,7 +157,7 @@ class SettingsTab(Gtk.Box):
     def update_ui_order(self):
         """Update the order of rows in the UI to match the current tab order"""
         # Get current tab order
-        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display"])
+        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"])
         # Remove all rows from the section
         for row in self.tab_section.get_children():
             if isinstance(row, Gtk.Box) and row != self.tab_section.get_children()[0]:  # Skip the label
@@ -189,7 +189,7 @@ class SettingsTab(Gtk.Box):
     def on_move_up_clicked(self, button, tab_name):
         """Handle move up button click"""
         # Get current tab order
-        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display"])
+        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"])
         # Find current index
         current_index = tab_order.index(tab_name)
         if current_index > 0:
@@ -209,7 +209,7 @@ class SettingsTab(Gtk.Box):
     def on_move_down_clicked(self, button, tab_name):
         """Handle move down button click"""
         # Get current tab order
-        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display"])
+        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display","Autostart"])
         # Find current index
         current_index = tab_order.index(tab_name)
         if current_index < len(tab_order) - 1:

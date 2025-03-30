@@ -1,4 +1,5 @@
 pygobject
+pygobject-stubs
 dbus-python
 psutil
 setuptools
