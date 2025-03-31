@@ -3,8 +3,6 @@
 import subprocess
 from typing import List, Dict
 import re
-import subprocess
-from typing import List, Dict
 
 from utils.logger import LogLevel, Logger
 

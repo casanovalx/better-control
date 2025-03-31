@@ -90,7 +90,6 @@ class VolumeTab(Gtk.Box):
         # Create notebook for tabbed interface
         self.notebook = Gtk.Notebook()
         self.notebook.set_vexpand(True)
-        self.notebook.set_tab_pos(Gtk.PositionType.TOP)
         self.notebook.set_visible(True)  # Ensure notebook is visible
         
         # Create tabs for different categories
