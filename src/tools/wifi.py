@@ -3,6 +3,8 @@
 import subprocess
 from typing import List, Dict
 from utils.logger import LogLevel, Logger
+import time
+import threading
 
 
 def get_wifi_status(logging: Logger) -> bool:
@@ -136,17 +138,75 @@ def connect_network(
         # First try to connect using saved connection
         try:
             subprocess.run(["nmcli", "con", "up", ssid], check=True)
+            logging.log(LogLevel.Info, f"Connected to {ssid} using saved connection")
             return True
         except subprocess.CalledProcessError:
-            # If saved connection fails, try with password if provided
-            if password:
-                cmd = ["nmcli", "device", "wifi", "connect", ssid, "password", password]
+            # If saved connection fails, we need to create a new connection
+            
+            # Special handling for networks like "Premier Inn Free" that need explicit security settings
+            if password and (ssid == "Premier Inn Free" or ssid.startswith("Premier Inn")):
+                logging.log(LogLevel.Info, f"Using special handling for {ssid}")
+                try:
+                    # Delete any existing connections with this name first to avoid conflicts
+                    try:
+                        subprocess.run(["nmcli", "con", "delete", ssid], check=False)
+                    except:
+                        pass
+                    
+                    # Create a new connection with explicit security settings
+                    con_name = ssid
+                    if not remember:
+                        con_name = f"{ssid}-temp"
+                        
+                    # Create connection with explicit security settings
+                    cmd = [
+                        "nmcli", "con", "add",
+                        "con-name", con_name,
+                        "type", "wifi",
+                        "ssid", ssid,
+                        "wifi-sec.key-mgmt", "wpa-psk",
+                        "wifi-sec.psk", password
+                    ]
+                    subprocess.run(cmd, check=True)
+                    
+                    # Activate the connection
+                    subprocess.run(["nmcli", "con", "up", con_name], check=True)
+                    
+                    # If temporary, schedule deletion
+                    if not remember:
+                        def delete_later():
+                            try:
+                                time.sleep(5)  # Wait to ensure connection is established
+                                subprocess.run(["nmcli", "con", "delete", con_name], check=True)
+                            except:
+                                pass
+                        
+                        cleanup = threading.Thread(target=delete_later)
+                        cleanup.daemon = True
+                        cleanup.start()
+                    
+                    return True
+                except subprocess.CalledProcessError as e:
+                    logging.log(LogLevel.Error, f"Failed connecting to {ssid} with special handling: {e}")
+                    return False
+            
+            # Standard handling for normal networks
+            try:
+                cmd = ["nmcli", "device", "wifi", "connect", ssid]
+                
+                if password:
+                    cmd.extend(["password", password])
+                
                 if not remember:
-                    cmd.extend(["--temporary"])
+                    cmd.append("--temporary")
+                    
                 subprocess.run(cmd, check=True)
+                logging.log(LogLevel.Info, f"Connected to {ssid} using standard connection")
                 return True
-            return False
-    except subprocess.CalledProcessError as e:
+            except subprocess.CalledProcessError as e:
+                logging.log(LogLevel.Error, f"Failed connecting to network: {e}")
+                return False
+    except Exception as e:
         logging.log(LogLevel.Error, f"Failed connecting to network: {e}")
         return False
 
