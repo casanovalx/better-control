@@ -22,7 +22,6 @@ def get_hyprland_startup_apps():
                     enabled = not stripped.startswith("#")
                     
                     cleared_line = stripped.lstrip("#").strip()
-                    
                     if "=" in cleared_line:
                         parts = cleared_line.split("=", 1)
                         command = parts[1].strip().strip('"')
@@ -32,7 +31,6 @@ def get_hyprland_startup_apps():
                             command = parts[1].strip().strip('"')
                         else:
                             continue
-                            
                     startup_apps[command] = {
                         "name": command,
                         "type": "hyprland",
@@ -67,5 +65,5 @@ def toggle_hyprland_startup(command):
     with open(config_path, "w") as f:
         f.writelines(lines)
     
-    # Reload Hyprland
+    # Reload hyprland
     subprocess.run(["hyprctl", "reload"])
