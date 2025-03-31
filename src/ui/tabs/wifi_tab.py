@@ -34,6 +34,9 @@ class WiFiTab(Gtk.Box):
         self.set_margin_bottom(15)
         self.set_hexpand(True)
         self.set_vexpand(True)
+        
+        # Track tab visibility status
+        self.tab_visible = False
 
         # Check if WiFi is supported
         result = subprocess.run(["nmcli", "-t", "-f", "DEVICE,TYPE", "device"], capture_output=True, text=True)
@@ -170,10 +173,33 @@ class WiFiTab(Gtk.Box):
         # Previous speed values for calculation
         self.prev_rx_bytes = 0
         self.prev_tx_bytes = 0
+        
+        # Connect signals for tab visibility tracking
+        self.connect("map", self.on_tab_shown)
+        self.connect("unmap", self.on_tab_hidden)
+
+    def on_tab_shown(self, widget):
+        """Handle tab becoming visible"""
+        self.logging.log(LogLevel.Info, "WiFi tab became visible, refreshing networks")
+        self.tab_visible = True
+        self.update_network_list()
+        return False
+        
+    def on_tab_hidden(self, widget):
+        """Handle tab becoming hidden"""
+        self.logging.log(LogLevel.Info, "WiFi tab became hidden")
+        self.tab_visible = False
+        return False
 
     def load_networks(self):
         """Load WiFi networks list - to be called after all tabs are loaded"""
         self.logging.log(LogLevel.Info, "Loading WiFi networks after tabs initialization")
+        
+        # Only load networks if the tab is visible
+        if not self.tab_visible:
+            self.logging.log(LogLevel.Info, "WiFi tab not visible, skipping initial network loading")
+            return
+            
         # Add a loading indicator
         row = Gtk.ListBoxRow()
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -350,7 +376,12 @@ class WiFiTab(Gtk.Box):
     def update_network_list(self):
         """Update the list of WiFi networks"""
         self.logging.log(LogLevel.Info, "Refreshing WiFi networks list")
-
+        
+        # Don't refresh if tab is not visible
+        if not self.tab_visible:
+            self.logging.log(LogLevel.Info, "WiFi tab not visible, skipping network refresh")
+            return
+            
         # Clear existing networks
         for child in self.networks_box.get_children():
             self.networks_box.remove(child)
@@ -412,8 +443,8 @@ class WiFiTab(Gtk.Box):
         def power_toggle_thread():
             try:
                 set_wifi_power(state, self.logging)
-                if state:
-                    # If Wi-Fi was turned on, update networks list
+                if state and self.tab_visible:
+                    # Only refresh network list if tab is visible
                     GLib.idle_add(self.update_network_list)
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Failed setting WiFi power: {e}")

@@ -163,37 +163,58 @@ class BetterControl(Gtk.Window):
         # Show all tabs to ensure content is visible
         self.show_all()
 
-        # Load WiFi networks after all tabs are loaded
-        if "Wi-Fi" in self.tabs:
-            self.tabs["Wi-Fi"].load_networks()
-
+        # Initialize the active tab
+        active_tab = None
+        
         # Set active tab based on command line arguments
         if self.arg_parser.find_arg(("-V", "--volume")) and "Volume" in self.tab_pages:
             self.notebook.set_current_page(self.tab_pages["Volume"])
+            active_tab = "Volume"
         elif self.arg_parser.find_arg(("-w", "--wifi")) and "Wi-Fi" in self.tab_pages:
             self.notebook.set_current_page(self.tab_pages["Wi-Fi"])
+            active_tab = "Wi-Fi"
         elif (
             self.arg_parser.find_arg(("-b", "--bluetooth"))
             and "Bluetooth" in self.tab_pages
         ):
             self.notebook.set_current_page(self.tab_pages["Bluetooth"])
+            active_tab = "Bluetooth"
         elif (
             self.arg_parser.find_arg(("-B", "--battery"))
             and "Battery" in self.tab_pages
         ):
             self.notebook.set_current_page(self.tab_pages["Battery"])
+            active_tab = "Battery"
         elif (
             self.arg_parser.find_arg(("-d", "--display"))
             and "Display" in self.tab_pages
         ):
             self.notebook.set_current_page(self.tab_pages["Display"])
+            active_tab = "Display"
         else:
             # Use last active tab from settings
             last_tab = self.settings.get("last_active_tab", 0)
             if last_tab < self.notebook.get_n_pages():
                 self.notebook.set_current_page(last_tab)
+                # Find which tab is at this position
+                for tab_name, tab_page in self.tab_pages.items():
+                    if tab_page == last_tab:
+                        active_tab = tab_name
+                        break
+        
+        # Set visibility status on the active tab
+        if active_tab == "Wi-Fi" and active_tab in self.tabs:
+            self.tabs[active_tab].tab_visible = True
+            
+        # Load WiFi networks if WiFi tab is active
+        if "Wi-Fi" in self.tabs and active_tab == "Wi-Fi":
+            self.tabs["Wi-Fi"].load_networks()
+        
         # Remove loading tab
         self.notebook.remove_page(self.loading_page)
+        
+        # Connect page switch signal to handle tab visibility
+        self.notebook.connect("switch-page", self.on_tab_switched)
 
         return False  # Required for GLib.idle_add
 
@@ -414,7 +435,17 @@ class BetterControl(Gtk.Window):
 
     def on_tab_switched(self, notebook, page, page_num):
         """Handle tab switching"""
+        
+        # Update tab visibility status 
+        for tab_name, tab in self.tabs.items():
+            # Check if this tab is at the current page number
+            is_visible = self.tab_pages.get(tab_name) == page_num
+            
+            # If tab has tab_visible property (WiFi tab), update it
+            if hasattr(tab, 'tab_visible'):
+                tab.tab_visible = is_visible
 
+        # Save the active tab setting
         self.settings["last_active_tab"] = page_num
         save_settings(self.settings, self.logging)
 
