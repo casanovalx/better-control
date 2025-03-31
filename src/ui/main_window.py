@@ -81,7 +81,9 @@ class BetterControl(Gtk.Window):
         for tab_name, tab_class in tab_classes.items():
             try:
                 # Create the tab
+                self.logging.log(LogLevel.Debug, f"Starting to create {tab_name} tab")
                 tab = tab_class(self.logging)
+                self.logging.log(LogLevel.Debug, f"Successfully created {tab_name} tab instance")
 
                 # Update UI from main thread
                 GLib.idle_add(self._add_tab_to_ui, tab_name, tab)
@@ -90,7 +92,12 @@ class BetterControl(Gtk.Window):
                 GLib.usleep(10000)  # 10ms delay
 
             except Exception as e:
-                self.logging.log(LogLevel.Error, f"Failed creating {tab_name} tab: {e}")
+                error_msg = f"Failed creating {tab_name} tab: {e}"
+                self.logging.log(LogLevel.Error, error_msg)
+                # Print full traceback to stderr
+                import traceback
+                traceback.print_exc()
+                print(f"FATAL ERROR: {error_msg}", file=sys.stderr)
 
         # Complete initialization on main thread
         GLib.idle_add(self._finish_tab_loading)
