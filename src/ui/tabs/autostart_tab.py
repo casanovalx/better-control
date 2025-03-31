@@ -41,10 +41,6 @@ class AutostartTab(Gtk.Box):
             min-width: 80px;
             border-radius: 4px;
         }
-        .toggle-button.enabled {
-            background: alpha(@accent_color, 0.9);
-            color: @theme_selected_fg_color;
-        }
         .toggle-button.disabled {
             background: @theme_selected_bg_color;
             color: @theme_selected_fg_color;

@@ -5,7 +5,7 @@ import subprocess
 
 CONFIG_FILES = [
     Path.home() / ".config/sway/config",
-    Path.home() / ".config/sway/autostart.conf"
+    Path.home() / ".config/sway/autostart"
 ]
 
 def get_sway_startup_apps():
