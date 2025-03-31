@@ -8,17 +8,59 @@ import glob
 import os
 from pathlib import Path
 from datetime import datetime
-from gi.repository import Gtk, GLib  # type: ignore
+from gi.repository import Gtk, GLib, Gdk, Pango # type: ignore
 from utils.logger import LogLevel, Logger
-from tools.hyprland import get_hyprland_startup_apps
-from tools.hyprland import CONFIG_FILES
+from tools.hyprland import get_hyprland_startup_apps, toggle_hyprland_startup
 from tools.globals import get_current_session
+from tools.swaywm import get_sway_startup_apps, toggle_sway_startup
 
 class AutostartTab(Gtk.Box):
     """Autostart settings tab"""
 
     def __init__(self, logging: Logger):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        
+        # add css
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_data(b"""
+        row {
+            padding: 8px;
+            border-bottom: 1px solid alpha(@theme_fg_color, 0.1);
+        }
+        row:selected {
+            background-color: alpha(@theme_selected_bg_color, 0.1);
+        }
+        .app-row {
+            border-radius: 6px;
+            margin: 2px 4px;
+        }
+        .app-row:hover {
+            background-color: alpha(@theme_fg_color, 0.05);
+        }
+        .toggle-button {
+            min-width: 80px;
+            border-radius: 4px;
+        }
+        .toggle-button.enabled {
+            background: alpha(@accent_color, 0.9);
+            color: @theme_selected_fg_color;
+        }
+        .toggle-button.disabled {
+            background: @theme_selected_bg_color;
+            color: @theme_selected_fg_color;
+        }
+        .app-label {
+            margin: 0 8px;
+            font-size: 1.1em;
+        }
+        """)
+        
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_USER
+        )
+        
         self.logging = logging
         self.startup_apps = {}
         
@@ -72,17 +114,23 @@ class AutostartTab(Gtk.Box):
 
         self.pack_start(header_box, False, False, 0)
         
-        if get_current_session():
+        if get_current_session() == "Hyprland":
             # Add session info
             session_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)     
-            session_label = Gtk.Label(label="Session: {}".format(get_current_session()))
+            session_label = Gtk.Label(label="Session: {}".format(get_current_session())+ "\nKeep your autostart.conf at: ~/.config/hypr/autostart.conf" )
+            session_box.pack_start(session_label, False, False, 0)
+            self.pack_start(session_box, False, True, 0)
+        if get_current_session() == "sway":
+            # Add session info
+            session_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)     
+            session_label = Gtk.Label(label="Session: {}".format(get_current_session())+ "\nKeep your autostart.conf at: ~/.config/sway/autostart.conf" )
             session_box.pack_start(session_label, False, False, 0)
             self.pack_start(session_box, False, True, 0)
         
         # Add toggle switches box
         toggles_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
         toggles_box.set_margin_top(5)
-        toggles_box.set_margin_bottom(10)
+        toggles_box.set_margin_bottom(2)
         
         # toggle to shows system autostart apps
         toggle1_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
@@ -121,6 +169,11 @@ class AutostartTab(Gtk.Box):
         
         # Set up timer check for external changes
         GLib.timeout_add(4000, self.check_external_changes)
+        
+        self.connect("realize", self.on_realize)
+        
+    def on_realize(self, widget):
+        GLib.idle_add(self.refresh_list)
     
     def on_toggle1_changed(self, switch, gparam):
         """Handle toggle for system autostart apps"""
@@ -180,9 +233,13 @@ class AutostartTab(Gtk.Box):
                         "hidden": False
                         }
                     
-        # Add hyprland apps
-        hypr_apps = get_hyprland_startup_apps()
-        startup_apps.update(hypr_apps)
+        # Add hyprland and sway apps according to session
+        if get_current_session() == "Hyprland":
+            hypr_apps = get_hyprland_startup_apps()
+            startup_apps.update(hypr_apps)
+        if get_current_session() == "sway":
+            sway_apps = get_sway_startup_apps()
+            startup_apps.update(sway_apps)
     
         self.logging.log(LogLevel.Debug, f"Found {len(startup_apps)} autostart apps")
         return startup_apps
@@ -190,6 +247,8 @@ class AutostartTab(Gtk.Box):
     def refresh_list(self):
         """Clear and repopulate the list of autostart apps"""
         # Run on a separate thread to avoid blocking the ui
+        if hasattr(self, '_refresh_thread') and self._refresh_thread.is_alive():
+            self.logging.log(LogLevel.Debug, "Refresh thread is already running")
         thread = threading.Thread(target=self.populate_list)
         thread.daemon = True
         thread.start()
@@ -217,6 +276,7 @@ class AutostartTab(Gtk.Box):
         self.logging.log(LogLevel.Debug, f"Adding app to list: {app_name}, enabled: {app['enabled']}")
         
         row = Gtk.ListBoxRow()
+        row.get_style_context().add_class("app-row")
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         row.add(hbox)
         
@@ -234,11 +294,18 @@ class AutostartTab(Gtk.Box):
             disabled_icon.set_tooltip_text("Disabled")
             hbox.pack_start(disabled_icon, False, False, 0)
         
+        # app label
         label = Gtk.Label(label=app.get("name", app_name), xalign=0)
+        label.set_line_wrap(True)
+        label.set_line_wrap_mode(Pango.WrapMode.WORD)
+        label.set_max_width_chars(40)
+        label.get_style_context().add_class("app-label")
         hbox.pack_start(label, True, True, 0)
         
         button_label = "Disable" if app["enabled"] else "Enable"
         button = Gtk.Button(label=button_label)
+        button.get_style_context().add_class("toggle-button")
+        button.get_style_context().add_class("enabled" if app["enabled"] else "disabled")
         button.connect("clicked", self.toggle_startup, app_name)
         hbox.pack_start(button, False, False, 0)
         
@@ -269,19 +336,16 @@ class AutostartTab(Gtk.Box):
 
         elif app["type"] == "hyprland":
             # hyprland specific case
-            with open(app["path"], "r") as f:
-                lines = f.readlines()
+            toggle_hyprland_startup(app_name)
 
-            if app["enabled"]:
-                lines[app["line_index"]] = f"# {lines[app['line_index']]}"  
-            else:
-                lines[app["line_index"]] = lines[app["line_index"]].lstrip("# ")
-
-            with open(app["path"], "w") as f:
-                f.writelines(lines)
-
-            # reload hyprland
-            subprocess.run(["hyprctl", "reload"])
+            app["enabled"] = not app["enabled"]
+            button.set_label("Disable" if app["enabled"] else "Enable")
+            
+            self.logging.log(LogLevel.Info, f"App toggled: {app_name}, enabled: {app['enabled']}")
+        # for sway
+        elif app["type"] == "sway":
+            # sway specific case
+            toggle_sway_startup(app_name)
 
             app["enabled"] = not app["enabled"]
             button.set_label("Disable" if app["enabled"] else "Enable")

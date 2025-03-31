@@ -4,8 +4,8 @@ from pathlib import Path
 import subprocess
 
 CONFIG_FILES = [
-            Path.home() / ".config/hypr/hyprland.conf",
-            Path.home() / ".config/hypr/autostart.conf"
+    Path.home() / ".config/hypr/hyprland.conf",
+    Path.home() / ".config/hypr/autostart.conf"
         ]
 
 def get_hyprland_startup_apps():
@@ -15,7 +15,7 @@ def get_hyprland_startup_apps():
         if hypr_config.exists():
             with open(hypr_config, "r") as f:
                 lines = f.readlines()
-                
+
             for i, line in enumerate(lines):
                 stripped = line.strip()
                 if "exec-once" in stripped:
