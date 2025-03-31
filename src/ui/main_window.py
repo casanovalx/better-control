@@ -9,7 +9,7 @@ import sys
 from utils.arg_parser import ArgParse
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib  # type: ignore
+from gi.repository import Gtk, GLib, Gdk  # type: ignore
 
 from ui.tabs.battery_tab import BatteryTab
 from ui.tabs.bluetooth_tab import BluetoothTab
@@ -30,11 +30,41 @@ class BetterControl(Gtk.Window):
         self.set_default_size(600, 400)
         self.logging.log(LogLevel.Info, "Initializing application")
 
+        # Apply custom CSS to remove button focus/selection outline
+        css_provider = Gtk.CssProvider()
+        css = b"""
+            button {
+                outline: none;
+                -gtk-outline-radius: 0;
+                border: none;
+            }
+            button:focus, button:hover, button:active {
+                outline: none;
+                box-shadow: none;
+                border: none;
+            }
+            notebook tab {
+                outline: none;
+            }
+            notebook tab:focus {
+                outline: none;
+            }
+        """
+        css_provider.load_from_data(css)
+        screen = Gdk.Screen.get_default()
+        style_context = Gtk.StyleContext()
+        style_context.add_provider_for_screen(
+            screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
         self.settings = load_settings(logging)
         self.logging.log(LogLevel.Info, "Settings loaded")
 
         self.notebook = Gtk.Notebook()
         self.add(self.notebook)
+        
+        # Connect key-press-event to disable tab selection with Tab key
+        self.notebook.connect("key-press-event", self.on_notebook_key_press)
 
         self.tabs = {}
         self.tab_pages = {}
@@ -388,6 +418,15 @@ class BetterControl(Gtk.Window):
         self.settings["last_active_tab"] = page_num
         save_settings(self.settings, self.logging)
 
+    def on_notebook_key_press(self, widget, event):
+        """Prevent tab selection with Tab key"""
+        # Get keyval from event
+        keyval = event.keyval
+        # Check if Tab key was pressed (keyval 65289)
+        if keyval == 65289:  # Tab key
+            # Stop propagation of the event
+            return True  # Event handled, don't propagate
+        return False  # Let other handlers process the event
 
     def on_destroy(self, window):
         """Save settings and quit"""
