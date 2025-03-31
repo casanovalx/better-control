@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import subprocess
 import threading
 import gi  # type: ignore
 gi.require_version('Gtk', '3.0')
@@ -9,6 +10,9 @@ from pathlib import Path
 from datetime import datetime
 from gi.repository import Gtk, GLib  # type: ignore
 from utils.logger import LogLevel, Logger
+from tools.hyprland import get_hyprland_startup_apps
+from tools.hyprland import CONFIG_FILES
+from tools.globals import get_current_session
 
 class AutostartTab(Gtk.Box):
     """Autostart settings tab"""
@@ -19,7 +23,7 @@ class AutostartTab(Gtk.Box):
         self.startup_apps = {}
         
         self.update_timeout_id = None
-        self.update_interval = 500  # in ms
+        self.update_interval = 100  # in ms
         self.is_visible = False
 
         self.set_margin_start(15)
@@ -28,6 +32,9 @@ class AutostartTab(Gtk.Box):
         self.set_margin_bottom(15)
         self.set_hexpand(True)
         self.set_vexpand(True)
+        hypr_apps = get_hyprland_startup_apps()
+        if not hypr_apps:
+            logging.log(LogLevel.Warn, f"failed to get hyprland config")
         
         # Create header box with title
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -64,6 +71,13 @@ class AutostartTab(Gtk.Box):
         header_box.pack_end(self.scan_button, False, False, 0)
 
         self.pack_start(header_box, False, False, 0)
+        
+        if get_current_session():
+            # Add session info
+            session_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)     
+            session_label = Gtk.Label(label="Session: {}".format(get_current_session()))
+            session_box.pack_start(session_label, False, False, 0)
+            self.pack_start(session_box, False, True, 0)
         
         # Add toggle switches box
         toggles_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
@@ -106,7 +120,7 @@ class AutostartTab(Gtk.Box):
         self.refresh_list()
         
         # Set up timer check for external changes
-        GLib.timeout_add(7000, self.check_external_changes)
+        GLib.timeout_add(4000, self.check_external_changes)
     
     def on_toggle1_changed(self, switch, gparam):
         """Handle toggle for system autostart apps"""
@@ -148,11 +162,27 @@ class AutostartTab(Gtk.Box):
                     
                     if is_hidden and hasattr(self, 'toggle2_switch') and not self.toggle2_switch.get_active():
                         continue
-                    startup_apps[app_name] = {"path": desktop_file, "name": app_name, "enabled": True, "hidden": is_hidden}
+                    startup_apps[app_name] = {
+                        "type": "desktop",
+                        "path": desktop_file,
+                        "name": app_name,
+                        "enabled": True,
+                        "hidden": is_hidden
+                        }
                 
                 for desktop_file in glob.glob(str(autostart_dir / "*.desktop.disabled")):
                     app_name = os.path.basename(desktop_file).replace(".desktop.disabled", "")
-                    startup_apps[app_name] = {"path": desktop_file, "name": app_name, "enabled": False, "hidden": False}
+                    startup_apps[app_name] = {
+                        "type": "desktop",
+                        "path": desktop_file,
+                        "name": app_name,
+                        "enabled": False,
+                        "hidden": False
+                        }
+                    
+        # Add hyprland apps
+        hypr_apps = get_hyprland_startup_apps()
+        startup_apps.update(hypr_apps)
     
         self.logging.log(LogLevel.Debug, f"Found {len(startup_apps)} autostart apps")
         return startup_apps
@@ -184,6 +214,8 @@ class AutostartTab(Gtk.Box):
     
     def add_app_to_list(self, app_name, app):
         """Add a single app to the listbox"""
+        self.logging.log(LogLevel.Debug, f"Adding app to list: {app_name}, enabled: {app['enabled']}")
+        
         row = Gtk.ListBoxRow()
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         row.add(hbox)
@@ -194,8 +226,15 @@ class AutostartTab(Gtk.Box):
             )
             hidden_icon.set_tooltip_text("Hidden entry")
             hbox.pack_start(hidden_icon, False, False, 0)
+            
+        if not app.get("enabled", True):
+            disabled_icon = Gtk.Image.new_from_icon_name(
+                "gtk-stop-symbolic", Gtk.IconSize.SMALL_TOOLBAR
+            )
+            disabled_icon.set_tooltip_text("Disabled")
+            hbox.pack_start(disabled_icon, False, False, 0)
         
-        label = Gtk.Label(label=app["name"], xalign=0)
+        label = Gtk.Label(label=app.get("name", app_name), xalign=0)
         hbox.pack_start(label, True, True, 0)
         
         button_label = "Disable" if app["enabled"] else "Enable"
@@ -212,21 +251,44 @@ class AutostartTab(Gtk.Box):
         app = self.startup_apps.get(app_name)
         
         if not app:
+            self.logging.log(LogLevel.Warn, f"App not found : {app_name}")
             return
         
-        if app["enabled"]:
-            new_path = app["path"] + ".disabled"
-        else:
-            new_path = app["path"].replace(".disabled", "")
+        self.logging.log(LogLevel.Info, f"Toggling app: {app_name}, current enabled: {app.get('enabled')}, type: {app.get('type')}")
         
-        try:
-            os.rename(app["path"], new_path)
-            app["path"] = new_path
+        # for both .desktop and hyprland apps
+        if app["type"] == "desktop" :
+            new_path = app["path"] + ".disabled" if app["enabled"] else app["path"].replace(".disabled", "")
+            try:
+                os.rename(app["path"], new_path)
+                app["path"] = new_path
+                app["enabled"] = not app["enabled"]
+                button.set_label("Disable" if app["enabled"] else "Enable")
+            except OSError as error:
+                self.logging.log(LogLevel.Error, f"Failed to toggle startup app: {error}")
+
+        elif app["type"] == "hyprland":
+            # hyprland specific case
+            with open(app["path"], "r") as f:
+                lines = f.readlines()
+
+            if app["enabled"]:
+                lines[app["line_index"]] = f"# {lines[app['line_index']]}"  
+            else:
+                lines[app["line_index"]] = lines[app["line_index"]].lstrip("# ")
+
+            with open(app["path"], "w") as f:
+                f.writelines(lines)
+
+            # reload hyprland
+            subprocess.run(["hyprctl", "reload"])
+
             app["enabled"] = not app["enabled"]
             button.set_label("Disable" if app["enabled"] else "Enable")
-            self.logging.log(LogLevel.Info, f"{'Enabled' if app['enabled'] else 'Disabled'} autostart app: {app_name}")
-        except OSError as error:
-            self.logging.log(LogLevel.Error, f"Failed to toggle startup app: {error}")
+            
+            self.logging.log(LogLevel.Info, f"App toggled: {app_name}, enabled: {app['enabled']}")
+        self.refresh_list()
+            
             
     def on_scan_clicked(self, widget):
         self.logging.log(LogLevel.Info, "Manually refreshing autostart apps...")
@@ -241,7 +303,7 @@ class AutostartTab(Gtk.Box):
             self.logging.log(LogLevel.Info, "Detected external changes in autostart apps, updating UI")
             self.refresh_list()
 
-        return True  # 
+        return True  
     
     def has_changes(self, new_apps, old_apps):
         """Check if there are differences between two app dictionaries"""
