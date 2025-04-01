@@ -30,6 +30,7 @@ class WiFiTab(Gtk.Box):
 
     def __init__(self, logging: Logger):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        get_wifi_css()
         self.logging = logging
         self.logging.log(LogLevel.Info, "Initializing WiFi tab")
         self.set_margin_start(15)
@@ -38,7 +39,6 @@ class WiFiTab(Gtk.Box):
         self.set_margin_bottom(15)
         self.set_hexpand(True)
         self.set_vexpand(True)
-        get_wifi_css()
 
         # Check if WiFi is supported
         result = subprocess.run(["nmcli", "-t", "-f", "DEVICE,TYPE", "device"], capture_output=True, text=True)
