@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
+import qrcode
 import subprocess
 from typing import List, Dict
+
+import qrcode.constants
 from utils.logger import LogLevel, Logger
 
 
@@ -105,7 +109,7 @@ def get_connection_info(ssid: str, logging: Logger) -> Dict[str, str]:
     """
     try:
         result = subprocess.run(
-            ["nmcli", "-t", "connection", "show", ssid], capture_output=True, text=True
+            ["nmcli", "-t", "--show-secrets", "connection", "show", ssid], capture_output=True, text=True
         )
         output = result.stdout
         info = {}
@@ -113,6 +117,8 @@ def get_connection_info(ssid: str, logging: Logger) -> Dict[str, str]:
             if ":" in line:
                 key, value = line.split(":", 1)
                 info[key.strip()] = value.strip()
+        password = info.get("802-11-wireless-security.psk", "Hidden")
+        info["password"] = password
         return info
     except Exception as e:
         logging.log(LogLevel.Error, f"Failed getting connection info: {e}")
@@ -217,3 +223,42 @@ def get_network_speed(logging: Logger) -> Dict[str, float]:
     except Exception as e:
         logging.log(LogLevel.Error, f"Failed getting network speed: {e}")
         return {"rx_bytes": 0, "tx_bytes": 0, "wifi_supported": False}
+
+def generate_wifi_qrcode(ssid: str, password: str, security: str, logging:Logger) -> str:
+    """Generate qr_code for the wifi
+    
+    Returns:
+        str: path to generated qr code image 
+    """
+    
+    try:
+        temp_dir = Path("/tmp/better-control")
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        qr_code_path = temp_dir / f"{ssid}.png"
+        if qr_code_path.exists():
+            logging.log(LogLevel.Info, f"found qr code for {ssid} at {qr_code_path}")
+            return str(qr_code_path)
+        
+        security_type = "WPA" if security.lower() != "none" else "nopass"
+        wifi_string = f"WIFI:T:{security_type};S:{ssid};P:{password};;"
+        
+        # generate the qr code
+        qr_code = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=6,
+            border=2,
+        )
+        qr_code.add_data(wifi_string)
+        qr_code.make(fit=True)
+        
+        # create qr code image
+        qr_code_image = qr_code.make_image(fill_color="black", back_color="white")
+        qr_code_image.save(qr_code_path)
+        
+        logging.log(LogLevel.Info, f"generated qr code for {ssid} at {qr_code_path}")
+        return str(qr_code_path)
+        
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Failed to generate qr code for {ssid} : {e}")

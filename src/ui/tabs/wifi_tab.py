@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import traceback
 import gi # type: ignore
 import threading
 
@@ -7,7 +8,7 @@ from utils.logger import LogLevel, Logger
 import subprocess
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib # type: ignore
+from gi.repository import Gtk, GLib, Gdk # type: ignore
 
 from tools.wifi import (
     get_wifi_status,
@@ -16,7 +17,9 @@ from tools.wifi import (
     connect_network,
     disconnect_network,
     forget_network,
-    get_network_speed
+    get_network_speed,
+    get_connection_info,
+    generate_wifi_qrcode
 )
 
 
@@ -34,6 +37,44 @@ class WiFiTab(Gtk.Box):
         self.set_margin_bottom(15)
         self.set_hexpand(True)
         self.set_vexpand(True)
+        
+        # css
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_data(b"""
+            .qr-button{
+                background-color: transparent;
+            }
+            .qr_image_holder{
+                border-radius: 12px;
+            }
+            .scan_label{
+                font-size: 18px;
+                font-weight: bold;
+            }
+            .ssid-box{
+                background: @wm_button_unfocused_bg;
+                border-radius: 6px;
+                border-bottom-right-radius: 0px;
+                border-bottom-left-radius: 0px;
+                padding: 10px;
+            }
+            .dimmed-label{
+                opacity: 0.5;
+            }
+            .secrity-box{
+                background: @wm_button_unfocused_bg;
+                border-radius: 6px;
+                border-top-right-radius: 0px;
+                border-top-left-radius: 0px;
+                padding: 10px;
+            }
+        """)
+        
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_USER
+        )
 
         # Check if WiFi is supported
         result = subprocess.run(["nmcli", "-t", "-f", "DEVICE,TYPE", "device"], capture_output=True, text=True)
@@ -305,6 +346,16 @@ class WiFiTab(Gtk.Box):
                     connected_box.pack_start(connected_icon, False, False, 0)
                     connected_box.pack_start(connected_label, False, False, 0)
                     box.pack_start(connected_box, False, True, 0)
+                    
+                    # add qr code icon
+                    qr_button = Gtk.Button()
+                    qr_button.set_tooltip_text("Show Qr code")
+                    qr_button.get_style_context().add_class("qr-button")
+                    qr_button.connect("clicked", self.show_qr_dialog)
+                    qr_icon = Gtk.Image.new_from_icon_name("qrscanner-symbolic", Gtk.IconSize.MENU)
+                    qr_button.set_image(qr_icon)
+                    box.pack_start(qr_button, False, False, 0)
+                    
 
                 # Security icon
                 if network["security"].lower() != "none":
@@ -678,3 +729,133 @@ class WiFiTab(Gtk.Box):
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Failed disconnecting from network: {e}")
             GLib.idle_add(self.update_network_list)
+            
+
+    def get_current_network(self):
+        """Get the currently connected network"""
+        try:
+            networks = get_wifi_networks(self.logging)
+            current_network = next((network for network in networks if network["in_use"]), None)
+            return current_network
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Failed to get current network: {e}")
+            return None
+
+    def show_qr_dialog(self, button):
+        """Show a qr code dialog for current network"""
+        # Get current network
+        current_network = self.get_current_network()
+        if current_network:
+            # create a dialog
+            try:
+                connection_info = get_connection_info(current_network["ssid"], self.logging)
+                
+                # generate qr code for wifi
+                qr_path = generate_wifi_qrcode(
+                    current_network["ssid"],
+                    connection_info.get("password", ""),
+                    current_network["security"],
+                    self.logging
+                )
+                
+                qr_dialog = Gtk.Dialog(
+                    title="Share Network",
+                    parent=self.get_toplevel(),
+                    flags=Gtk.DialogFlags.MODAL,
+                )
+                qr_dialog.set_default_size(0,0)
+                qr_dialog.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
+                
+                # header
+                header_bar = Gtk.HeaderBar()
+                header_bar.set_show_close_button(True)
+                header_bar.set_title("Share Network")
+                qr_dialog.set_titlebar(header_bar)
+                
+                # content area
+                content_area = qr_dialog.get_content_area()
+                content_area.set_spacing(10)
+                content_area.set_margin_top(10)
+                content_area.set_margin_bottom(10)
+                content_area.set_margin_start(10)
+                content_area.set_margin_end(10)
+                
+                # for qr code image
+                top_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+                top_box.set_margin_bottom(20)
+                
+                # image holder
+                qr_button = Gtk.Button()
+                qr_button.set_size_request(124,124)
+                qr_button.set_relief(Gtk.ReliefStyle.NONE)
+                qr_button.get_style_context().add_class("qr_image_holder")
+                top_box.pack_start(qr_button, False, False, 0)
+                
+                scan_label = Gtk.Label(label="Scan to connect")
+                scan_label.get_style_context().add_class("scan_label")
+                top_box.pack_start(scan_label, False, False, 0)
+                
+                if qr_path:
+                    qr_image = Gtk.Image()
+                    qr_image.set_size_request(120, 120)
+                    qr_image.set_margin_top(8)
+                    qr_image.set_margin_bottom(8)
+                    qr_image.set_from_file(qr_path)
+                    qr_button.add(qr_image)
+                else:
+                    error_label = Gtk.Label(label="Failed to generate QR code")
+                    qr_button.add(error_label)
+                
+                content_area.pack_start(top_box, False, True, 0)
+                
+                # network details
+                bottom_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+                bottom_box.set_margin_top(1)
+                
+                # network name
+                ssid_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+                ssid_box.set_size_request(320, 50)
+                ssid_box.get_style_context().add_class("ssid-box")
+                
+                ssid_label = Gtk.Label(label="Network Name")
+                ssid_label.get_style_context().add_class("dimmed-label")
+                ssid_label.set_markup("<b>Network Name </b>")
+                ssid_label.set_halign(Gtk.Align.START)
+                
+                ssid_name = Gtk.Label(label=current_network["ssid"])
+                ssid_name.get_style_context().add_class("dimmed-label")
+                ssid_name.set_halign(Gtk.Align.START)
+                ssid_box.pack_start(ssid_label, False, False, 0)
+                ssid_box.pack_start(ssid_name, False, False, 0)
+                
+                # network passwd
+                security_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+                security_box.set_size_request(320, 50)
+                security_box.get_style_context().add_class("secrity-box")
+                
+                security_label = Gtk.Label(label="Password")
+                security_label.get_style_context().add_class("dimmed-label")
+                security_label.set_markup("<b>Password </b>")
+                security_label.set_halign(Gtk.Align.START)
+                
+                passwd = Gtk.Label(label=connection_info.get("password", "Hidden"))
+                passwd.get_style_context().add_class("dimmed-label")
+                passwd.set_halign(Gtk.Align.START)
+                security_box.pack_start(security_label, False, False, 0)
+                security_box.pack_start(passwd, False, False, 0)
+                
+                # add to bottom box
+                bottom_box.pack_start(ssid_box, False, False, 0)
+                bottom_box.pack_start(security_box, False, False, 0)
+                
+                content_area.pack_start(bottom_box, False, True, 0)
+                
+                qr_dialog.show_all()
+                response = qr_dialog.run()
+                qr_dialog.destroy()
+                
+                                
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"failed to open qr code dialog: {e}")
+                traceback.print_exc()
+            

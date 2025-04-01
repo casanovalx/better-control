@@ -4,3 +4,4 @@ dbus-python
 psutil
 setuptools
 wheel
+qrcode

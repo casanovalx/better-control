@@ -37,10 +37,6 @@ class AutostartTab(Gtk.Box):
         .app-row:hover {
             background-color: alpha(@theme_fg_color, 0.05);
         }
-        .toggle-button {
-            min-width: 80px;
-            border-radius: 4px;
-        }
         .toggle-button.disabled {
             background: @theme_selected_bg_color;
             color: @theme_selected_fg_color;
@@ -113,13 +109,13 @@ class AutostartTab(Gtk.Box):
         if get_current_session() == "Hyprland":
             # Add session info
             session_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)     
-            session_label = Gtk.Label(label="Session: {}".format(get_current_session())+ "\nKeep your autostart.conf at: ~/.config/hypr/autostart.conf" )
+            session_label = Gtk.Label(label="Session: {}".format(get_current_session()))
             session_box.pack_start(session_label, False, False, 0)
             self.pack_start(session_box, False, True, 0)
         if get_current_session() == "sway":
             # Add session info
             session_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)     
-            session_label = Gtk.Label(label="Session: {}".format(get_current_session())+ "\nKeep your autostart.conf at: ~/.config/sway/autostart.conf" )
+            session_label = Gtk.Label(label="Session: {}".format(get_current_session()))
             session_box.pack_start(session_label, False, False, 0)
             self.pack_start(session_box, False, True, 0)
         
