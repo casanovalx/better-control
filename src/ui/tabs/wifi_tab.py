@@ -172,8 +172,8 @@ class WiFiTab(Gtk.Box):
         # Initial network list population is now deferred
         # self.update_network_list()  <- This line is removed
 
-        # Start network speed updates
-        GLib.timeout_add_seconds(1, self.update_network_speed)
+        # Store network speed timer ID so we can stop it when tab is hidden
+        self.network_speed_timer_id = None
 
         # Previous speed values for calculation
         self.prev_rx_bytes = 0
@@ -188,12 +188,23 @@ class WiFiTab(Gtk.Box):
         self.logging.log(LogLevel.Info, "WiFi tab became visible, refreshing networks")
         self.tab_visible = True
         self.update_network_list()
+        
+        # Start network speed updates when tab becomes visible
+        if self.network_speed_timer_id is None:
+            self.network_speed_timer_id = GLib.timeout_add_seconds(1, self.update_network_speed)
+        
         return False
         
     def on_tab_hidden(self, widget):
         """Handle tab becoming hidden"""
         self.logging.log(LogLevel.Info, "WiFi tab became hidden")
         self.tab_visible = False
+        
+        # Stop network speed updates when tab is hidden
+        if self.network_speed_timer_id is not None:
+            GLib.source_remove(self.network_speed_timer_id)
+            self.network_speed_timer_id = None
+            
         return False
 
     def load_networks(self):
