@@ -9,6 +9,7 @@ import subprocess
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk # type: ignore
+from tools.globals import get_wifi_css
 
 from tools.wifi import (
     get_wifi_status,
@@ -37,6 +38,7 @@ class WiFiTab(Gtk.Box):
         self.set_margin_bottom(15)
         self.set_hexpand(True)
         self.set_vexpand(True)
+        get_wifi_css()
 
         # Check if WiFi is supported
         result = subprocess.run(["nmcli", "-t", "-f", "DEVICE,TYPE", "device"], capture_output=True, text=True)
