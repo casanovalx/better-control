@@ -4,6 +4,7 @@ from pathlib import Path
 import qrcode
 import subprocess
 from typing import List, Dict
+import os
 
 import qrcode.constants
 from utils.logger import LogLevel, Logger
@@ -141,79 +142,175 @@ def connect_network(
         bool: True if connection successful, False otherwise
     """
     try:
-        # First try to connect using saved connection
-        try:
-            subprocess.run(["nmcli", "con", "up", ssid], check=True)
-            logging.log(LogLevel.Info, f"Connected to {ssid} using saved connection")
-            return True
-        except subprocess.CalledProcessError:
-            # If saved connection fails, we need to create a new connection
-            
-            # Special handling for networks like "Premier Inn Free" that need explicit security settings
-            if password and (ssid == "Premier Inn Free" or ssid.startswith("Premier Inn")):
-                logging.log(LogLevel.Info, f"Using special handling for {ssid}")
+        # If we have a password, use the direct device wifi connect approach
+        if password:
+            # First, look up if the network exists and check its security type
+            try:
+                networks = get_wifi_networks(logging)
+                network = next((n for n in networks if n["ssid"] == ssid), None)
+                
+                # Default to creating a new connection with explicit security settings
+                # This approach works better for networks with spaces in names or special security requirements
+                logging.log(LogLevel.Info, f"Creating connection for network: {ssid}")
+                
+                # First, try to delete any existing connection with this name to avoid conflicts
                 try:
-                    # Delete any existing connections with this name first to avoid conflicts
-                    try:
-                        subprocess.run(["nmcli", "con", "delete", ssid], check=False)
-                    except:
-                        pass
+                    delete_cmd = f'nmcli connection delete "{ssid}"'
+                    subprocess.run(delete_cmd, shell=True, capture_output=True, text=True)
+                    logging.log(LogLevel.Debug, f"Removed any existing connection named '{ssid}'")
+                except Exception as e:
+                    # It's fine if this fails - might not exist yet
+                    logging.log(LogLevel.Debug, f"No existing connection to delete or other error: {e}")
+                
+                # Create a new connection with the right security settings
+                conn_name = ssid
+                if not remember:
+                    conn_name = f"{ssid}-temp"
+                
+                # Create new connection with explicit security settings
+                cmd_str = f'nmcli connection add con-name "{conn_name}" type wifi ssid "{ssid}" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "{password}"'
+                
+                logging.log(LogLevel.Debug, f"Creating connection with command (password masked): nmcli connection add con-name \"{conn_name}\" type wifi ssid \"{ssid}\" wifi-sec.key-mgmt wpa-psk wifi-sec.psk ********")
+                
+                result = subprocess.run(
+                    cmd_str,
+                    capture_output=True,
+                    text=True,
+                    shell=True
+                )
+                
+                # Log the result
+                if result.stdout:
+                    logging.log(LogLevel.Debug, f"Connection creation output: {result.stdout}")
+                if result.stderr:
+                    logging.log(LogLevel.Debug, f"Connection creation error: {result.stderr}")
+                
+                # Now activate the connection
+                if result.returncode == 0:
+                    logging.log(LogLevel.Info, f"Created connection profile for {ssid}, now connecting...")
                     
-                    # Create a new connection with explicit security settings
-                    con_name = ssid
-                    if not remember:
-                        con_name = f"{ssid}-temp"
-                        
-                    # Create connection with explicit security settings
-                    cmd = [
-                        "nmcli", "con", "add",
-                        "con-name", con_name,
-                        "type", "wifi",
-                        "ssid", ssid,
-                        "wifi-sec.key-mgmt", "wpa-psk",
-                        "wifi-sec.psk", password
-                    ]
-                    subprocess.run(cmd, check=True)
+                    # Connect to the newly created connection
+                    up_cmd = f'nmcli connection up "{conn_name}"'
+                    up_result = subprocess.run(
+                        up_cmd,
+                        capture_output=True,
+                        text=True,
+                        shell=True
+                    )
                     
-                    # Activate the connection
-                    subprocess.run(["nmcli", "con", "up", con_name], check=True)
+                    # Log the connection result
+                    if up_result.stdout:
+                        logging.log(LogLevel.Debug, f"Connection activation output: {up_result.stdout}")
+                    if up_result.stderr:
+                        logging.log(LogLevel.Debug, f"Connection activation error: {up_result.stderr}")
                     
-                    # If temporary, schedule deletion
-                    if not remember:
+                    # Clean up if temporary
+                    if not remember and up_result.returncode == 0:
                         def delete_later():
                             try:
-                                time.sleep(5)  # Wait to ensure connection is established
-                                subprocess.run(["nmcli", "con", "delete", con_name], check=True)
-                            except:
-                                pass
-                        
+                                time.sleep(2)  # Give it a moment to connect fully
+                                delete_cmd = f'nmcli connection delete "{conn_name}"'
+                                subprocess.run(delete_cmd, shell=True)
+                                logging.log(LogLevel.Debug, f"Removed temporary connection {conn_name}")
+                            except Exception as e:
+                                logging.log(LogLevel.Error, f"Failed to remove temporary connection: {e}")
+                                
                         cleanup = threading.Thread(target=delete_later)
                         cleanup.daemon = True
                         cleanup.start()
                     
-                    return True
-                except subprocess.CalledProcessError as e:
-                    logging.log(LogLevel.Error, f"Failed connecting to {ssid} with special handling: {e}")
-                    return False
-            
-            # Standard handling for normal networks
-            try:
-                cmd = ["nmcli", "device", "wifi", "connect", ssid]
-                
-                if password:
-                    cmd.extend(["password", password])
-                
-                if not remember:
-                    cmd.append("--temporary")
+                    if up_result.returncode == 0:
+                        logging.log(LogLevel.Info, f"Successfully connected to {ssid}")
+                        return True
+                    else:
+                        logging.log(LogLevel.Error, f"Failed to activate connection: {up_result.stderr or 'Unknown error'}")
+                        return False
+                else:
+                    logging.log(LogLevel.Error, f"Failed to create connection profile: {result.stderr or 'Unknown error'}")
                     
-                subprocess.run(cmd, check=True)
-                logging.log(LogLevel.Info, f"Connected to {ssid} using standard connection")
-                return True
-            except subprocess.CalledProcessError as e:
-                logging.log(LogLevel.Error, f"Failed connecting to network: {e}")
+                    # As a fallback, try the simple device wifi connect approach
+                    fallback_cmd = f'nmcli device wifi connect "{ssid}" password "{password}"'
+                    if not remember:
+                        fallback_cmd += " --temporary"
+                        
+                    logging.log(LogLevel.Debug, f"Trying fallback connection method (password masked): nmcli device wifi connect \"{ssid}\" password ********")
+                    fallback_result = subprocess.run(
+                        fallback_cmd,
+                        capture_output=True,
+                        text=True,
+                        shell=True
+                    )
+                    
+                    if fallback_result.returncode == 0:
+                        logging.log(LogLevel.Info, f"Connected to {ssid} using fallback method")
+                        return True
+                    else:
+                        logging.log(LogLevel.Error, f"Fallback connection failed: {fallback_result.stderr or 'Unknown error'}")
+                        return False
+                        
+            except Exception as e:
+                logging.log(LogLevel.Error, f"Error during connection process: {e}")
+                return False
+        else:
+            # Try to connect using saved connection if no password provided
+            try:
+                # Use shell=True with quoted SSID
+                cmd_str = f'nmcli con up "{ssid}"'
+                
+                result = subprocess.run(
+                    cmd_str,
+                    capture_output=True, 
+                    text=True,
+                    shell=True
+                )
+                
+                # Log all output
+                if result.stdout:
+                    logging.log(LogLevel.Debug, f"Saved connection output: {result.stdout}")
+                if result.stderr:
+                    logging.log(LogLevel.Debug, f"Saved connection error: {result.stderr}")
+                
+                # Check result code
+                if result.returncode == 0:
+                    logging.log(LogLevel.Info, f"Connected to {ssid} using saved connection")
+                    return True
+                else:
+                    # Log the error details for debugging
+                    logging.log(LogLevel.Debug, f"Failed to connect using saved connection: {result.stderr}")
+                    
+                    # Check if the error is about missing password
+                    if "Secrets were required, but not provided" in (result.stderr or ""):
+                        logging.log(LogLevel.Debug, f"Connection requires password which wasn't provided")
+                        # Return false to trigger the password dialog in the UI
+                        return False
+                    
+                    # Try direct connection as fallback
+                    cmd_str = f'nmcli device wifi connect "{ssid}"'
+                    
+                    if not remember:
+                        cmd_str += " --temporary"
+                        
+                    logging.log(LogLevel.Debug, f"Attempting direct connection using command: {cmd_str}")
+                    result = subprocess.run(cmd_str, capture_output=True, text=True, shell=True)
+                    
+                    # Log all output
+                    if result.stdout:
+                        logging.log(LogLevel.Debug, f"Direct connection output: {result.stdout}")
+                    if result.stderr:
+                        logging.log(LogLevel.Debug, f"Direct connection error: {result.stderr}")
+                    
+                    # Check result code
+                    if result.returncode == 0:
+                        logging.log(LogLevel.Info, f"Connected to {ssid} using direct connection")
+                        return True
+                    else:
+                        logging.log(LogLevel.Error, f"Failed direct connection: {result.stderr or 'Unknown error'}")
+                        return False
+            except Exception as e:
+                logging.log(LogLevel.Error, f"Exception during connection attempt: {e}")
                 return False
     except Exception as e:
-        logging.log(LogLevel.Error, f"Failed connecting to network: {e}")
+        logging.log(LogLevel.Error, f"Exception in connect_network: {e}")
         return False
 
 
