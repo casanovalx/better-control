@@ -51,6 +51,33 @@ class BetterControl(Gtk.Window):
             notebook tab:focus {
                 outline: none;
             }
+            /* Make selections invisible */
+            selection {
+                background-color: transparent;
+                color: inherit;
+            }
+            *:selected {
+                background-color: transparent;
+                color: inherit;
+            }
+            textview text selection {
+                background-color: transparent;
+            }
+            entry selection {
+                background-color: transparent;
+            }
+            label selection {
+                background-color: transparent;
+            }
+            treeview:selected {
+                background-color: transparent;
+            }
+            menuitem:selected {
+                background-color: transparent;
+            }
+            listbox row:selected {
+                background-color: transparent;
+            }
         """
         css_provider.load_from_data(css)
         screen = Gdk.Screen.get_default()
@@ -67,6 +94,8 @@ class BetterControl(Gtk.Window):
         
         # Connect key-press-event to disable tab selection with Tab key
         self.notebook.connect("key-press-event", self.on_notebook_key_press)
+        # Also connect key-press-event to the main window to catch all tab presses
+        self.connect("key-press-event", self.on_key_press)
 
         self.tabs = {}
         self.tab_pages = {}
@@ -490,10 +519,17 @@ class BetterControl(Gtk.Window):
         """Prevent tab selection with Tab key"""
         # Get keyval from event
         keyval = event.keyval
-        # Check if Tab key was pressed (keyval 65289)
-        if keyval == 65289:  # Tab key
+        # Prevent Tab key (65289) and Shift+Tab (65056)
+        if keyval in (65289, 65056):
             # Stop propagation of the event
             return True  # Event handled, don't propagate
+        return False  # Let other handlers process the event
+
+    def on_key_press(self, widget, event):
+        """Prevent tab selection globally"""
+        keyval = event.keyval
+        if keyval in (65289, 65056):  # Tab and Shift+Tab
+            return True  # Stop propagation
         return False  # Let other handlers process the event
 
     def on_destroy(self, window):
