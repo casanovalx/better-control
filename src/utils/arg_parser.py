@@ -142,6 +142,9 @@ class ArgParse:
         )
         self.arg_print(f"   -h, --help                      Prints this message")
         self.arg_print(
+            f"   -a, --autostart                   Starts with the autostart tab open",
+        )
+        self.arg_print(
             f"   -B, --battery                   Starts with the battery tab open",
         )
         self.arg_print(

@@ -1,5 +1,7 @@
 pygobject
+pygobject-stubs
 dbus-python
 psutil
 setuptools
 wheel
+qrcode
