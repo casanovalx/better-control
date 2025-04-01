@@ -169,6 +169,9 @@ class ArgParse:
             f"                                       or output to stdout based on the log level if given a value between 0, and 3.",
         )
         self.arg_print(
+            f"   -r, --redact                    Redact sensitive information from logs (network names, device IDs, etc.)",
+        )
+        self.arg_print(
             f"    -s,--size <intxint>             Sets a custom window size"
         )
 
