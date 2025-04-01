@@ -37,44 +37,6 @@ class WiFiTab(Gtk.Box):
         self.set_margin_bottom(15)
         self.set_hexpand(True)
         self.set_vexpand(True)
-        
-        # css
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(b"""
-            .qr-button{
-                background-color: transparent;
-            }
-            .qr_image_holder{
-                border-radius: 12px;
-            }
-            .scan_label{
-                font-size: 18px;
-                font-weight: bold;
-            }
-            .ssid-box{
-                background: @wm_button_unfocused_bg;
-                border-radius: 6px;
-                border-bottom-right-radius: 0px;
-                border-bottom-left-radius: 0px;
-                padding: 10px;
-            }
-            .dimmed-label{
-                opacity: 0.5;
-            }
-            .secrity-box{
-                background: @wm_button_unfocused_bg;
-                border-radius: 6px;
-                border-top-right-radius: 0px;
-                border-top-left-radius: 0px;
-                padding: 10px;
-            }
-        """)
-        
-        Gtk.StyleContext.add_provider_for_screen(
-            Gdk.Screen.get_default(),
-            css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_USER
-        )
 
         # Check if WiFi is supported
         result = subprocess.run(["nmcli", "-t", "-f", "DEVICE,TYPE", "device"], capture_output=True, text=True)
