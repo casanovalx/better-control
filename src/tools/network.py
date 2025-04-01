@@ -129,13 +129,11 @@ def connect_to_wifi(
             add_command = [
                 "nmcli",
                 "con",
-                "add",
+                "add",  
                 "type",
                 "wifi",
                 "con-name",
-                ssid,
                 "ssid",
-                ssid,
                 "wifi-sec.key-mgmt",
                 "wpa-psk",
                 "wifi-sec.psk",
@@ -155,14 +153,12 @@ def connect_to_wifi(
                 "type",
                 "wifi",
                 "con-name",
-                ssid,
                 "ssid",
-                ssid,
             ]
             subprocess.run(add_command, check=True)
 
         # Activate the connection
-        subprocess.run(["nmcli", "con", "up", ssid], check=True)
+        subprocess.run(["nmcli", "con", "up", "ssid"], check=True)
         return True
 
     except subprocess.CalledProcessError as e:

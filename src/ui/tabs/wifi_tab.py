@@ -34,6 +34,9 @@ class WiFiTab(Gtk.Box):
         self.set_margin_bottom(15)
         self.set_hexpand(True)
         self.set_vexpand(True)
+        
+        # Track tab visibility status
+        self.tab_visible = False
 
         # Check if WiFi is supported
         result = subprocess.run(["nmcli", "-t", "-f", "DEVICE,TYPE", "device"], capture_output=True, text=True)
@@ -170,10 +173,33 @@ class WiFiTab(Gtk.Box):
         # Previous speed values for calculation
         self.prev_rx_bytes = 0
         self.prev_tx_bytes = 0
+        
+        # Connect signals for tab visibility tracking
+        self.connect("map", self.on_tab_shown)
+        self.connect("unmap", self.on_tab_hidden)
+
+    def on_tab_shown(self, widget):
+        """Handle tab becoming visible"""
+        self.logging.log(LogLevel.Info, "WiFi tab became visible, refreshing networks")
+        self.tab_visible = True
+        self.update_network_list()
+        return False
+        
+    def on_tab_hidden(self, widget):
+        """Handle tab becoming hidden"""
+        self.logging.log(LogLevel.Info, "WiFi tab became hidden")
+        self.tab_visible = False
+        return False
 
     def load_networks(self):
         """Load WiFi networks list - to be called after all tabs are loaded"""
         self.logging.log(LogLevel.Info, "Loading WiFi networks after tabs initialization")
+        
+        # Only load networks if the tab is visible
+        if not self.tab_visible:
+            self.logging.log(LogLevel.Info, "WiFi tab not visible, skipping initial network loading")
+            return
+            
         # Add a loading indicator
         row = Gtk.ListBoxRow()
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -350,7 +376,12 @@ class WiFiTab(Gtk.Box):
     def update_network_list(self):
         """Update the list of WiFi networks"""
         self.logging.log(LogLevel.Info, "Refreshing WiFi networks list")
-
+        
+        # Don't refresh if tab is not visible
+        if not self.tab_visible:
+            self.logging.log(LogLevel.Info, "WiFi tab not visible, skipping network refresh")
+            return
+            
         # Clear existing networks
         for child in self.networks_box.get_children():
             self.networks_box.remove(child)
@@ -404,7 +435,7 @@ class WiFiTab(Gtk.Box):
 
         return True  # Continue the timer
 
-    def on_power_switched(self, switch):
+    def on_power_switched(self, switch, gparam):
         """Handle WiFi power switch toggle"""
         state = switch.get_active()
         self.logging.log(LogLevel.Info, f"Setting WiFi power: {'ON' if state else 'OFF'}")
@@ -412,8 +443,8 @@ class WiFiTab(Gtk.Box):
         def power_toggle_thread():
             try:
                 set_wifi_power(state, self.logging)
-                if state:
-                    # If Wi-Fi was turned on, update networks list
+                if state and self.tab_visible:
+                    # Only refresh network list if tab is visible
                     GLib.idle_add(self.update_network_list)
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Failed setting WiFi power: {e}")
@@ -471,21 +502,29 @@ class WiFiTab(Gtk.Box):
         # Try connecting in background thread
         def connect_thread():
             try:
-                # First try to connect without password
-                success = connect_network(ssid, self.logging)
-                if success:
-                    # Successfully connected
+                # First try to connect with saved credentials
+                if connect_network(ssid, self.logging):
                     GLib.idle_add(self.update_network_list)
                     return
-                # If connection failed, show password dialog on main thread
-                GLib.idle_add(self._show_password_dialog, ssid)
+
+                # If that fails, check if network requires password
+                networks = get_wifi_networks(self.logging)
+                network = next((n for n in networks if n["ssid"] == ssid), None)
+                
+                if network and network["security"].lower() != "none":
+                    # Network requires password and saved credentials failed, show password dialog
+                    GLib.idle_add(self._show_password_dialog, ssid)
+                else:
+                    # Failed to connect but no password needed, just refresh UI
+                    GLib.idle_add(self.update_network_list)
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Failed connecting to network: {e}")
-                GLib.idle_add(self.update_network_list)  # Refresh to clear connecting status
-        # Start connection thread
+                GLib.idle_add(self.update_network_list)
+
         thread = threading.Thread(target=connect_thread)
         thread.daemon = True
         thread.start()
+
     def _show_password_dialog(self, ssid):
         """Show password dialog for secured networks"""
         networks = get_wifi_networks(self.logging)
@@ -530,10 +569,23 @@ class WiFiTab(Gtk.Box):
                 # Connect with password in background thread
                 def connect_with_password_thread():
                     try:
-                        if connect_network(ssid, password, remember):
+                        if connect_network(ssid, self.logging, password, remember):
                             GLib.idle_add(self.update_network_list)
                         else:
-                            # Failed to connect, just refresh UI to clear status
+                            # Show error dialog
+                            error_dialog = Gtk.MessageDialog(
+                                transient_for=self.get_toplevel(),
+                                flags=0,
+                                message_type=Gtk.MessageType.ERROR,
+                                buttons=Gtk.ButtonsType.OK,
+                                text="Failed to connect"
+                            )
+                            error_dialog.format_secondary_text(
+                                "Please check your password and try again."
+                            )
+                            error_dialog.run()
+                            error_dialog.destroy()
+                            # Refresh UI to clear status
                             GLib.idle_add(self.update_network_list)
                     except Exception as e:
                         self.logging.log(LogLevel.Error, f"Failed connecting to network with password: {e}")

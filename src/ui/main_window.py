@@ -9,7 +9,7 @@ import sys
 from utils.arg_parser import ArgParse
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib  # type: ignore
+from gi.repository import Gtk, GLib, Gdk  # type: ignore
 
 from ui.tabs.battery_tab import BatteryTab
 from ui.tabs.bluetooth_tab import BluetoothTab
@@ -30,11 +30,41 @@ class BetterControl(Gtk.Window):
         self.set_default_size(600, 400)
         self.logging.log(LogLevel.Info, "Initializing application")
 
+        # Apply custom CSS to remove button focus/selection outline
+        css_provider = Gtk.CssProvider()
+        css = b"""
+            button {
+                outline: none;
+                -gtk-outline-radius: 0;
+                border: none;
+            }
+            button:focus, button:hover, button:active {
+                outline: none;
+                box-shadow: none;
+                border: none;
+            }
+            notebook tab {
+                outline: none;
+            }
+            notebook tab:focus {
+                outline: none;
+            }
+        """
+        css_provider.load_from_data(css)
+        screen = Gdk.Screen.get_default()
+        style_context = Gtk.StyleContext()
+        style_context.add_provider_for_screen(
+            screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
         self.settings = load_settings(logging)
         self.logging.log(LogLevel.Info, "Settings loaded")
 
         self.notebook = Gtk.Notebook()
         self.add(self.notebook)
+        
+        # Connect key-press-event to disable tab selection with Tab key
+        self.notebook.connect("key-press-event", self.on_notebook_key_press)
 
         self.tabs = {}
         self.tab_pages = {}
@@ -81,7 +111,9 @@ class BetterControl(Gtk.Window):
         for tab_name, tab_class in tab_classes.items():
             try:
                 # Create the tab
+                self.logging.log(LogLevel.Debug, f"Starting to create {tab_name} tab")
                 tab = tab_class(self.logging)
+                self.logging.log(LogLevel.Debug, f"Successfully created {tab_name} tab instance")
 
                 # Update UI from main thread
                 GLib.idle_add(self._add_tab_to_ui, tab_name, tab)
@@ -90,7 +122,12 @@ class BetterControl(Gtk.Window):
                 GLib.usleep(10000)  # 10ms delay
 
             except Exception as e:
-                self.logging.log(LogLevel.Error, f"Failed creating {tab_name} tab: {e}")
+                error_msg = f"Failed creating {tab_name} tab: {e}"
+                self.logging.log(LogLevel.Error, error_msg)
+                # Print full traceback to stderr
+                import traceback
+                traceback.print_exc()
+                print(f"FATAL ERROR: {error_msg}", file=sys.stderr)
 
         # Complete initialization on main thread
         GLib.idle_add(self._finish_tab_loading)
@@ -126,37 +163,58 @@ class BetterControl(Gtk.Window):
         # Show all tabs to ensure content is visible
         self.show_all()
 
-        # Load WiFi networks after all tabs are loaded
-        if "Wi-Fi" in self.tabs:
-            self.tabs["Wi-Fi"].load_networks()
-
+        # Initialize the active tab
+        active_tab = None
+        
         # Set active tab based on command line arguments
         if self.arg_parser.find_arg(("-V", "--volume")) and "Volume" in self.tab_pages:
             self.notebook.set_current_page(self.tab_pages["Volume"])
+            active_tab = "Volume"
         elif self.arg_parser.find_arg(("-w", "--wifi")) and "Wi-Fi" in self.tab_pages:
             self.notebook.set_current_page(self.tab_pages["Wi-Fi"])
+            active_tab = "Wi-Fi"
         elif (
             self.arg_parser.find_arg(("-b", "--bluetooth"))
             and "Bluetooth" in self.tab_pages
         ):
             self.notebook.set_current_page(self.tab_pages["Bluetooth"])
+            active_tab = "Bluetooth"
         elif (
             self.arg_parser.find_arg(("-B", "--battery"))
             and "Battery" in self.tab_pages
         ):
             self.notebook.set_current_page(self.tab_pages["Battery"])
+            active_tab = "Battery"
         elif (
             self.arg_parser.find_arg(("-d", "--display"))
             and "Display" in self.tab_pages
         ):
             self.notebook.set_current_page(self.tab_pages["Display"])
+            active_tab = "Display"
         else:
             # Use last active tab from settings
             last_tab = self.settings.get("last_active_tab", 0)
             if last_tab < self.notebook.get_n_pages():
                 self.notebook.set_current_page(last_tab)
+                # Find which tab is at this position
+                for tab_name, tab_page in self.tab_pages.items():
+                    if tab_page == last_tab:
+                        active_tab = tab_name
+                        break
+        
+        # Set visibility status on the active tab
+        if active_tab == "Wi-Fi" and active_tab in self.tabs:
+            self.tabs[active_tab].tab_visible = True
+            
+        # Load WiFi networks if WiFi tab is active
+        if "Wi-Fi" in self.tabs and active_tab == "Wi-Fi":
+            self.tabs["Wi-Fi"].load_networks()
+        
         # Remove loading tab
         self.notebook.remove_page(self.loading_page)
+        
+        # Connect page switch signal to handle tab visibility
+        self.notebook.connect("switch-page", self.on_tab_switched)
 
         return False  # Required for GLib.idle_add
 
@@ -377,10 +435,29 @@ class BetterControl(Gtk.Window):
 
     def on_tab_switched(self, notebook, page, page_num):
         """Handle tab switching"""
+        
+        # Update tab visibility status 
+        for tab_name, tab in self.tabs.items():
+            # Check if this tab is at the current page number
+            is_visible = self.tab_pages.get(tab_name) == page_num
+            
+            # If tab has tab_visible property (WiFi tab), update it
+            if hasattr(tab, 'tab_visible'):
+                tab.tab_visible = is_visible
 
+        # Save the active tab setting
         self.settings["last_active_tab"] = page_num
         save_settings(self.settings, self.logging)
 
+    def on_notebook_key_press(self, widget, event):
+        """Prevent tab selection with Tab key"""
+        # Get keyval from event
+        keyval = event.keyval
+        # Check if Tab key was pressed (keyval 65289)
+        if keyval == 65289:  # Tab key
+            # Stop propagation of the event
+            return True  # Event handled, don't propagate
+        return False  # Let other handlers process the event
 
     def on_destroy(self, window):
         """Save settings and quit"""
