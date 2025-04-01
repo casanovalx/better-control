@@ -43,7 +43,7 @@ Before installing, ensure you have `git` and `base-devel` installed.
 | Dependency | Purpose |
 |------------|---------|
 | **GTK 3** | UI framework |
-| **Python Libraries** | python-gobject, python-dbus, python-psutil |
+| **Python Libraries** | python-gobject, python-dbus, python-psutil, python-qrcode |
 | **Requests** | For checking updates |
 
 ### Feature-Specific Dependencies
@@ -85,9 +85,7 @@ yay -S better-control-git
 <summary><b>🐧 Debian-based Distributions</b></summary>
 
 ```bash
-sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils \
-pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon \
-gammastep python3-requests
+sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode
 ```
 </details>
 
@@ -95,8 +93,7 @@ gammastep python3-requests
 <summary><b>🎩 Fedora-based Distributions</b></summary>
 
 ```bash
-sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl \
-python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests
+sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode
 ```
 </details>
 
@@ -104,8 +101,7 @@ python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-req
 <summary><b>🌀 Void Linux</b></summary>
 
 ```bash
-sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl \
-python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests
+sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode
 ```
 </details>
 
@@ -113,18 +109,28 @@ python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-req
 <summary><b>🏔️ Alpine Linux</b></summary>
 
 ```bash
-sudo apk add gtk3 networkmanager bluez bluez-utils pulseaudio brightnessctl \
-py3-gobject py3-dbus python3 power-profiles-daemon gammastep py3-requests
+sudo apk add gtk3 networkmanager bluez bluez-utils pulseaudio brightnessctl py3-gobject py3-dbus python3 power-profiles-daemon gammastep py3-requests py3-qrcode
 ```
 </details>
 
 ### Manual Installation Steps
 
 ```bash
-git clone https://github.com/quantumvoid0/better-control
+git clone https://github.com/quantumvoid0/better-control.git
 cd better-control
+make
 sudo make install
 ```
+
+## 📚 Documentation
+
+For more information, please refer to the [official documentation](https://github.com/quantumvoid0/better-control/wiki).
+
+<br>
+
+## 📄 License
+
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for more details.
 
 <br>
 
