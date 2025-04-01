@@ -43,14 +43,13 @@ Before installing, ensure you have `git` and `base-devel` installed.
 | Dependency | Purpose |
 |------------|---------|
 | **GTK 3** | UI framework |
-| **Python Libraries** | python-gobject, python-dbus, python-psutil, python-qrcode |
-| **Requests** | For checking updates |
+| **Python Libraries** | python-gobject, python-dbus, python-psutil |
 
 ### Feature-Specific Dependencies
 
 | Feature | Required Packages |
 |---------|------------------|
-| **Wi-Fi Management** | NetworkManager |
+| **Wi-Fi Management** | NetworkManager, python-qrcode |
 | **Bluetooth** | BlueZ & BlueZ Utils |
 | **Audio Control** | PipeWire or PulseAudio |
 | **Brightness** | brightnessctl |
