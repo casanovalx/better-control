@@ -157,7 +157,23 @@ class SettingsTab(Gtk.Box):
     def update_ui_order(self):
         """Update the order of rows in the UI to match the current tab order"""
         # Get current tab order
-        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"])
+        tab_order = self.settings.get("tab_order", ["Wi-Fi", "Volume", "Bluetooth", "Battery", "Display", "Autostart"])
+        
+        # Make sure all known tabs are in the tab_order
+        all_tabs = ["Wi-Fi", "Volume", "Bluetooth", "Battery", "Display", "Autostart"]
+        for tab in all_tabs:
+            if tab not in tab_order:
+                # If we're adding Autostart for the first time, put it at the end
+                if tab == "Autostart":
+                    tab_order.append(tab)
+                else:
+                    tab_order.append(tab)
+        
+        # Update the settings with the modified order
+        self.settings["tab_order"] = tab_order
+        # Save the settings to the file
+        save_settings(self.settings, self.logging)
+        
         # Remove all rows from the section
         for row in self.tab_section.get_children():
             if isinstance(row, Gtk.Box) and row != self.tab_section.get_children()[0]:  # Skip the label
@@ -189,7 +205,7 @@ class SettingsTab(Gtk.Box):
     def on_move_up_clicked(self, button, tab_name):
         """Handle move up button click"""
         # Get current tab order
-        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"])
+        tab_order = self.settings.get("tab_order", ["Wi-Fi", "Volume", "Bluetooth", "Battery", "Display", "Autostart"])
         # Find current index
         current_index = tab_order.index(tab_name)
         if current_index > 0:
@@ -209,22 +225,27 @@ class SettingsTab(Gtk.Box):
     def on_move_down_clicked(self, button, tab_name):
         """Handle move down button click"""
         # Get current tab order
-        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display","Autostart"])
+        tab_order = self.settings.get("tab_order", ["Wi-Fi", "Volume", "Bluetooth", "Battery", "Display", "Autostart"])
+        
         # Find current index
         current_index = tab_order.index(tab_name)
-        if current_index < len(tab_order) - 1:
-            # Swap with next tab
-            tab_order[current_index], tab_order[current_index + 1] = tab_order[current_index + 1], tab_order[current_index]
+        
+        # Don't allow moving down if it's already the last tab
+        if current_index >= len(tab_order) - 1:
+            return
+            
+        # Swap with next tab
+        tab_order[current_index], tab_order[current_index + 1] = tab_order[current_index + 1], tab_order[current_index]
 
-            # Update settings
-            self.settings["tab_order"] = tab_order
-            save_settings(self.settings, self.logging)
+        # Update settings
+        self.settings["tab_order"] = tab_order
+        save_settings(self.settings, self.logging)
 
-            # Update UI order
-            self.update_ui_order()
+        # Update UI order
+        self.update_ui_order()
 
-            # Emit signal to notify the main window
-            self.emit("tab-order-changed", tab_order)
+        # Emit signal to notify the main window
+        self.emit("tab-order-changed", tab_order)
             
     def save_window_size(self, width: int, height: int):
         """Save window size to settings

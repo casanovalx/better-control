@@ -160,6 +160,21 @@ class BetterControl(Gtk.Window):
         """Finish tab loading by applying visibility and order (on main thread)"""
         self.logging.log(LogLevel.Info, "All tabs created, finalizing UI")
 
+        # Ensure all tabs are present in the tab_order setting
+        tab_order = self.settings.get("tab_order", ["Wi-Fi", "Volume", "Bluetooth", "Battery", "Display", "Autostart"])
+        
+        # Make sure all created tabs are in the tab_order
+        for tab_name in self.tabs.keys():
+            if tab_name not in tab_order:
+                # If we're adding Autostart for the first time, put it at the end
+                if tab_name == "Autostart":
+                    tab_order.append(tab_name)
+                else:
+                    tab_order.append(tab_name)
+        
+        # Update the settings with the complete tab list
+        self.settings["tab_order"] = tab_order
+
         # Apply tab order (visibility is already applied)
         self.apply_tab_order()
 
@@ -266,6 +281,19 @@ class BetterControl(Gtk.Window):
         tab_order = self.settings.get(
             "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"]
         )
+        
+        # Make sure all tabs are present in the tab_order
+        for tab_name in self.tabs.keys():
+            if tab_name not in tab_order:
+                # If we're adding Autostart for the first time, put it at the end
+                if tab_name == "Autostart":
+                    tab_order.append(tab_name)
+                else:
+                    tab_order.append(tab_name)
+        
+        # Update the settings with the modified order
+        self.settings["tab_order"] = tab_order
+        
         # Reorder tabs according to settings
         for tab_name in tab_order:
             if tab_name in self.tabs and tab_name in self.tab_pages:
@@ -277,7 +305,7 @@ class BetterControl(Gtk.Window):
                 for name, num in self.tab_pages.items():
                     if num > current_page:
                         self.tab_pages[name] = num - 1
-                self.tab_pages[tab_name] = len(self.tab_pages)
+                self.tab_pages[tab_name] = len(self.tab_pages) - 1
 
     def get_icon_for_tab(self, tab_name):
         """Get icon name for a tab"""
@@ -471,6 +499,20 @@ class BetterControl(Gtk.Window):
     def on_destroy(self, window):
         """Save settings and quit"""
         self.settings["last_active_tab"] = self.notebook.get_current_page()
+
+        # Ensure Autostart is in the tab_order setting before saving
+        if "tab_order" in self.settings:
+            tab_order = self.settings["tab_order"]
+            # Make sure all known tabs are included
+            all_tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"]
+            for tab_name in all_tabs:
+                if tab_name not in tab_order:
+                    # If we're adding Autostart for the first time, put it at the end
+                    if tab_name == "Autostart":
+                        tab_order.append(tab_name)
+                    else:
+                        tab_order.append(tab_name)
+            self.settings["tab_order"] = tab_order
 
         if hasattr(self, "monitor_pulse_events_running"):
             self.monitor_pulse_events_running = False
