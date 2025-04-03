@@ -528,8 +528,19 @@ class BetterControl(Gtk.Window):
     def on_key_press(self, widget, event):
         """Prevent tab selection globally"""
         keyval = event.keyval
+        state = event.state
+        
         if keyval in (65289, 65056):  # Tab and Shift+Tab
             return True  # Stop propagation
+        # on shift + s show settings dialog
+        if keyval in (115, 83) and state & Gdk.ModifierType.SHIFT_MASK:
+            # show settings dialog
+            self.toggle_settings_panel(None)
+            return True
+        #  ctrl + q or q will quit the application
+        if keyval in (113, 81) or  (keyval == 113 and state & Gdk.ModifierType.CONTROL_MASK):
+            self.logging.log(LogLevel.Info, "Application quitted")
+            Gtk.main_quit()
         return False  # Let other handlers process the event
 
     def on_destroy(self, window):
