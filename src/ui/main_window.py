@@ -16,6 +16,7 @@ from ui.tabs.autostart_tab import AutostartTab
 from ui.tabs.battery_tab import BatteryTab
 from ui.tabs.bluetooth_tab import BluetoothTab
 from ui.tabs.display_tab import DisplayTab
+from ui.tabs.power_tab import PowerTab
 from ui.tabs.volume_tab import VolumeTab
 from ui.tabs.wifi_tab import WiFiTab
 from ui.tabs.settings_tab import SettingsTab
@@ -137,6 +138,7 @@ class BetterControl(Gtk.Window):
             "Bluetooth": BluetoothTab,
             "Battery": BatteryTab,
             "Display": DisplayTab,
+            "Power": PowerTab,
             "Autostart": AutostartTab,
         }
         # Create tabs one by one
@@ -190,13 +192,21 @@ class BetterControl(Gtk.Window):
         self.logging.log(LogLevel.Info, "All tabs created, finalizing UI")
 
         # Ensure all tabs are present in the tab_order setting
-        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"])
+        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"])
         
         # Make sure all created tabs are in the tab_order
         for tab_name in self.tabs.keys():
             if tab_name not in tab_order:
+                # If we're adding Power for the first time, put it before Autostart
+                if tab_name == "Power":
+                    # Find the position of Autostart
+                    if "Autostart" in tab_order:
+                        autostart_index = tab_order.index("Autostart")
+                        tab_order.insert(autostart_index, tab_name)
+                    else:
+                        tab_order.append(tab_name)
                 # If we're adding Autostart for the first time, put it at the end
-                if tab_name == "Autostart":
+                elif tab_name == "Autostart":
                     tab_order.append(tab_name)
                 else:
                     tab_order.append(tab_name)
@@ -211,9 +221,9 @@ class BetterControl(Gtk.Window):
         self.show_all()
 
         # Log tab page numbers for debugging
-        self.logging.log(LogLevel.Info, "Tab page numbers:")
-        for tab_name, page_num in self.tab_pages.items():
-            self.logging.log(LogLevel.Info, f"{tab_name}: {page_num}")
+        self.logging.log(
+            LogLevel.Debug, f"Tab pages: {self.tab_pages}"
+        )
 
         # Initialize the active tab
         active_tab = None
@@ -261,6 +271,14 @@ class BetterControl(Gtk.Window):
             self.logging.log(LogLevel.Info, f"Setting active tab to Display (page {page_num})")
             self.notebook.set_current_page(page_num)
             active_tab = "Display"
+        elif (
+            self.arg_parser.find_arg(("-p", "--power"))
+            and "Power" in self.tab_pages
+        ):
+            page_num = self.tab_pages["Power"]
+            self.logging.log(LogLevel.Info, f"Setting active tab to Power (page {page_num})")
+            self.notebook.set_current_page(page_num)
+            active_tab = "Power"
         else:
             # Use last active tab from settings
             last_tab = self.settings.get("last_active_tab", 0)
@@ -326,14 +344,22 @@ class BetterControl(Gtk.Window):
         """Apply tab order settings"""
         # Get current tab order from settings or use default
         tab_order = self.settings.get(
-            "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"]
+            "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"]
         )
         
         # Make sure all tabs are present in the tab_order
         for tab_name in self.tabs.keys():
             if tab_name not in tab_order:
+                # If we're adding Power for the first time, put it before Autostart
+                if tab_name == "Power":
+                    # Find the position of Autostart
+                    if "Autostart" in tab_order:
+                        autostart_index = tab_order.index("Autostart")
+                        tab_order.insert(autostart_index, tab_name)
+                    else:
+                        tab_order.append(tab_name)
                 # If we're adding Autostart for the first time, put it at the end
-                if tab_name == "Autostart":
+                elif tab_name == "Autostart":
                     tab_order.append(tab_name)
                 else:
                     tab_order.append(tab_name)
@@ -379,6 +405,7 @@ class BetterControl(Gtk.Window):
             "Battery": "battery-good-symbolic",
             "Display": "video-display-symbolic",
             "Settings": "preferences-system-symbolic",
+            "Power": "system-shutdown-symbolic",
             "Autostart": "system-run-symbolic",
         }
         return icons.get(tab_name, "application-x-executable-symbolic")
@@ -473,7 +500,7 @@ class BetterControl(Gtk.Window):
 
                 # Then reorder it according to the tab_order setting
                 tab_order = self.settings.get(
-                    "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"]
+                    "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"]
                 )
                 if tab_name in tab_order:
                     # Find the desired position for this tab
@@ -585,7 +612,7 @@ class BetterControl(Gtk.Window):
         if "tab_order" in self.settings:
             tab_order = self.settings["tab_order"]
             # Make sure all known tabs are included
-            all_tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"]
+            all_tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"]
             for tab_name in all_tabs:
                 if tab_name not in tab_order:
                     # If we're adding Autostart for the first time, put it at the end

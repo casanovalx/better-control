@@ -154,6 +154,9 @@ class ArgParse:
             f"   -f, --force                     Makes the app force to have all dependencies installed",
         )
         self.arg_print(
+            f"   -p, --power                     Starts with the power tab open",
+        )
+        self.arg_print(
             f"   -V, --volume                    Starts with the volume tab open",
         )
         self.arg_print(
