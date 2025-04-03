@@ -21,6 +21,10 @@ class PowerTab(Gtk.Box):
         self.active_buttons = self._load_settings()
         self.custom_commands = self.active_buttons.get("commands", {})
         self.custom_colors = self.active_buttons.get("colors", {})
+        self.custom_shortcuts = self.active_buttons.get("shortcuts", {})
+
+        # Log loaded shortcuts for debugging
+        self.logging.log(LogLevel.Debug, f"Loaded shortcuts: {self.custom_shortcuts}")
 
         # Set margins to match other tabs
         self.set_margin_start(15)
@@ -81,7 +85,8 @@ class PowerTab(Gtk.Box):
                 "icon": "system-lock-screen-symbolic",
                 "tooltip": "Lock the screen",
                 "callback": self.on_lock_clicked,
-                "color": "#4A90D9"
+                "color": "#4A90D9",
+                "default_shortcut": "l"
             },
             {
                 "id": "logout",
@@ -89,7 +94,8 @@ class PowerTab(Gtk.Box):
                 "icon": "system-log-out-symbolic",
                 "tooltip": "Log out of the current session",
                 "callback": self.on_logout_clicked,
-                "color": "#729FCF"
+                "color": "#729FCF",
+                "default_shortcut": "o"
             },
             {
                 "id": "suspend",
@@ -97,7 +103,8 @@ class PowerTab(Gtk.Box):
                 "icon": "system-suspend-symbolic",
                 "tooltip": "Suspend the system (sleep)",
                 "callback": self.on_suspend_clicked,
-                "color": "#8DB67A"
+                "color": "#8DB67A",
+                "default_shortcut": "s"
             },
             {
                 "id": "hibernate",
@@ -105,7 +112,8 @@ class PowerTab(Gtk.Box):
                 "icon": "document-save-symbolic",
                 "tooltip": "Hibernate the system",
                 "callback": self.on_hibernate_clicked,
-                "color": "#AD7FA8"
+                "color": "#AD7FA8",
+                "default_shortcut": "h"
             },
             {
                 "id": "reboot",
@@ -113,7 +121,8 @@ class PowerTab(Gtk.Box):
                 "icon": "system-reboot-symbolic",
                 "tooltip": "Restart the system",
                 "callback": self.on_reboot_clicked,
-                "color": "#F8C146"
+                "color": "#F8C146",
+                "default_shortcut": "r"
             },
             {
                 "id": "shutdown",
@@ -121,9 +130,13 @@ class PowerTab(Gtk.Box):
                 "icon": "system-shutdown-symbolic",
                 "tooltip": "Power off the system",
                 "callback": self.on_shutdown_clicked,
-                "color": "#EF5350"
+                "color": "#EF5350",
+                "default_shortcut": "p"
             }
         ]
+        
+        # Update power options with custom shortcuts
+        self._update_power_options_shortcuts()
         
         # Build the grid with active buttons
         self._build_power_grid()
@@ -139,9 +152,70 @@ class PowerTab(Gtk.Box):
         
         # Add CSS for styling
         self._add_css()
+        
+        # Setup key event handling
+        self.set_can_focus(True)
+        self.grab_focus()
+
+        # Connect to key-press-event at window level to ensure it works
+        # We need to get the toplevel window to attach the event
+        GLib.timeout_add(200, self._setup_key_handler)
+    
+    def _setup_key_handler(self):
+        """Set up keyboard handler with a small delay to ensure window is ready"""
+        # Get the toplevel window
+        toplevel = self.get_toplevel()
+        if toplevel and isinstance(toplevel, Gtk.Window):
+            self.logging.log(LogLevel.Debug, "Setting up key handler on window")
+            toplevel.connect("key-press-event", self.on_key_press)
+            self.grab_focus()  # Try to grab focus again
+        return False  # Don't call again
+    
+    def _update_power_options_shortcuts(self):
+        """Update power options with custom shortcuts"""
+        for option in self.power_options:
+            option_id = option["id"]
+            shortcut = self.custom_shortcuts.get(option_id, option["default_shortcut"])
+            option["shortcut"] = shortcut
+            self.logging.log(LogLevel.Debug, f"Set shortcut for {option_id}: {shortcut}")
+    
+    def on_key_press(self, widget, event):
+        """Handle key press events to trigger power actions"""
+        keyval = event.keyval
+        keychar = chr(keyval).lower()
+        
+        self.logging.log(LogLevel.Debug, f"Key pressed: {keychar}")
+        
+        for option in self.power_options:
+            option_id = option["id"]
+            if not self.active_buttons.get(option_id, True):
+                continue
+                
+            # Get the shortcut directly from custom_shortcuts or default
+            shortcut = self.custom_shortcuts.get(option_id, option["default_shortcut"]).lower()
+            
+            self.logging.log(LogLevel.Debug, f"Checking shortcut for {option_id}: {shortcut} against {keychar}")
+            
+            if keychar == shortcut:
+                self.logging.log(LogLevel.Info, f"Shortcut triggered for {option['label']}")
+                option["callback"](None)
+                return True
+                
+        return False
     
     def _load_settings(self):
         """Load power menu button settings"""
+        default_shortcuts = {}
+        for option in [
+            {"id": "lock", "default_shortcut": "l"},
+            {"id": "logout", "default_shortcut": "o"},
+            {"id": "suspend", "default_shortcut": "s"},
+            {"id": "hibernate", "default_shortcut": "h"},
+            {"id": "reboot", "default_shortcut": "r"},
+            {"id": "shutdown", "default_shortcut": "p"}
+        ]:
+            default_shortcuts[option["id"]] = option["default_shortcut"]
+            
         default_settings = {
             "lock": True,
             "logout": True,
@@ -164,7 +238,8 @@ class PowerTab(Gtk.Box):
                 "hibernate": "#AD7FA8",
                 "reboot": "#F8C146",
                 "shutdown": "#EF5350"
-            }
+            },
+            "shortcuts": default_shortcuts
         }
         
         try:
@@ -178,6 +253,10 @@ class PowerTab(Gtk.Box):
                     # Ensure commands exist in settings
                     if "commands" not in settings:
                         settings["commands"] = default_settings["commands"]
+                    
+                    # Ensure shortcuts exist in settings
+                    if "shortcuts" not in settings:
+                        settings["shortcuts"] = default_settings["shortcuts"]
                     
                     return settings
             else:
@@ -246,8 +325,14 @@ class PowerTab(Gtk.Box):
             # Get custom color if available
             color = self.custom_colors.get(option["id"], option["color"])
             
+            # Get current shortcut for this option
+            shortcut = self.custom_shortcuts.get(option["id"], option["default_shortcut"])
+            
+            # Add shortcut to label
+            label_with_shortcut = f"{option['label']} [{shortcut}]"
+            
             button = self._create_power_button(
-                option["label"],
+                label_with_shortcut,
                 option["icon"],
                 option["tooltip"],
                 option["callback"],
@@ -318,6 +403,92 @@ class PowerTab(Gtk.Box):
         # Add visibility tab
         visibility_tab_label = Gtk.Label(label="Buttons")
         notebook.append_page(visibility_box, visibility_tab_label)
+        
+        # ===== Shortcuts Tab =====
+        shortcuts_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        shortcuts_box.set_margin_start(10)
+        shortcuts_box.set_margin_end(10)
+        shortcuts_box.set_margin_top(10)
+        shortcuts_box.set_margin_bottom(10)
+        
+        shortcuts_label = Gtk.Label()
+        shortcuts_label.set_markup("<b>Keyboard Shortcuts</b>")
+        shortcuts_label.set_halign(Gtk.Align.START)
+        shortcuts_box.pack_start(shortcuts_label, False, False, 0)
+        
+        # Add description
+        description = Gtk.Label()
+        description.set_markup("<small>Press a single key to set the shortcut for each action</small>")
+        description.set_halign(Gtk.Align.START)
+        shortcuts_box.pack_start(description, False, False, 5)
+        
+        # Add separator
+        shortcuts_separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        shortcuts_box.pack_start(shortcuts_separator, False, False, 5)
+        
+        # Create a scrolled window
+        shortcuts_scrolled = Gtk.ScrolledWindow()
+        shortcuts_scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        shortcuts_scrolled.set_vexpand(True)
+        
+        shortcuts_list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        
+        # Create shortcut entries for each power option
+        self.shortcut_entries = {}
+        for option in self.power_options:
+            option_id = option["id"]
+            
+            # Get current shortcut or default
+            current_shortcut = self.custom_shortcuts.get(option_id, option["default_shortcut"])
+            
+            # Create row
+            shortcut_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            
+            # Add icon
+            icon = Gtk.Image.new_from_icon_name(option["icon"], Gtk.IconSize.MENU)
+            shortcut_box.pack_start(icon, False, False, 0)
+            
+            # Add label
+            label = Gtk.Label(label=f"{option['label']} Shortcut:")
+            label.set_halign(Gtk.Align.START)
+            shortcut_box.pack_start(label, True, True, 0)
+            
+            # Create entry to display the shortcut
+            entry = Gtk.Entry()
+            entry.set_text(current_shortcut)
+            entry.set_width_chars(1)
+            entry.set_max_length(1)
+            entry.set_alignment(0.5)  # Center text
+            entry.set_tooltip_text(f"Press a key to set the shortcut for {option['label']}")
+            
+            # Handle key press in the entry
+            entry.connect("key-press-event", self.on_shortcut_key_press, option_id)
+            self.shortcut_entries[option_id] = entry
+            shortcut_box.pack_end(entry, False, False, 0)
+            
+            # Add reset button
+            reset_button = Gtk.Button()
+            reset_button.set_tooltip_text(f"Reset to default shortcut")
+            
+            reset_icon = Gtk.Image.new_from_icon_name("edit-undo-symbolic", Gtk.IconSize.MENU)
+            reset_button.add(reset_icon)
+            reset_button.connect("clicked", self.on_reset_shortcut, option_id, entry, option["default_shortcut"])
+            
+            shortcut_box.pack_end(reset_button, False, False, 5)
+            
+            shortcuts_list_box.pack_start(shortcut_box, False, False, 5)
+            
+            # Add separator between entries
+            if option != self.power_options[-1]:
+                shortcut_separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+                shortcuts_list_box.pack_start(shortcut_separator, False, False, 5)
+        
+        shortcuts_scrolled.add(shortcuts_list_box)
+        shortcuts_box.pack_start(shortcuts_scrolled, True, True, 0)
+        
+        # Add shortcuts tab
+        shortcuts_tab_label = Gtk.Label(label="Shortcuts")
+        notebook.append_page(shortcuts_box, shortcuts_tab_label)
         
         # ===== Commands Tab =====
         commands_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -575,15 +746,27 @@ class PowerTab(Gtk.Box):
             hex_color = getattr(color_button, "preview_color")
             colors[option_id] = hex_color
         
-        # Save commands to settings
+        # Get current shortcuts from entries
+        shortcuts = {}
+        for option_id, entry in self.shortcut_entries.items():
+            shortcuts[option_id] = entry.get_text()
+        
+        # Save settings
         self.active_buttons["commands"] = commands
         self.active_buttons["colors"] = colors
+        self.active_buttons["shortcuts"] = shortcuts
         
-        # Update custom commands and colors
+        # Update custom values
         self.custom_commands = commands
         self.custom_colors = colors
+        self.custom_shortcuts = shortcuts
+        
+        # Update power options with new shortcuts
+        self._update_power_options_shortcuts()
         
         self._save_settings()
+        
+        # Rebuild the grid to show updated shortcut labels
         self._build_power_grid()
         self.settings_popover.popdown()
     
@@ -785,4 +968,30 @@ class PowerTab(Gtk.Box):
         
         style_context.add_provider(
             style_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        ) 
+        )
+    
+    def on_shortcut_key_press(self, entry, event, option_id):
+        """Handle key press in shortcut entry"""
+        keyval = event.keyval
+        
+        # Ignore modifier keys
+        if keyval in (Gdk.KEY_Control_L, Gdk.KEY_Control_R, 
+                      Gdk.KEY_Shift_L, Gdk.KEY_Shift_R, 
+                      Gdk.KEY_Alt_L, Gdk.KEY_Alt_R):
+            return True
+        
+        # Get the character
+        keychar = chr(keyval).lower()
+        
+        # Update the entry
+        entry.set_text(keychar)
+        
+        # Prevent further processing
+        return True
+    
+    def on_reset_shortcut(self, button, option_id, entry, default_shortcut):
+        """Reset shortcut to default"""
+        entry.set_text(default_shortcut)
+        
+        # Update the active_buttons dictionary
+        self.active_buttons[option_id] = True 
