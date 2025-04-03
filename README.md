@@ -209,6 +209,6 @@ Better-Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasm
 
 [Report Bug](https://github.com/quantumvoid0/better-control/issues) • 
 [Request Feature](https://github.com/quantumvoid0/better-control/issues) • 
-[Contribute](https://github.com/quantumvoid0/better-control/#Contribution)
+[Contribute](https://github.com/quantumvoid0/better-control/pulls)
 
 </div>
