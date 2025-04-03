@@ -1,8 +1,7 @@
-from ctypes.util import test
-from math import e
-from operator import ne
 from sys import stderr, stdout
 from typing import Dict, List, Optional, TextIO, Tuple
+
+from tools.terminal import term_support_color
 
 
 def sprint(file: Optional[TextIO], *args) -> None:
@@ -134,52 +133,66 @@ class ArgParse:
 
     def print_help_msg(self, stream: Optional[TextIO]):
         self.__help_stream = stream
+        use_colors = term_support_color()
 
-        self.arg_print(f"Usage: {self.__bin} <options>\n")
-        self.arg_print("Options:")
-        self.arg_print(f"   -h, --help                      Prints this message")
-        self.arg_print(
-            f"   -a, --autostart                   Starts with the autostart tab open",
-        )
-        self.arg_print(
-            f"   -B, --battery                   Starts with the battery tab open",
-        )
-        self.arg_print(
-            f"   -b, --bluetooth                 Starts with the bluetooth tab open",
-        )
-        self.arg_print(
-            f"   -d, --display                   Starts with the display tab open",
-        )
-        self.arg_print(
-            f"   -f, --force                     Makes the app force to have all dependencies installed",
-        )
-        self.arg_print(
-            f"   -p, --power                     Starts with the power tab open",
-        )
-        self.arg_print(
-            f"   -V, --volume                    Starts with the volume tab open",
-        )
-        self.arg_print(
-            f"   -v                              Also starts with the volume tab open",
-        )
-        self.arg_print(
-            f"   -w, --wifi                      Starts with the wifi tab open"
-        )
-        self.arg_print(
-            f"   -l, --log <lvl/file>            The program will either log to a file if given a file path,",
-        )
-        self.arg_print(
-            f"                                       or output to stdout based on the log level if given a value between 0, and 3.",
-        )
-        self.arg_print(
-            f"   -r, --redact                    Redact sensitive information from logs (network names, device IDs, etc.)",
-        )
-        self.arg_print(
-            f"    -s,--size <intxint>             Sets a custom window size"
-        )
-        self.arg_print(
-            f"   -m, --minimal                   Hides the notebook tabs and only shows the selected tab content"
-        )
+        # Define colors if terminal supports them
+        if use_colors:
+            # Color definitions
+            RESET = "\033[0m"
+            BOLD = "\033[1m"
+            UNDERLINE = "\033[4m"
+            CYAN = "\033[36m"
+            GREEN = "\033[32m"
+            YELLOW = "\033[33m"
+            BLUE = "\033[34m"
+            MAGENTA = "\033[35m"
+            GRAY = "\033[90m"
+            WHITE = "\033[97m"
+        else:
+            # No colors if terminal doesn't support them
+            RESET = BOLD = UNDERLINE = CYAN = GREEN = YELLOW = BLUE = MAGENTA = GRAY = WHITE = ""
+
+        # Header
+        self.arg_print(f"\n{BOLD}{CYAN}╭───────────────────────────────────────────────────────────────╮{RESET}")
+        self.arg_print(f"{BOLD}{CYAN}│                      BETTER CONTROL                         │{RESET}")
+        self.arg_print(f"{BOLD}{CYAN}╰───────────────────────────────────────────────────────────────╯{RESET}\n")
+
+        # Usage
+        self.arg_print(f"{BOLD}USAGE:{RESET}")
+        self.arg_print(f"  {WHITE}{self.__bin} {GRAY}[options]{RESET}\n")
+
+        # Options header
+        self.arg_print(f"{BOLD}OPTIONS:{RESET}")
+
+        # General options
+        self.arg_print(f"{BOLD}{UNDERLINE}General:{RESET}")
+        self.arg_print(f"  {GREEN}-h, --help{RESET}                      Prints this help message")
+        self.arg_print(f"  {GREEN}-f, --force{RESET}                     Makes the app force to have all dependencies installed")
+        self.arg_print(f"  {GREEN}-s, --size{RESET} {YELLOW}<intxint>{RESET}             Sets a custom window size")
+        self.arg_print(f"  {GREEN}-m, --minimal{RESET}                   Hides the notebook tabs and only shows the selected tab content\n")
+
+        # Tab selection options
+        self.arg_print(f"{BOLD}{UNDERLINE}Tab Selection:{RESET}")
+        self.arg_print(f"  {BLUE}-a, --autostart{RESET}                 Starts with the autostart tab open")
+        self.arg_print(f"  {BLUE}-B, --battery{RESET}                   Starts with the battery tab open")
+        self.arg_print(f"  {BLUE}-b, --bluetooth{RESET}                 Starts with the bluetooth tab open")
+        self.arg_print(f"  {BLUE}-d, --display{RESET}                   Starts with the display tab open")
+        self.arg_print(f"  {BLUE}-p, --power{RESET}                     Starts with the power tab open")
+        self.arg_print(f"  {BLUE}-V, --volume{RESET}                    Starts with the volume tab open")
+        self.arg_print(f"  {BLUE}-v{RESET}                              Also starts with the volume tab open")
+        self.arg_print(f"  {BLUE}-w, --wifi{RESET}                      Starts with the wifi tab open\n")
+
+        # Logging options
+        self.arg_print(f"{BOLD}{UNDERLINE}Logging:{RESET}")
+        self.arg_print(f"  {MAGENTA}-l, --log{RESET} {YELLOW}<lvl/file>{RESET}            The program will either log to a file if given a file path,")
+        self.arg_print(f"                                 or output to stdout based on the log level if given")
+        self.arg_print(f"                                 a value between 0 and 3.")
+        self.arg_print(f"  {MAGENTA}-r, --redact{RESET}                    Redact sensitive information from logs\n")
+
+        # Footer
+        self.arg_print(f"{BOLD}{CYAN}╭────────────────────────────────────────────────────────────────╮{RESET}")
+        self.arg_print(f"{BOLD}{CYAN}│         https://github.com/quantumvoid0/better-control         │{RESET}")
+        self.arg_print(f"{BOLD}{CYAN}╰────────────────────────────────────────────────────────────────╯{RESET}\n")
 
         if stream == stderr:
             exit(1)
