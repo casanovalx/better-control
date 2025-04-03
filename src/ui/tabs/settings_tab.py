@@ -157,10 +157,10 @@ class SettingsTab(Gtk.Box):
     def update_ui_order(self):
         """Update the order of rows in the UI to match the current tab order"""
         # Get current tab order
-        tab_order = self.settings.get("tab_order", ["Wi-Fi", "Volume", "Bluetooth", "Battery", "Display", "Autostart"])
+        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"])
         
         # Make sure all known tabs are in the tab_order
-        all_tabs = ["Wi-Fi", "Volume", "Bluetooth", "Battery", "Display", "Autostart"]
+        all_tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"]
         for tab in all_tabs:
             if tab not in tab_order:
                 # If we're adding Autostart for the first time, put it at the end
@@ -205,7 +205,7 @@ class SettingsTab(Gtk.Box):
     def on_move_up_clicked(self, button, tab_name):
         """Handle move up button click"""
         # Get current tab order
-        tab_order = self.settings.get("tab_order", ["Wi-Fi", "Volume", "Bluetooth", "Battery", "Display", "Autostart"])
+        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"])
         # Find current index
         current_index = tab_order.index(tab_name)
         if current_index > 0:
@@ -225,7 +225,7 @@ class SettingsTab(Gtk.Box):
     def on_move_down_clicked(self, button, tab_name):
         """Handle move down button click"""
         # Get current tab order
-        tab_order = self.settings.get("tab_order", ["Wi-Fi", "Volume", "Bluetooth", "Battery", "Display", "Autostart"])
+        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"])
         
         # Find current index
         current_index = tab_order.index(tab_name)

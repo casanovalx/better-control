@@ -23,10 +23,6 @@ if __name__ == "__main__":
     if arg_parser.find_arg(("-h", "--help")):
         arg_parser.print_help_msg(sys.stdout)
 
-    if arg_parser.find_arg(("-v", "--version")):
-        sprint(sys.stdout, "5.3")
-        exit(0)
-
     logging = Logger(arg_parser)
 
     if arg_parser.find_arg(("-f", "--force")) and not check_all_dependencies(logging):

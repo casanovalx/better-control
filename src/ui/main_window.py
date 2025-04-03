@@ -190,7 +190,7 @@ class BetterControl(Gtk.Window):
         self.logging.log(LogLevel.Info, "All tabs created, finalizing UI")
 
         # Ensure all tabs are present in the tab_order setting
-        tab_order = self.settings.get("tab_order", ["Wi-Fi", "Volume", "Bluetooth", "Battery", "Display", "Autostart"])
+        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Autostart"])
         
         # Make sure all created tabs are in the tab_order
         for tab_name in self.tabs.keys():
@@ -210,38 +210,56 @@ class BetterControl(Gtk.Window):
         # Show all tabs to ensure content is visible
         self.show_all()
 
+        # Log tab page numbers for debugging
+        self.logging.log(LogLevel.Info, "Tab page numbers:")
+        for tab_name, page_num in self.tab_pages.items():
+            self.logging.log(LogLevel.Info, f"{tab_name}: {page_num}")
+
         # Initialize the active tab
         active_tab = None
         
         # Set active tab based on command line arguments
-        if self.arg_parser.find_arg(("-V", "--volume")) and "Volume" in self.tab_pages:
-            self.notebook.set_current_page(self.tab_pages["Volume"])
+        if (self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", ""))) and "Volume" in self.tab_pages:
+            page_num = self.tab_pages["Volume"]
+            self.logging.log(LogLevel.Info, f"Setting active tab to Volume (page {page_num})")
+            self.notebook.set_current_page(page_num)
             active_tab = "Volume"
         elif self.arg_parser.find_arg(("-w", "--wifi")) and "Wi-Fi" in self.tab_pages:
-            self.notebook.set_current_page(self.tab_pages["Wi-Fi"])
+            page_num = self.tab_pages["Wi-Fi"]
+            self.logging.log(LogLevel.Info, f"Setting active tab to Wi-Fi (page {page_num})")
+            self.notebook.set_current_page(page_num)
             active_tab = "Wi-Fi"
         elif (
             self.arg_parser.find_arg(("-a", "--autostart"))
             and "Autostart" in self.tab_pages
         ):
-            self.notebook.set_current_page(self.tab_pages["Autostart"])
+            page_num = self.tab_pages["Autostart"]
+            self.logging.log(LogLevel.Info, f"Setting active tab to Autostart (page {page_num})")
+            self.notebook.set_current_page(page_num)
+            active_tab = "Autostart"
         elif (
             self.arg_parser.find_arg(("-b", "--bluetooth"))
             and "Bluetooth" in self.tab_pages
         ):
-            self.notebook.set_current_page(self.tab_pages["Bluetooth"])
+            page_num = self.tab_pages["Bluetooth"]
+            self.logging.log(LogLevel.Info, f"Setting active tab to Bluetooth (page {page_num})")
+            self.notebook.set_current_page(page_num)
             active_tab = "Bluetooth"
         elif (
             self.arg_parser.find_arg(("-B", "--battery"))
             and "Battery" in self.tab_pages
         ):
-            self.notebook.set_current_page(self.tab_pages["Battery"])
+            page_num = self.tab_pages["Battery"]
+            self.logging.log(LogLevel.Info, f"Setting active tab to Battery (page {page_num})")
+            self.notebook.set_current_page(page_num)
             active_tab = "Battery"
         elif (
             self.arg_parser.find_arg(("-d", "--display"))
             and "Display" in self.tab_pages
         ):
-            self.notebook.set_current_page(self.tab_pages["Display"])
+            page_num = self.tab_pages["Display"]
+            self.logging.log(LogLevel.Info, f"Setting active tab to Display (page {page_num})")
+            self.notebook.set_current_page(page_num)
             active_tab = "Display"
         else:
             # Use last active tab from settings
@@ -323,18 +341,34 @@ class BetterControl(Gtk.Window):
         # Update the settings with the modified order
         self.settings["tab_order"] = tab_order
         
-        # Reorder tabs according to settings
-        for tab_name in tab_order:
-            if tab_name in self.tabs and tab_name in self.tab_pages:
-                # Get current page number
-                current_page = self.tab_pages[tab_name]
-                # Move tab to end (will be reordered in correct position)
-                self.notebook.reorder_child(self.tabs[tab_name], -1)
-                # Update page numbers
-                for name, num in self.tab_pages.items():
-                    if num > current_page:
-                        self.tab_pages[name] = num - 1
-                self.tab_pages[tab_name] = len(self.tab_pages) - 1
+        # Log the desired tab order
+        self.logging.log(LogLevel.Debug, f"Applying tab order: {tab_order}")
+        
+        # Clear the tab_pages mapping
+        self.tab_pages = {}
+        
+        # Remove all tabs from the notebook while preserving them
+        tab_widgets = {}
+        for tab_name, tab in self.tabs.items():
+            for i in range(self.notebook.get_n_pages()):
+                if self.notebook.get_nth_page(i) == tab:
+                    self.notebook.remove_page(i)
+                    tab_widgets[tab_name] = tab
+                    break
+        
+        # Re-add tabs in the correct order
+        for i, tab_name in enumerate(tab_order):
+            if tab_name in self.tabs and tab_name in tab_widgets:
+                # Add tab to notebook with proper label
+                page_num = self.notebook.append_page(
+                    self.tabs[tab_name],
+                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
+                )
+                self.tab_pages[tab_name] = page_num
+                self.logging.log(LogLevel.Debug, f"Tab {tab_name} added at position {page_num}")
+        
+        # Show all tabs
+        self.notebook.show_all()
 
     def get_icon_for_tab(self, tab_name):
         """Get icon name for a tab"""

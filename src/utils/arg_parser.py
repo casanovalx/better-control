@@ -137,9 +137,6 @@ class ArgParse:
 
         self.arg_print(f"Usage: {self.__bin} <options>\n")
         self.arg_print("Options:")
-        self.arg_print(
-            f"   -v, --version                   Shows the version of the program",
-        )
         self.arg_print(f"   -h, --help                      Prints this message")
         self.arg_print(
             f"   -a, --autostart                   Starts with the autostart tab open",
@@ -158,6 +155,9 @@ class ArgParse:
         )
         self.arg_print(
             f"   -V, --volume                    Starts with the volume tab open",
+        )
+        self.arg_print(
+            f"   -v                              Also starts with the volume tab open",
         )
         self.arg_print(
             f"   -w, --wifi                      Starts with the wifi tab open"
