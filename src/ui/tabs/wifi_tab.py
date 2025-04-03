@@ -299,8 +299,23 @@ class WiFiTab(Gtk.Box):
 
                 self.networks_box.show_all()
                 return False
+
+            # Sort networks: connected network first, then by signal strength
+            # Convert signal to int for sorting, with error handling
+            def get_sort_key(network):
+                try:
+                    # Connected networks go first, then sort by signal strength
+                    if network["in_use"]:
+                        return -9999  # Ensures connected network is always first
+                    else:
+                        return -int(network["signal"])  # Negative for descending order
+                except (ValueError, TypeError):
+                    return 0  # Default value if signal can't be converted
+
+            sorted_networks = sorted(networks, key=get_sort_key)
+
             # Add networks
-            for network in networks:
+            for network in sorted_networks:
                 row = Gtk.ListBoxRow()
                 box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
                 box.set_margin_start(10)
