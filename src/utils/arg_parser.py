@@ -153,9 +153,9 @@ class ArgParse:
             RESET = BOLD = UNDERLINE = CYAN = GREEN = YELLOW = BLUE = MAGENTA = GRAY = WHITE = ""
 
         # Header
-        self.arg_print(f"\n{BOLD}{CYAN}╭───────────────────────────────────────────────────────────────╮{RESET}")
-        self.arg_print(f"{BOLD}{CYAN}│                      BETTER CONTROL                         │{RESET}")
-        self.arg_print(f"{BOLD}{CYAN}╰───────────────────────────────────────────────────────────────╯{RESET}\n")
+        self.arg_print(f"\n{BOLD}{CYAN}╭────────────────────────────────────────────────────────────────╮{RESET}")
+        self.arg_print(f"{BOLD}{CYAN}│                         BETTER CONTROL                         │{RESET}")
+        self.arg_print(f"{BOLD}{CYAN}╰────────────────────────────────────────────────────────────────╯{RESET}\n")
 
         # Usage
         self.arg_print(f"{BOLD}USAGE:{RESET}")
