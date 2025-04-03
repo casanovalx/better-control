@@ -34,6 +34,11 @@ class BetterControl(Gtk.Window):
         self.set_default_size(600, 400)
         self.logging.log(LogLevel.Info, "Initializing application")
 
+        # Check if minimal mode is enabled
+        self.minimal_mode = arg_parser.find_arg(("-m", "--minimal"))
+        if self.minimal_mode:
+            self.logging.log(LogLevel.Info, "Minimal mode enabled")
+
         # Apply custom CSS to remove button focus/selection outline
         css_provider = Gtk.CssProvider()
         css = b"""
@@ -96,6 +101,10 @@ class BetterControl(Gtk.Window):
 
         self.notebook = Gtk.Notebook()
         self.add(self.notebook)
+
+        # Hide tab bar in minimal mode
+        if self.minimal_mode:
+            self.notebook.set_show_tabs(False)
 
         # Connect key-press-event to disable tab selection with Tab key
         self.notebook.connect("key-press-event", self.on_notebook_key_press)
@@ -271,11 +280,15 @@ class BetterControl(Gtk.Window):
                 self.logging.log(LogLevel.Info, f"Setting active tab to Volume (page {page_num})")
                 self.notebook.set_current_page(page_num)
                 active_tab = "Volume"
+                if self.minimal_mode:
+                    self.set_title(f"Better Control - Volume")
             elif self.arg_parser.find_arg(("-w", "--wifi")) and "Wi-Fi" in self.tab_pages:
                 page_num = self.tab_pages["Wi-Fi"]
                 self.logging.log(LogLevel.Info, f"Setting active tab to Wi-Fi (page {page_num})")
                 self.notebook.set_current_page(page_num)
                 active_tab = "Wi-Fi"
+                if self.minimal_mode:
+                    self.set_title(f"Better Control - Wi-Fi")
             elif (
                 self.arg_parser.find_arg(("-a", "--autostart"))
                 and "Autostart" in self.tab_pages
@@ -284,6 +297,8 @@ class BetterControl(Gtk.Window):
                 self.logging.log(LogLevel.Info, f"Setting active tab to Autostart (page {page_num})")
                 self.notebook.set_current_page(page_num)
                 active_tab = "Autostart"
+                if self.minimal_mode:
+                    self.set_title(f"Better Control - Autostart")
             elif (
                 self.arg_parser.find_arg(("-b", "--bluetooth"))
                 and "Bluetooth" in self.tab_pages
@@ -292,6 +307,8 @@ class BetterControl(Gtk.Window):
                 self.logging.log(LogLevel.Info, f"Setting active tab to Bluetooth (page {page_num})")
                 self.notebook.set_current_page(page_num)
                 active_tab = "Bluetooth"
+                if self.minimal_mode:
+                    self.set_title(f"Better Control - Bluetooth")
             elif (
                 self.arg_parser.find_arg(("-B", "--battery"))
                 and "Battery" in self.tab_pages
@@ -300,6 +317,8 @@ class BetterControl(Gtk.Window):
                 self.logging.log(LogLevel.Info, f"Setting active tab to Battery (page {page_num})")
                 self.notebook.set_current_page(page_num)
                 active_tab = "Battery"
+                if self.minimal_mode:
+                    self.set_title(f"Better Control - Battery")
             elif (
                 self.arg_parser.find_arg(("-d", "--display"))
                 and "Display" in self.tab_pages
@@ -308,6 +327,8 @@ class BetterControl(Gtk.Window):
                 self.logging.log(LogLevel.Info, f"Setting active tab to Display (page {page_num})")
                 self.notebook.set_current_page(page_num)
                 active_tab = "Display"
+                if self.minimal_mode:
+                    self.set_title(f"Better Control - Display")
             elif (
                 self.arg_parser.find_arg(("-p", "--power"))
                 and "Power" in self.tab_pages
@@ -316,6 +337,8 @@ class BetterControl(Gtk.Window):
                 self.logging.log(LogLevel.Info, f"Setting active tab to Power (page {page_num})")
                 self.notebook.set_current_page(page_num)
                 active_tab = "Power"
+                if self.minimal_mode:
+                    self.set_title(f"Better Control - Power")
             else:
                 # Use last active tab from settings
                 last_tab = self.settings.get("last_active_tab", 0)
@@ -325,6 +348,8 @@ class BetterControl(Gtk.Window):
                     for tab_name, tab_page in self.tab_pages.items():
                         if tab_page == last_tab:
                             active_tab = tab_name
+                            if self.minimal_mode:
+                                self.set_title(f"Better Control - {tab_name}")
                             break
 
             # Set visibility status on the active tab
@@ -465,6 +490,11 @@ class BetterControl(Gtk.Window):
 
     def create_settings_button(self):
         """Create settings button in the notebook action area"""
+        # Don't show settings button in minimal mode
+        if self.minimal_mode:
+            self.logging.log(LogLevel.Info, "Settings button not created in minimal mode")
+            return
+
         settings_button = Gtk.Button()
         settings_icon = Gtk.Image.new_from_icon_name(
             "preferences-system-symbolic", Gtk.IconSize.BUTTON
@@ -642,6 +672,10 @@ class BetterControl(Gtk.Window):
             # If tab has tab_visible property (WiFi tab), update it
             if hasattr(tab, 'tab_visible'):
                 tab.tab_visible = is_visible
+
+            # Update window title in minimal mode
+            if is_visible and self.minimal_mode:
+                self.set_title(f"Better Control - {tab_name}")
 
         # Save the active tab setting
         self.settings["last_active_tab"] = page_num

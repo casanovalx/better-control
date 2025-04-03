@@ -177,6 +177,9 @@ class ArgParse:
         self.arg_print(
             f"    -s,--size <intxint>             Sets a custom window size"
         )
+        self.arg_print(
+            f"   -m, --minimal                   Hides the notebook tabs and only shows the selected tab content"
+        )
 
         if stream == stderr:
             exit(1)
