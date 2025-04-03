@@ -61,6 +61,18 @@ Before installing, ensure you have `git` and `base-devel` installed.
 
 <br>
 
+### Usage
+
+`control` or `better-control` command will run the gui application.
+
+### Keybindings
+
+| Keybinding | Action |
+|------------|--------|
+| `Shift + S` | Open Settings Dialog |
+| `Q` or `Ctrl + Q` | Quit Application |
+
+
 ## 💾 Installation
 
 <details>
@@ -197,6 +209,6 @@ Better-Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasm
 
 [Report Bug](https://github.com/quantumvoid0/better-control/issues) • 
 [Request Feature](https://github.com/quantumvoid0/better-control/issues) • 
-[Contribute](https://github.com/quantumvoid0/better-control/pulls)
+[Contribute](https://github.com/quantumvoid0/better-control/#Contribution)
 
 </div>
