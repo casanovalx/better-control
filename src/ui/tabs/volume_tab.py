@@ -55,7 +55,20 @@ class VolumeTab(Gtk.Box):
         self.set_visible(True)
         self.set_no_show_all(False)
         
+        # Create lock for thread safety
+        self._lock = threading.RLock()
+        
         self.is_visible = False  # Track tab visibility
+        
+        # Initialize flags and references to prevent segfaults
+        self._volume_change_timeout_id = None
+        self._mic_volume_change_timeout_id = None
+        self._app_volume_timeouts = {}
+        self._app_mic_volume_timeouts = {}
+        self._pending_app_volumes = {}
+        self._pending_app_mic_volumes = {}
+        self.pulse_thread = None
+        self._is_being_destroyed = False
 
         # Get the default icon theme
         self.icon_theme = Gtk.IconTheme.get_default()
@@ -101,7 +114,6 @@ class VolumeTab(Gtk.Box):
         self.pack_start(self.notebook, True, True, 0)
 
         # Initialize pulse audio monitoring variables
-        self.pulse_thread = None
         self.should_monitor = False  # Don't start monitoring until tab is visible
 
         # Initialize UI state
@@ -462,43 +474,92 @@ class VolumeTab(Gtk.Box):
             self.logging.log(LogLevel.Info, "Audio monitoring already active")
 
     def stop_pulse_monitoring(self):
-        """Stop the PulseAudio monitoring thread"""
+        """Stop monitoring pulse events"""
+        # Set flag to indicate we should stop
         self.should_monitor = False
-        if self.pulse_thread and self.pulse_thread.is_alive():
-            self.pulse_thread.join(1.0)  # Wait for the thread to terminate with timeout
+        
+        # Use lock to safely access thread data
+        with self._lock:
+            # Make sure thread terminates properly
+            thread_ref = self.pulse_thread
+            if thread_ref is not None and thread_ref.is_alive():
+                try:
+                    # Wait a short time for the thread to exit naturally
+                    # Don't join in the main thread, as that could block UI
+                    def join_thread_safe():
+                        try:
+                            thread_ref.join(timeout=0.3)
+                        except Exception as e:
+                            self.logging.log(LogLevel.Error, f"Error joining pulse thread: {e}")
+                        return False  # Don't repeat
+                        
+                    # Schedule joining the thread
+                    GLib.timeout_add(100, join_thread_safe)
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Error stopping pulse thread: {e}")
+                    
+            # Clear the reference regardless
             self.pulse_thread = None
-        self.logging.log(LogLevel.Info, "Stopped audio monitoring")
 
     def monitor_pulse_events(self):
-        """Simple periodic monitoring instead of event-based monitoring"""
-        try:
-            # Use a simple timeout-based refresh approach
-            self.logging.log(LogLevel.Info, "Starting periodic (500ms) audio refresh")
-            
-            # Set up the periodic refresh
-            refresh_counter = 0
-            while self.should_monitor:
-                # Sleep for half a second
+        """Background thread for monitoring pulse audio state"""
+        counter = 0
+        last_error_time = 0
+        error_count = 0
+        
+        while self.should_monitor:
+            try:
+                # Check if we're being destroyed or monitoring should stop
+                if not self.should_monitor or hasattr(self, '_is_being_destroyed') and self._is_being_destroyed:
+                    break
+                    
+                # Use locks to prevent race conditions with the main thread
+                with self._lock:
+                    # Every 10th iteration (roughly 1 second), do a deeper refresh
+                    if counter % 10 == 0:
+                        if self.is_visible:
+                            # Use GLib.idle_add to ensure UI updates happen on the main thread
+                            GLib.idle_add(self.refresh_audio_state, counter)
+                
+                # Sleep a bit to prevent high CPU usage
+                # Use smaller sleep increments and check should_monitor regularly
+                for _ in range(5):
+                    if not self.should_monitor or hasattr(self, '_is_being_destroyed') and self._is_being_destroyed:
+                        break
+                    time.sleep(0.02)  # 20ms * 5 = 100ms
+                
+                counter += 1
+                
+            except RuntimeError as e:
+                # Handle RuntimeError separately (often due to thread issues)
+                self.logging.log(LogLevel.Error, f"Runtime error in pulse monitoring thread: {e}")
+                # Exit the thread if we're having serious issues
+                if "object at has been deleted" in str(e):
+                    self.logging.log(LogLevel.Error, "Critical error in pulse thread - exiting")
+                    break
+                time.sleep(0.5)  # Sleep to prevent tight loop
+                
+            except Exception as e:
+                current_time = time.time()
+                # Limit error logging to prevent log spam
+                if current_time - last_error_time > 5:  # Reset error count after 5 seconds
+                    error_count = 0
+                    last_error_time = current_time
+                    
+                error_count += 1
+                if error_count <= 3:  # Log only first 3 errors in a 5 second window
+                    self.logging.log(LogLevel.Error, f"Error in pulse monitoring thread: {e}")
+                    
+                # Sleep after error to prevent tight loop
                 time.sleep(0.5)
                 
-                # Skip updates if the tab is not visible
-                if not self.is_visible:
-                    continue
-                    
-                # Schedule UI update on the main thread
-                GLib.idle_add(self.refresh_audio_state, refresh_counter)
-                
-                # Increment counter for selective updates
-                refresh_counter = (refresh_counter + 1) % 10
-                
-            self.logging.log(LogLevel.Info, "Periodic audio refresh stopped")
-            
-        except Exception as e:
-            self.logging.log(LogLevel.Error, f"Error in audio monitor: {e}")
-            # Attempt to restart the monitoring after a short delay
-            if self.should_monitor:
-                GLib.timeout_add(5000, self.restart_pulse_monitoring)
-    
+        self.logging.log(LogLevel.Debug, "Pulse audio monitoring thread exited")
+        
+        # Clear thread reference when it exits
+        with self._lock:
+            if hasattr(self, 'pulse_thread') and self.pulse_thread is not None:
+                self.pulse_thread = None
+
     def refresh_audio_state(self, counter):
         """Update audio state based on a counter (to distribute heavy operations)"""
         try:
@@ -536,15 +597,6 @@ class VolumeTab(Gtk.Box):
             
         return False  # Don't repeat via GLib (we're manually scheduling)
         
-    def restart_pulse_monitoring(self):
-        """Restart the pulse monitoring if it crashed"""
-        if self.should_monitor and (
-            not self.pulse_thread or not self.pulse_thread.is_alive()
-        ):
-            self.logging.log(LogLevel.Info, "Restarting audio monitoring")
-            self.start_pulse_monitoring()
-        return False  # Don't repeat this timeout
-
     def update_device_lists(self):
         """Update output and input device lists and sync dropdown with the actual default sink."""
         try:
@@ -1159,11 +1211,35 @@ class VolumeTab(Gtk.Box):
         self.connect("destroy", on_destroy)
 
     def __del__(self):
-        """Ensure resources are cleaned up when the object is garbage collected"""
-        try:
-            self.stop_pulse_monitoring()
-        except:
-            pass
+        """Clean up resources when tab is destroyed"""
+        self.stop_pulse_monitoring()
+        # Clean up any other resources
+        self.logging.log(LogLevel.Debug, "Volume tab resources cleaned up")
+        
+    def on_destroy(self, widget):
+        """Clean up resources when tab is destroyed"""
+        self.stop_pulse_monitoring()
+        # Cancel any pending timeouts
+        if hasattr(self, "_volume_change_timeout_id") and self._volume_change_timeout_id:
+            GLib.source_remove(self._volume_change_timeout_id)
+            self._volume_change_timeout_id = None
+        if hasattr(self, "_mic_volume_change_timeout_id") and self._mic_volume_change_timeout_id:
+            GLib.source_remove(self._mic_volume_change_timeout_id)
+            self._mic_volume_change_timeout_id = None
+            
+        # Clean up application volume timeouts
+        if hasattr(self, "_app_volume_timeouts"):
+            for app_id, timeout_id in self._app_volume_timeouts.items():
+                if timeout_id:
+                    GLib.source_remove(timeout_id)
+            self._app_volume_timeouts = {}
+            
+        # Clean up application mic volume timeouts
+        if hasattr(self, "_app_mic_volume_timeouts"):
+            for app_id, timeout_id in self._app_mic_volume_timeouts.items():
+                if timeout_id:
+                    GLib.source_remove(timeout_id)
+            self._app_mic_volume_timeouts = {}
 
     def show_all(self):
         """Ensure tab and all its contents are shown correctly"""

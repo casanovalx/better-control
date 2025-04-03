@@ -141,15 +141,24 @@ class BetterControl(Gtk.Window):
             "Power": PowerTab,
             "Autostart": AutostartTab,
         }
+        
+        # Track if thread is still running to avoid segfaults during shutdown
+        self.tabs_thread_running = True
+        
         # Create tabs one by one
         for tab_name, tab_class in tab_classes.items():
             try:
+                # Check if thread should still run
+                if not hasattr(self, 'tabs_thread_running') or not self.tabs_thread_running:
+                    self.logging.log(LogLevel.Info, "Tab creation thread stopped")
+                    return
+                    
                 # Create the tab
                 self.logging.log(LogLevel.Debug, f"Starting to create {tab_name} tab")
                 tab = tab_class(self.logging)
                 self.logging.log(LogLevel.Debug, f"Successfully created {tab_name} tab instance")
 
-                # Update UI from main thread
+                # Update UI from main thread safely
                 GLib.idle_add(self._add_tab_to_ui, tab_name, tab)
 
                 # Small delay to avoid blocking the UI
@@ -165,6 +174,9 @@ class BetterControl(Gtk.Window):
 
         # Complete initialization on main thread
         GLib.idle_add(self._finish_tab_loading)
+        
+        # Mark thread as completed
+        self.tabs_thread_running = False
 
     def _add_tab_to_ui(self, tab_name, tab):
         """Add a tab to the UI (called from main thread)"""
@@ -189,120 +201,140 @@ class BetterControl(Gtk.Window):
 
     def _finish_tab_loading(self):
         """Finish tab loading by applying visibility and order (on main thread)"""
-        self.logging.log(LogLevel.Info, "All tabs created, finalizing UI")
-
-        # Ensure all tabs are present in the tab_order setting
-        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"])
-        
-        # Make sure all created tabs are in the tab_order
-        for tab_name in self.tabs.keys():
-            if tab_name not in tab_order:
-                # If we're adding Power for the first time, put it before Autostart
-                if tab_name == "Power":
-                    # Find the position of Autostart
-                    if "Autostart" in tab_order:
-                        autostart_index = tab_order.index("Autostart")
-                        tab_order.insert(autostart_index, tab_name)
+        try:
+            self.logging.log(LogLevel.Info, "All tabs created, finalizing UI")
+    
+            # Ensure all tabs are present in the tab_order setting
+            tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"])
+            
+            # Make sure all created tabs are in the tab_order
+            for tab_name in self.tabs.keys():
+                if tab_name not in tab_order:
+                    # If we're adding Power for the first time, put it before Autostart
+                    if tab_name == "Power":
+                        # Find the position of Autostart
+                        if "Autostart" in tab_order:
+                            autostart_index = tab_order.index("Autostart")
+                            tab_order.insert(autostart_index, tab_name)
+                        else:
+                            tab_order.append(tab_name)
+                    # If we're adding Autostart for the first time, put it at the end
+                    elif tab_name == "Autostart":
+                        tab_order.append(tab_name)
                     else:
                         tab_order.append(tab_name)
-                # If we're adding Autostart for the first time, put it at the end
-                elif tab_name == "Autostart":
-                    tab_order.append(tab_name)
-                else:
-                    tab_order.append(tab_name)
-        
-        # Update the settings with the complete tab list
-        self.settings["tab_order"] = tab_order
-
-        # Apply tab order (visibility is already applied)
-        self.apply_tab_order()
-
-        # Show all tabs to ensure content is visible
-        self.show_all()
-
-        # Log tab page numbers for debugging
-        self.logging.log(
-            LogLevel.Debug, f"Tab pages: {self.tab_pages}"
-        )
-
-        # Initialize the active tab
-        active_tab = None
-        
-        # Set active tab based on command line arguments
-        if (self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", ""))) and "Volume" in self.tab_pages:
-            page_num = self.tab_pages["Volume"]
-            self.logging.log(LogLevel.Info, f"Setting active tab to Volume (page {page_num})")
-            self.notebook.set_current_page(page_num)
-            active_tab = "Volume"
-        elif self.arg_parser.find_arg(("-w", "--wifi")) and "Wi-Fi" in self.tab_pages:
-            page_num = self.tab_pages["Wi-Fi"]
-            self.logging.log(LogLevel.Info, f"Setting active tab to Wi-Fi (page {page_num})")
-            self.notebook.set_current_page(page_num)
-            active_tab = "Wi-Fi"
-        elif (
-            self.arg_parser.find_arg(("-a", "--autostart"))
-            and "Autostart" in self.tab_pages
-        ):
-            page_num = self.tab_pages["Autostart"]
-            self.logging.log(LogLevel.Info, f"Setting active tab to Autostart (page {page_num})")
-            self.notebook.set_current_page(page_num)
-            active_tab = "Autostart"
-        elif (
-            self.arg_parser.find_arg(("-b", "--bluetooth"))
-            and "Bluetooth" in self.tab_pages
-        ):
-            page_num = self.tab_pages["Bluetooth"]
-            self.logging.log(LogLevel.Info, f"Setting active tab to Bluetooth (page {page_num})")
-            self.notebook.set_current_page(page_num)
-            active_tab = "Bluetooth"
-        elif (
-            self.arg_parser.find_arg(("-B", "--battery"))
-            and "Battery" in self.tab_pages
-        ):
-            page_num = self.tab_pages["Battery"]
-            self.logging.log(LogLevel.Info, f"Setting active tab to Battery (page {page_num})")
-            self.notebook.set_current_page(page_num)
-            active_tab = "Battery"
-        elif (
-            self.arg_parser.find_arg(("-d", "--display"))
-            and "Display" in self.tab_pages
-        ):
-            page_num = self.tab_pages["Display"]
-            self.logging.log(LogLevel.Info, f"Setting active tab to Display (page {page_num})")
-            self.notebook.set_current_page(page_num)
-            active_tab = "Display"
-        elif (
-            self.arg_parser.find_arg(("-p", "--power"))
-            and "Power" in self.tab_pages
-        ):
-            page_num = self.tab_pages["Power"]
-            self.logging.log(LogLevel.Info, f"Setting active tab to Power (page {page_num})")
-            self.notebook.set_current_page(page_num)
-            active_tab = "Power"
-        else:
-            # Use last active tab from settings
-            last_tab = self.settings.get("last_active_tab", 0)
-            if last_tab < self.notebook.get_n_pages():
-                self.notebook.set_current_page(last_tab)
-                # Find which tab is at this position
-                for tab_name, tab_page in self.tab_pages.items():
-                    if tab_page == last_tab:
-                        active_tab = tab_name
-                        break
-        
-        # Set visibility status on the active tab
-        if active_tab == "Wi-Fi" and active_tab in self.tabs:
-            self.tabs[active_tab].tab_visible = True
             
-        # Load WiFi networks if WiFi tab is active
-        if "Wi-Fi" in self.tabs and active_tab == "Wi-Fi":
-            self.tabs["Wi-Fi"].load_networks()
-        
-        # Remove loading tab
-        self.notebook.remove_page(self.loading_page)
-        
-        # Connect page switch signal to handle tab visibility
-        self.notebook.connect("switch-page", self.on_tab_switched)
+            # Update the settings with the complete tab list
+            self.settings["tab_order"] = tab_order
+    
+            # Apply tab order (visibility is already applied)
+            try:
+                self.apply_tab_order()
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"Error applying tab order: {e}")
+    
+            # Show all tabs to ensure content is visible
+            self.show_all()
+    
+            # Log tab page numbers for debugging
+            self.logging.log(
+                LogLevel.Debug, f"Tab pages: {self.tab_pages}"
+            )
+    
+            # Initialize the active tab
+            active_tab = None
+            
+            # Set active tab based on command line arguments
+            if (self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", ""))) and "Volume" in self.tab_pages:
+                page_num = self.tab_pages["Volume"]
+                self.logging.log(LogLevel.Info, f"Setting active tab to Volume (page {page_num})")
+                self.notebook.set_current_page(page_num)
+                active_tab = "Volume"
+            elif self.arg_parser.find_arg(("-w", "--wifi")) and "Wi-Fi" in self.tab_pages:
+                page_num = self.tab_pages["Wi-Fi"]
+                self.logging.log(LogLevel.Info, f"Setting active tab to Wi-Fi (page {page_num})")
+                self.notebook.set_current_page(page_num)
+                active_tab = "Wi-Fi"
+            elif (
+                self.arg_parser.find_arg(("-a", "--autostart"))
+                and "Autostart" in self.tab_pages
+            ):
+                page_num = self.tab_pages["Autostart"]
+                self.logging.log(LogLevel.Info, f"Setting active tab to Autostart (page {page_num})")
+                self.notebook.set_current_page(page_num)
+                active_tab = "Autostart"
+            elif (
+                self.arg_parser.find_arg(("-b", "--bluetooth"))
+                and "Bluetooth" in self.tab_pages
+            ):
+                page_num = self.tab_pages["Bluetooth"]
+                self.logging.log(LogLevel.Info, f"Setting active tab to Bluetooth (page {page_num})")
+                self.notebook.set_current_page(page_num)
+                active_tab = "Bluetooth"
+            elif (
+                self.arg_parser.find_arg(("-B", "--battery"))
+                and "Battery" in self.tab_pages
+            ):
+                page_num = self.tab_pages["Battery"]
+                self.logging.log(LogLevel.Info, f"Setting active tab to Battery (page {page_num})")
+                self.notebook.set_current_page(page_num)
+                active_tab = "Battery"
+            elif (
+                self.arg_parser.find_arg(("-d", "--display"))
+                and "Display" in self.tab_pages
+            ):
+                page_num = self.tab_pages["Display"]
+                self.logging.log(LogLevel.Info, f"Setting active tab to Display (page {page_num})")
+                self.notebook.set_current_page(page_num)
+                active_tab = "Display"
+            elif (
+                self.arg_parser.find_arg(("-p", "--power"))
+                and "Power" in self.tab_pages
+            ):
+                page_num = self.tab_pages["Power"]
+                self.logging.log(LogLevel.Info, f"Setting active tab to Power (page {page_num})")
+                self.notebook.set_current_page(page_num)
+                active_tab = "Power"
+            else:
+                # Use last active tab from settings
+                last_tab = self.settings.get("last_active_tab", 0)
+                if last_tab < self.notebook.get_n_pages():
+                    self.notebook.set_current_page(last_tab)
+                    # Find which tab is at this position
+                    for tab_name, tab_page in self.tab_pages.items():
+                        if tab_page == last_tab:
+                            active_tab = tab_name
+                            break
+            
+            # Set visibility status on the active tab
+            if active_tab == "Wi-Fi" and active_tab in self.tabs:
+                self.tabs[active_tab].tab_visible = True
+                
+            # Load WiFi networks if WiFi tab is active
+            if "Wi-Fi" in self.tabs and active_tab == "Wi-Fi":
+                try:
+                    self.tabs["Wi-Fi"].load_networks()
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Error loading WiFi networks: {e}")
+            
+            # Remove loading tab with proper error handling
+            try:
+                if self.loading_page < self.notebook.get_n_pages():
+                    self.notebook.remove_page(self.loading_page)
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"Error removing loading page: {e}")
+            
+            # Connect page switch signal to handle tab visibility
+            self.notebook.connect("switch-page", self.on_tab_switched)
+            
+            # Store strong references to prevent GC issues
+            self._keep_refs = True  # Flag to indicate we're keeping references
+            
+            self.logging.log(LogLevel.Info, "Tab loading finished successfully")
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Critical error finalizing UI: {e}")
+            import traceback
+            traceback.print_exc()
 
         return False  # Required for GLib.idle_add
 
@@ -606,6 +638,13 @@ class BetterControl(Gtk.Window):
 
     def on_destroy(self, window):
         """Save settings and quit"""
+        self.logging.log(LogLevel.Info, "Application shutting down")
+        
+        # Stop any ongoing tab creation
+        if hasattr(self, 'tabs_thread_running'):
+            self.tabs_thread_running = False
+        
+        # Save the current tab before exiting
         self.settings["last_active_tab"] = self.notebook.get_current_page()
 
         # Ensure Autostart is in the tab_order setting before saving
@@ -622,11 +661,21 @@ class BetterControl(Gtk.Window):
                         tab_order.append(tab_name)
             self.settings["tab_order"] = tab_order
 
+        # Signal all tabs to clean up their resources
+        for tab_name, tab in self.tabs.items():
+            if hasattr(tab, 'on_destroy'):
+                try:
+                    tab.on_destroy(None)
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Error destroying {tab_name} tab: {e}")
+
+        # Stop any monitoring threads
         if hasattr(self, "monitor_pulse_events_running"):
             self.monitor_pulse_events_running = False
         if hasattr(self, "load_networks_thread_running"):
             self.load_networks_thread_running = False
 
+        # Ensure logging is set up
         if not hasattr(self, "logging") or not self.logging:
             self.logging = logging.getLogger("BetterControl")
             handler = logging.StreamHandler(sys.__stdout__)  
@@ -634,18 +683,29 @@ class BetterControl(Gtk.Window):
             self.logging.addHandler(handler)
             self.logging.setLevel(logging.Info)
 
-        save_thread = threading.Thread(target=save_settings, args=(self.settings, self.logging))
-        save_thread.start()
-        save_thread.join()
+        # Save settings in a separate thread to avoid blocking
+        try:
+            save_thread = threading.Thread(target=save_settings, args=(self.settings, self.logging))
+            save_thread.daemon = True  # Allow Python to exit without waiting for thread
+            save_thread.start()
+            # Wait briefly for the thread to complete, but don't block shutdown
+            save_thread.join(timeout=0.5)
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Error saving settings: {e}")
 
-        self.logging.log(LogLevel.Info, "Application quitted")
+        self.logging.log(LogLevel.Info, "Application shutdown complete")
 
+        # Close any file descriptors
         if hasattr(self.logging, "flush"):
             self.logging.flush()
 
+        # Use try/except to avoid errors during shutdown
+        try:
+            sys.stdout = open('/dev/null', 'w')
+            sys.stderr = open('/dev/null', 'w')
+        except Exception:
+            pass
 
-        sys.stdout = open('/dev/null', 'w')
-        sys.stderr = open('/dev/null', 'w')
-
+        # Let GTK know we're quitting
         Gtk.main_quit()
-        sys.exit(0)  
+        

@@ -159,8 +159,55 @@ class BluetoothTab(Gtk.Box):
 
     def periodic_update(self):
         """Update the device list periodically"""
-        self.update_device_list()
-        return True  # Keep the timer active
+        try:
+            # Skip update if tab is being destroyed
+            if hasattr(self, 'is_being_destroyed') and self.is_being_destroyed:
+                return False
+                
+            self.update_device_list()
+            return True  # Keep the timer active
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Error in periodic update: {e}")
+            return True  # Keep trying
+            
+    def __del__(self):
+        """Clean up resources when tab is destroyed"""
+        try:
+            self.cleanup_resources()
+        except Exception as e:
+            pass  # Can't log during __del__
+            
+    def on_destroy(self, widget):
+        """Clean up resources when tab is destroyed"""
+        self.is_being_destroyed = True
+        self.cleanup_resources()
+        
+    def cleanup_resources(self):
+        """Clean up all resources used by the tab"""
+        # Stop discovery if active
+        if self.is_discovering:
+            try:
+                stop_discovery(self.logging)
+                self.is_discovering = False
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"Error stopping discovery: {e}")
+                
+        # Remove timers
+        if self.discovery_timeout_id is not None:
+            try:
+                GLib.source_remove(self.discovery_timeout_id)
+                self.discovery_timeout_id = None
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"Error removing discovery timeout: {e}")
+                
+        if self.discovery_check_id is not None:
+            try:
+                GLib.source_remove(self.discovery_check_id)
+                self.discovery_check_id = None
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"Error removing discovery check: {e}")
+                
+        self.logging.log(LogLevel.Debug, "Bluetooth tab resources cleaned up")
 
     def on_power_switched(self, switch, gparam):
         """Handle Bluetooth power switch changes
