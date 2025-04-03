@@ -168,7 +168,7 @@ class ArgParse:
         self.arg_print(f"{BOLD}{UNDERLINE}General:{RESET}")
         self.arg_print(f"  {GREEN}-h, --help{RESET}                      Prints this help message")
         self.arg_print(f"  {GREEN}-f, --force{RESET}                     Makes the app force to have all dependencies installed")
-        self.arg_print(f"  {GREEN}-s, --size{RESET} {YELLOW}<intxint>{RESET}             Sets a custom window size")
+        self.arg_print(f"  {GREEN}-s, --size{RESET} {YELLOW}<intxint>{RESET}            Sets a custom window size")
         self.arg_print(f"  {GREEN}-m, --minimal{RESET}                   Hides the notebook tabs and only shows the selected tab content\n")
 
         # Tab selection options
@@ -185,8 +185,8 @@ class ArgParse:
         # Logging options
         self.arg_print(f"{BOLD}{UNDERLINE}Logging:{RESET}")
         self.arg_print(f"  {MAGENTA}-l, --log{RESET} {YELLOW}<lvl/file>{RESET}            The program will either log to a file if given a file path,")
-        self.arg_print(f"                                 or output to stdout based on the log level if given")
-        self.arg_print(f"                                 a value between 0 and 3.")
+        self.arg_print(f"                                  or output to stdout based on the log level if given")
+        self.arg_print(f"                                  a value between 0 and 3.")
         self.arg_print(f"  {MAGENTA}-r, --redact{RESET}                    Redact sensitive information from logs\n")
 
         # Footer
