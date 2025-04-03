@@ -2,15 +2,13 @@
 
 # ⚙️ Better Control ⚙️
 
+<img src="https://github.com/user-attachments/assets/4ac1bfc4-6a0e-4134-83c3-1356d5a71e33" width="650">
+
 ### *A sleek GTK-themed control panel for Linux* 🐧
 
 [![AUR Package](https://img.shields.io/aur/version/better-control-git?style=flat-square&logo=arch-linux&label=AUR&color=1793d1)](https://aur.archlinux.org/packages/better-control-git)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/quantumvoid0/better-control?style=flat-square&color=yellow)](https://github.com/quantumvoid0/better-control/stargazers)
-
-<br>
-
-<img src="https://github.com/user-attachments/assets/4ac1bfc4-6a0e-4134-83c3-1356d5a71e33" width="650">
 
 </div>
 
