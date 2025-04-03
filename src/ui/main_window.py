@@ -6,7 +6,7 @@ import traceback
 import gi  # type: ignore
 import threading
 import sys
- 
+
 from utils.arg_parser import ArgParse
 
 gi.require_version("Gtk", "3.0")
@@ -22,6 +22,7 @@ from ui.tabs.wifi_tab import WiFiTab
 from ui.tabs.settings_tab import SettingsTab
 from utils.settings import load_settings, save_settings
 from utils.logger import LogLevel, Logger
+from ui.css.animations import load_animations_css, animate_widget_show
 
 
 class BetterControl(Gtk.Window):
@@ -87,12 +88,15 @@ class BetterControl(Gtk.Window):
             screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
+        # Load animations CSS
+        self.animations_css_provider = load_animations_css()
+
         self.settings = load_settings(logging)
         self.logging.log(LogLevel.Info, "Settings loaded")
 
         self.notebook = Gtk.Notebook()
         self.add(self.notebook)
-        
+
         # Connect key-press-event to disable tab selection with Tab key
         self.notebook.connect("key-press-event", self.on_notebook_key_press)
         # Also connect key-press-event to the main window to catch all tab presses
@@ -103,8 +107,13 @@ class BetterControl(Gtk.Window):
 
         self.loading_spinner = Gtk.Spinner()
         self.loading_spinner.start()
+        # Add animation class to spinner
+        self.loading_spinner.get_style_context().add_class("spinner-pulse")
 
         self.loading_label = Gtk.Label(label="Loading tabs...")
+        # Add animation class to label
+        self.loading_label.get_style_context().add_class("fade-in")
+
         loading_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         loading_box.set_halign(Gtk.Align.CENTER)
         loading_box.set_valign(Gtk.Align.CENTER)
@@ -141,10 +150,10 @@ class BetterControl(Gtk.Window):
             "Power": PowerTab,
             "Autostart": AutostartTab,
         }
-        
+
         # Track if thread is still running to avoid segfaults during shutdown
         self.tabs_thread_running = True
-        
+
         # Create tabs one by one
         for tab_name, tab_class in tab_classes.items():
             try:
@@ -152,7 +161,7 @@ class BetterControl(Gtk.Window):
                 if not hasattr(self, 'tabs_thread_running') or not self.tabs_thread_running:
                     self.logging.log(LogLevel.Info, "Tab creation thread stopped")
                     return
-                    
+
                 # Create the tab
                 self.logging.log(LogLevel.Debug, f"Starting to create {tab_name} tab")
                 tab = tab_class(self.logging)
@@ -174,7 +183,7 @@ class BetterControl(Gtk.Window):
 
         # Complete initialization on main thread
         GLib.idle_add(self._finish_tab_loading)
-        
+
         # Mark thread as completed
         self.tabs_thread_running = False
 
@@ -184,6 +193,18 @@ class BetterControl(Gtk.Window):
 
         # Make sure tab is visible
         tab.show_all()
+
+        # Add animation class to the tab
+        tab.get_style_context().add_class("fade-in")
+
+        # Remove animation class after animation completes
+        def remove_animation_class():
+            if tab and not tab.get_parent() is None:
+                tab.get_style_context().remove_class("fade-in")
+            return False
+
+        # Schedule class removal after animation duration
+        GLib.timeout_add(350, remove_animation_class)
 
         # Check visibility settings
         visibility = self.settings.get("visibility", {})
@@ -203,10 +224,10 @@ class BetterControl(Gtk.Window):
         """Finish tab loading by applying visibility and order (on main thread)"""
         try:
             self.logging.log(LogLevel.Info, "All tabs created, finalizing UI")
-    
+
             # Ensure all tabs are present in the tab_order setting
             tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"])
-            
+
             # Make sure all created tabs are in the tab_order
             for tab_name in self.tabs.keys():
                 if tab_name not in tab_order:
@@ -223,27 +244,27 @@ class BetterControl(Gtk.Window):
                         tab_order.append(tab_name)
                     else:
                         tab_order.append(tab_name)
-            
+
             # Update the settings with the complete tab list
             self.settings["tab_order"] = tab_order
-    
+
             # Apply tab order (visibility is already applied)
             try:
                 self.apply_tab_order()
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Error applying tab order: {e}")
-    
+
             # Show all tabs to ensure content is visible
             self.show_all()
-    
+
             # Log tab page numbers for debugging
             self.logging.log(
                 LogLevel.Debug, f"Tab pages: {self.tab_pages}"
             )
-    
+
             # Initialize the active tab
             active_tab = None
-            
+
             # Set active tab based on command line arguments
             if (self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", ""))) and "Volume" in self.tab_pages:
                 page_num = self.tab_pages["Volume"]
@@ -305,31 +326,31 @@ class BetterControl(Gtk.Window):
                         if tab_page == last_tab:
                             active_tab = tab_name
                             break
-            
+
             # Set visibility status on the active tab
             if active_tab == "Wi-Fi" and active_tab in self.tabs:
                 self.tabs[active_tab].tab_visible = True
-                
+
             # Load WiFi networks if WiFi tab is active
             if "Wi-Fi" in self.tabs and active_tab == "Wi-Fi":
                 try:
                     self.tabs["Wi-Fi"].load_networks()
                 except Exception as e:
                     self.logging.log(LogLevel.Error, f"Error loading WiFi networks: {e}")
-            
+
             # Remove loading tab with proper error handling
             try:
                 if self.loading_page < self.notebook.get_n_pages():
                     self.notebook.remove_page(self.loading_page)
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Error removing loading page: {e}")
-            
+
             # Connect page switch signal to handle tab visibility
             self.notebook.connect("switch-page", self.on_tab_switched)
-            
+
             # Store strong references to prevent GC issues
             self._keep_refs = True  # Flag to indicate we're keeping references
-            
+
             self.logging.log(LogLevel.Info, "Tab loading finished successfully")
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Critical error finalizing UI: {e}")
@@ -378,7 +399,7 @@ class BetterControl(Gtk.Window):
         tab_order = self.settings.get(
             "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"]
         )
-        
+
         # Make sure all tabs are present in the tab_order
         for tab_name in self.tabs.keys():
             if tab_name not in tab_order:
@@ -395,16 +416,16 @@ class BetterControl(Gtk.Window):
                     tab_order.append(tab_name)
                 else:
                     tab_order.append(tab_name)
-        
+
         # Update the settings with the modified order
         self.settings["tab_order"] = tab_order
-        
+
         # Log the desired tab order
         self.logging.log(LogLevel.Debug, f"Applying tab order: {tab_order}")
-        
+
         # Clear the tab_pages mapping
         self.tab_pages = {}
-        
+
         # Remove all tabs from the notebook while preserving them
         tab_widgets = {}
         for tab_name, tab in self.tabs.items():
@@ -413,7 +434,7 @@ class BetterControl(Gtk.Window):
                     self.notebook.remove_page(i)
                     tab_widgets[tab_name] = tab
                     break
-        
+
         # Re-add tabs in the correct order
         for i, tab_name in enumerate(tab_order):
             if tab_name in self.tabs and tab_name in tab_widgets:
@@ -424,7 +445,7 @@ class BetterControl(Gtk.Window):
                 )
                 self.tab_pages[tab_name] = page_num
                 self.logging.log(LogLevel.Debug, f"Tab {tab_name} added at position {page_num}")
-        
+
         # Show all tabs
         self.notebook.show_all()
 
@@ -486,6 +507,9 @@ class BetterControl(Gtk.Window):
             content_area = dialog.get_content_area()
             content_area.add(settings_tab)
             content_area.set_border_width(10)
+
+            # Add animation class to settings tab
+            settings_tab.get_style_context().add_class("fade-in")
 
             # Show the dialog and all its contents
             dialog.show_all()
@@ -594,12 +618,27 @@ class BetterControl(Gtk.Window):
 
     def on_tab_switched(self, notebook, page, page_num):
         """Handle tab switching"""
-        
-        # Update tab visibility status 
+
+        # Apply animation to the new tab
+        current_page = notebook.get_nth_page(page_num)
+        if current_page:
+            # Add fade-in animation class
+            current_page.get_style_context().add_class("fade-in")
+
+            # Remove the animation class after it completes
+            def remove_animation_class():
+                if current_page and not current_page.get_parent() is None:
+                    current_page.get_style_context().remove_class("fade-in")
+                return False
+
+            # Schedule class removal after animation duration
+            GLib.timeout_add(350, remove_animation_class)
+
+        # Update tab visibility status
         for tab_name, tab in self.tabs.items():
             # Check if this tab is at the current page number
             is_visible = self.tab_pages.get(tab_name) == page_num
-            
+
             # If tab has tab_visible property (WiFi tab), update it
             if hasattr(tab, 'tab_visible'):
                 tab.tab_visible = is_visible
@@ -622,7 +661,7 @@ class BetterControl(Gtk.Window):
         """Prevent tab selection globally"""
         keyval = event.keyval
         state = event.state
-        
+
         if keyval in (65289, 65056):  # Tab and Shift+Tab
             return True  # Stop propagation
         # on shift + s show settings dialog
@@ -639,11 +678,11 @@ class BetterControl(Gtk.Window):
     def on_destroy(self, window):
         """Save settings and quit"""
         self.logging.log(LogLevel.Info, "Application shutting down")
-        
+
         # Stop any ongoing tab creation
         if hasattr(self, 'tabs_thread_running'):
             self.tabs_thread_running = False
-        
+
         # Save the current tab before exiting
         self.settings["last_active_tab"] = self.notebook.get_current_page()
 
@@ -678,7 +717,7 @@ class BetterControl(Gtk.Window):
         # Ensure logging is set up
         if not hasattr(self, "logging") or not self.logging:
             self.logging = logging.getLogger("BetterControl")
-            handler = logging.StreamHandler(sys.__stdout__)  
+            handler = logging.StreamHandler(sys.__stdout__)
             handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s]: %(message)s", "%H:%M:%S"))
             self.logging.addHandler(handler)
             self.logging.setLevel(logging.Info)
@@ -708,4 +747,3 @@ class BetterControl(Gtk.Window):
 
         # Let GTK know we're quitting
         Gtk.main_quit()
-        

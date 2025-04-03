@@ -10,6 +10,7 @@ import subprocess
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk # type: ignore
 from tools.globals import get_wifi_css
+from ui.css.animations import animate_widget_show
 
 from tools.wifi import (
     get_wifi_status,
@@ -39,7 +40,7 @@ class WiFiTab(Gtk.Box):
         self.set_margin_bottom(15)
         self.set_hexpand(True)
         self.set_vexpand(True)
-        
+
         # Track tab visibility status
         self.tab_visible = False
 
@@ -178,7 +179,7 @@ class WiFiTab(Gtk.Box):
         # Previous speed values for calculation
         self.prev_rx_bytes = 0
         self.prev_tx_bytes = 0
-        
+
         # Connect signals for tab visibility tracking
         self.connect("map", self.on_tab_shown)
         self.connect("unmap", self.on_tab_hidden)
@@ -188,34 +189,34 @@ class WiFiTab(Gtk.Box):
         self.logging.log(LogLevel.Info, "WiFi tab became visible, refreshing networks")
         self.tab_visible = True
         self.update_network_list()
-        
+
         # Start network speed updates when tab becomes visible
         if self.network_speed_timer_id is None:
             self.network_speed_timer_id = GLib.timeout_add_seconds(1, self.update_network_speed)
-        
+
         return False
-        
+
     def on_tab_hidden(self, widget):
         """Handle tab becoming hidden"""
         self.logging.log(LogLevel.Info, "WiFi tab became hidden")
         self.tab_visible = False
-        
+
         # Stop network speed updates when tab is hidden
         if self.network_speed_timer_id is not None:
             GLib.source_remove(self.network_speed_timer_id)
             self.network_speed_timer_id = None
-            
+
         return False
 
     def load_networks(self):
         """Load WiFi networks list - to be called after all tabs are loaded"""
         self.logging.log(LogLevel.Info, "Loading WiFi networks after tabs initialization")
-        
+
         # Only load networks if the tab is visible
         if not self.tab_visible:
             self.logging.log(LogLevel.Info, "WiFi tab not visible, skipping initial network loading")
             return
-            
+
         # Add a loading indicator
         row = Gtk.ListBoxRow()
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -283,6 +284,19 @@ class WiFiTab(Gtk.Box):
 
                 row.add(box)
                 self.networks_box.add(row)
+
+                # Add animation class to the row
+                row.get_style_context().add_class("fade-in")
+
+                # Remove animation class after it completes
+                def remove_animation_class(row_widget):
+                    if row_widget and not row_widget.get_parent() is None:
+                        row_widget.get_style_context().remove_class("fade-in")
+                    return False
+
+                # Schedule class removal after animation duration
+                GLib.timeout_add(350, remove_animation_class, row)
+
                 self.networks_box.show_all()
                 return False
             # Add networks
@@ -347,7 +361,7 @@ class WiFiTab(Gtk.Box):
                     connected_box.pack_start(connected_icon, False, False, 0)
                     connected_box.pack_start(connected_label, False, False, 0)
                     box.pack_start(connected_box, False, True, 0)
-                    
+
                     # add qr code icon
                     qr_button = Gtk.Button()
                     qr_button.set_tooltip_text("Show Qr code")
@@ -356,7 +370,7 @@ class WiFiTab(Gtk.Box):
                     qr_icon = Gtk.Image.new_from_icon_name("qrscanner-symbolic", Gtk.IconSize.MENU)
                     qr_button.set_image(qr_icon)
                     box.pack_start(qr_button, False, False, 0)
-                    
+
 
                 # Security icon
                 if network["security"].lower() != "none":
@@ -365,6 +379,26 @@ class WiFiTab(Gtk.Box):
 
                 row.add(box)
                 self.networks_box.add(row)
+
+                # Add animation class with a slight delay based on position
+                # to create a cascading effect
+                def add_animation_with_delay(row_widget, index):
+                    if row_widget and not row_widget.get_parent() is None:
+                        row_widget.get_style_context().add_class("fade-in")
+
+                        # Remove animation class after it completes
+                        def remove_animation_class():
+                            if row_widget and not row_widget.get_parent() is None:
+                                row_widget.get_style_context().remove_class("fade-in")
+                            return False
+
+                        # Schedule class removal after animation duration
+                        GLib.timeout_add(350, remove_animation_class)
+                    return False
+
+                # Schedule animation with cascading delay (30ms per item)
+                index = len(self.networks_box.get_children()) - 1
+                GLib.timeout_add(30 * index, add_animation_with_delay, row, index)
 
             self.networks_box.show_all()
         except Exception as e:
@@ -402,12 +436,12 @@ class WiFiTab(Gtk.Box):
     def update_network_list(self):
         """Update the list of WiFi networks"""
         self.logging.log(LogLevel.Info, "Refreshing WiFi networks list")
-        
+
         # Don't refresh if tab is not visible
         if not self.tab_visible:
             self.logging.log(LogLevel.Info, "WiFi tab not visible, skipping network refresh")
             return
-            
+
         # Clear existing networks
         for child in self.networks_box.get_children():
             self.networks_box.remove(child)
@@ -536,7 +570,7 @@ class WiFiTab(Gtk.Box):
                 # If that fails, check if network requires password
                 networks = get_wifi_networks(self.logging)
                 network = next((n for n in networks if n["ssid"] == ssid), None)
-                
+
                 if network and network["security"].lower() != "none":
                     # Network requires password and saved credentials failed, show password dialog
                     GLib.idle_add(self._show_password_dialog, ssid)
@@ -756,7 +790,7 @@ class WiFiTab(Gtk.Box):
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Failed disconnecting from network: {e}")
             GLib.idle_add(self.update_network_list)
-            
+
 
     def get_current_network(self):
         """Get the currently connected network"""
@@ -776,7 +810,7 @@ class WiFiTab(Gtk.Box):
             # create a dialog
             try:
                 connection_info = get_connection_info(current_network["ssid"], self.logging)
-                
+
                 # generate qr code for wifi
                 qr_path = generate_wifi_qrcode(
                     current_network["ssid"],
@@ -784,7 +818,7 @@ class WiFiTab(Gtk.Box):
                     current_network["security"],
                     self.logging
                 )
-                
+
                 qr_dialog = Gtk.Dialog(
                     title="Share Network",
                     parent=self.get_toplevel(),
@@ -792,13 +826,13 @@ class WiFiTab(Gtk.Box):
                 )
                 qr_dialog.set_default_size(0,0)
                 qr_dialog.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
-                
+
                 # header
                 header_bar = Gtk.HeaderBar()
                 header_bar.set_show_close_button(True)
                 header_bar.set_title("Share Network")
                 qr_dialog.set_titlebar(header_bar)
-                
+
                 # content area
                 content_area = qr_dialog.get_content_area()
                 content_area.set_spacing(10)
@@ -806,22 +840,22 @@ class WiFiTab(Gtk.Box):
                 content_area.set_margin_bottom(10)
                 content_area.set_margin_start(10)
                 content_area.set_margin_end(10)
-                
+
                 # for qr code image
                 top_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
                 top_box.set_margin_bottom(20)
-                
+
                 # image holder
                 qr_button = Gtk.Button()
                 qr_button.set_size_request(124,124)
                 qr_button.set_relief(Gtk.ReliefStyle.NONE)
                 qr_button.get_style_context().add_class("qr_image_holder")
                 top_box.pack_start(qr_button, False, False, 0)
-                
+
                 scan_label = Gtk.Label(label="Scan to connect")
                 scan_label.get_style_context().add_class("scan_label")
                 top_box.pack_start(scan_label, False, False, 0)
-                
+
                 if qr_path:
                     qr_image = Gtk.Image()
                     qr_image.set_size_request(120, 120)
@@ -832,57 +866,56 @@ class WiFiTab(Gtk.Box):
                 else:
                     error_label = Gtk.Label(label="Failed to generate QR code")
                     qr_button.add(error_label)
-                
+
                 content_area.pack_start(top_box, False, True, 0)
-                
+
                 # network details
                 bottom_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
                 bottom_box.set_margin_top(1)
-                
+
                 # network name
                 ssid_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
                 ssid_box.set_size_request(320, 50)
                 ssid_box.get_style_context().add_class("ssid-box")
-                
+
                 ssid_label = Gtk.Label(label="Network Name")
                 ssid_label.get_style_context().add_class("dimmed-label")
                 ssid_label.set_markup("<b>Network Name </b>")
                 ssid_label.set_halign(Gtk.Align.START)
-                
+
                 ssid_name = Gtk.Label(label=current_network["ssid"])
                 ssid_name.get_style_context().add_class("dimmed-label")
                 ssid_name.set_halign(Gtk.Align.START)
                 ssid_box.pack_start(ssid_label, False, False, 0)
                 ssid_box.pack_start(ssid_name, False, False, 0)
-                
+
                 # network passwd
                 security_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
                 security_box.set_size_request(320, 50)
                 security_box.get_style_context().add_class("secrity-box")
-                
+
                 security_label = Gtk.Label(label="Password")
                 security_label.get_style_context().add_class("dimmed-label")
                 security_label.set_markup("<b>Password </b>")
                 security_label.set_halign(Gtk.Align.START)
-                
+
                 passwd = Gtk.Label(label=connection_info.get("password", "Hidden"))
                 passwd.get_style_context().add_class("dimmed-label")
                 passwd.set_halign(Gtk.Align.START)
                 security_box.pack_start(security_label, False, False, 0)
                 security_box.pack_start(passwd, False, False, 0)
-                
+
                 # add to bottom box
                 bottom_box.pack_start(ssid_box, False, False, 0)
                 bottom_box.pack_start(security_box, False, False, 0)
-                
+
                 content_area.pack_start(bottom_box, False, True, 0)
-                
+
                 qr_dialog.show_all()
                 response = qr_dialog.run()
                 qr_dialog.destroy()
-                
-                                
+
+
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"failed to open qr code dialog: {e}")
                 traceback.print_exc()
-            
