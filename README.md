@@ -61,6 +61,18 @@ Before installing, ensure you have `git` and `base-devel` installed.
 
 <br>
 
+### Usage
+
+`control` or `better-control` command will run the gui application.
+
+### Keybindings
+
+| Keybinding | Action |
+|------------|--------|
+| `Shift + S` | Open Settings Dialog |
+| `Q` or `Ctrl + Q` | Quit Application |
+
+
 ## 💾 Installation
 
 <details>
