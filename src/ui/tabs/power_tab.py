@@ -20,6 +20,7 @@ class PowerTab(Gtk.Box):
         self.config_file = os.path.expanduser("~/.config/better-control/power_settings.json")
         self.active_buttons = self._load_settings()
         self.custom_commands = self.active_buttons.get("commands", {})
+        self.custom_colors = self.active_buttons.get("colors", {})
 
         # Set margins to match other tabs
         self.set_margin_start(15)
@@ -155,6 +156,14 @@ class PowerTab(Gtk.Box):
                 "hibernate": "systemctl hibernate",
                 "reboot": "systemctl reboot",
                 "shutdown": "systemctl poweroff"
+            },
+            "colors": {
+                "lock": "#4A90D9",
+                "logout": "#729FCF",
+                "suspend": "#8DB67A",
+                "hibernate": "#AD7FA8",
+                "reboot": "#F8C146",
+                "shutdown": "#EF5350"
             }
         }
         
@@ -234,12 +243,15 @@ class PowerTab(Gtk.Box):
         
         # Create and arrange buttons in a grid
         for i, option in enumerate(active_options):
+            # Get custom color if available
+            color = self.custom_colors.get(option["id"], option["color"])
+            
             button = self._create_power_button(
                 option["label"],
                 option["icon"],
                 option["tooltip"],
                 option["callback"],
-                option["color"],
+                color,
                 button_size
             )
             
@@ -398,6 +410,134 @@ class PowerTab(Gtk.Box):
         commands_tab_label = Gtk.Label(label="Commands")
         notebook.append_page(commands_box, commands_tab_label)
         
+        # ===== Colors Tab =====
+        colors_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        colors_box.set_margin_start(10)
+        colors_box.set_margin_end(10)
+        colors_box.set_margin_top(10)
+        colors_box.set_margin_bottom(10)
+        
+        colors_label = Gtk.Label()
+        colors_label.set_markup("<b>Customize Button Colors</b>")
+        colors_label.set_halign(Gtk.Align.START)
+        colors_box.pack_start(colors_label, False, False, 0)
+        
+        # Add separator
+        colors_separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        colors_box.pack_start(colors_separator, False, False, 5)
+        
+        # Create scrolled window for colors
+        colors_scrolled = Gtk.ScrolledWindow()
+        colors_scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        colors_scrolled.set_vexpand(True)
+        
+        colors_list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        
+        # Create color buttons for each power option
+        self.color_buttons = {}
+        for option in self.power_options:
+            option_id = option["id"]
+            
+            # Get default color for this option
+            default_color = ""
+            if option_id == "lock":
+                default_color = "#4A90D9"
+            elif option_id == "logout":
+                default_color = "#729FCF"
+            elif option_id == "suspend":
+                default_color = "#8DB67A"
+            elif option_id == "hibernate":
+                default_color = "#AD7FA8"
+            elif option_id == "reboot":
+                default_color = "#F8C146"
+            elif option_id == "shutdown":
+                default_color = "#EF5350"
+            
+            # Get current saved color or use default
+            current_color = self.custom_colors.get(option_id, default_color)
+            
+            # Option label
+            color_label_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            
+            icon = Gtk.Image.new_from_icon_name(option["icon"], Gtk.IconSize.MENU)
+            color_label_box.pack_start(icon, False, False, 0)
+            
+            label = Gtk.Label(label=f"{option['label']} Color:")
+            label.set_halign(Gtk.Align.START)
+            color_label_box.pack_start(label, True, True, 0)
+            
+            colors_list_box.pack_start(color_label_box, False, False, 0)
+            
+            # Color selection box
+            color_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            
+            # Create color button
+            color_button = Gtk.ColorButton()
+            color_button.set_tooltip_text(f"Select color for {option['label']} button")
+            
+            # Set the current color
+            rgba = self._hex_to_rgba(current_color)
+            color_button.set_rgba(rgba)
+            
+            color_button.connect("color-set", self.on_color_selected, option_id)
+            self.color_buttons[option_id] = color_button
+            
+            color_box.pack_start(color_button, False, False, 0)
+            
+            # Color hex display
+            color_entry = Gtk.Entry()
+            color_entry.set_text(current_color)
+            color_entry.set_width_chars(9)
+            color_entry.set_max_length(7)
+            color_entry.set_editable(False)
+            color_box.pack_start(color_entry, False, False, 0)
+            
+            # Connect the color button to update the entry
+            color_button.connect("color-set", self.on_update_color_entry, color_entry)
+            
+            # Reset color button
+            reset_color_button = Gtk.Button()
+            reset_color_button.set_tooltip_text(f"Reset to default color")
+            
+            reset_icon = Gtk.Image.new_from_icon_name("edit-undo-symbolic", Gtk.IconSize.MENU)
+            reset_color_button.add(reset_icon)
+            reset_color_button.connect("clicked", self.on_reset_color, option_id, color_button, color_entry, default_color)
+            
+            color_box.pack_end(reset_color_button, False, False, 0)
+            
+            # Preview of the color
+            preview_button = Gtk.Button(label=option["label"])
+            preview_button.set_size_request(120, 30)
+            
+            # Style the preview button
+            style_provider = Gtk.CssProvider()
+            css = f".preview-button {{ background-color: {current_color}; color: white; font-weight: bold; border-radius: 6px; }}"
+            style_provider.load_from_data(css.encode())
+            preview_button.get_style_context().add_class("preview-button")
+            preview_button.get_style_context().add_provider(
+                style_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            )
+            
+            # Store reference to update preview
+            setattr(color_button, "preview_button", preview_button)
+            setattr(color_button, "preview_color", current_color)
+            
+            color_box.pack_end(preview_button, True, True, 0)
+            
+            colors_list_box.pack_start(color_box, False, False, 0)
+            
+            # Add separator between entries
+            if option != self.power_options[-1]:
+                color_separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+                colors_list_box.pack_start(color_separator, False, False, 10)
+        
+        colors_scrolled.add(colors_list_box)
+        colors_box.pack_start(colors_scrolled, True, True, 0)
+        
+        # Add colors tab
+        colors_tab_label = Gtk.Label(label="Colors")
+        notebook.append_page(colors_box, colors_tab_label)
+        
         box.pack_start(notebook, True, True, 0)
         
         # Add apply button
@@ -429,11 +569,19 @@ class PowerTab(Gtk.Box):
         for option_id, entry in self.command_entries.items():
             commands[option_id] = entry.get_text()
         
+        # Get current colors from color buttons
+        colors = {}
+        for option_id, color_button in self.color_buttons.items():
+            hex_color = getattr(color_button, "preview_color")
+            colors[option_id] = hex_color
+        
         # Save commands to settings
         self.active_buttons["commands"] = commands
+        self.active_buttons["colors"] = colors
         
-        # Update custom commands
+        # Update custom commands and colors
         self.custom_commands = commands
+        self.custom_colors = colors
         
         self._save_settings()
         self._build_power_grid()
@@ -561,4 +709,80 @@ class PowerTab(Gtk.Box):
         """Handle shutdown button click"""
         command = self.custom_commands.get("shutdown", "systemctl poweroff")
         self.logging.log(LogLevel.Info, f"Shutdown button clicked, running: {command}")
-        self._execute_command(command) 
+        self._execute_command(command)
+    
+    def _hex_to_rgba(self, hex_color):
+        """Convert hex color to RGBA color"""
+        rgba = Gdk.RGBA()
+        
+        # Handle both formats: #RRGGBB and RRGGBB
+        if hex_color.startswith("#"):
+            hex_color = hex_color[1:]
+        
+        # Parse the hex color
+        if len(hex_color) == 6:
+            r = int(hex_color[0:2], 16) / 255.0
+            g = int(hex_color[2:4], 16) / 255.0
+            b = int(hex_color[4:6], 16) / 255.0
+            rgba.red = r
+            rgba.green = g
+            rgba.blue = b
+            rgba.alpha = 1.0
+        
+        return rgba
+    
+    def _rgba_to_hex(self, rgba):
+        """Convert RGBA color to hex color"""
+        r = int(rgba.red * 255)
+        g = int(rgba.green * 255)
+        b = int(rgba.blue * 255)
+        return f"#{r:02x}{g:02x}{b:02x}"
+    
+    def on_color_selected(self, color_button, option_id):
+        """Handle color selection"""
+        rgba = color_button.get_rgba()
+        hex_color = self._rgba_to_hex(rgba)
+        setattr(color_button, "preview_color", hex_color)
+        
+        # Update preview button style
+        preview_button = getattr(color_button, "preview_button")
+        style_provider = Gtk.CssProvider()
+        css = f".preview-button {{ background-color: {hex_color}; color: white; font-weight: bold; border-radius: 6px; }}"
+        style_provider.load_from_data(css.encode())
+        
+        # Remove old provider and add new one
+        style_context = preview_button.get_style_context()
+        for provider in style_context.list_providers():
+            style_context.remove_provider(provider)
+        
+        style_context.add_provider(
+            style_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+    
+    def on_update_color_entry(self, color_button, entry):
+        """Update color entry when color button changes"""
+        rgba = color_button.get_rgba()
+        hex_color = self._rgba_to_hex(rgba)
+        entry.set_text(hex_color)
+    
+    def on_reset_color(self, button, option_id, color_button, entry, default_color):
+        """Reset color to default"""
+        rgba = self._hex_to_rgba(default_color)
+        color_button.set_rgba(rgba)
+        entry.set_text(default_color)
+        
+        # Update preview button
+        setattr(color_button, "preview_color", default_color)
+        preview_button = getattr(color_button, "preview_button")
+        style_provider = Gtk.CssProvider()
+        css = f".preview-button {{ background-color: {default_color}; color: white; font-weight: bold; border-radius: 6px; }}"
+        style_provider.load_from_data(css.encode())
+        
+        # Remove old provider and add new one
+        style_context = preview_button.get_style_context()
+        for provider in style_context.list_providers():
+            style_context.remove_provider(provider)
+        
+        style_context.add_provider(
+            style_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        ) 
