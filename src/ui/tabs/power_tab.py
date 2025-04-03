@@ -19,6 +19,7 @@ class PowerTab(Gtk.Box):
         # Set default button visibility
         self.config_file = os.path.expanduser("~/.config/better-control/power_settings.json")
         self.active_buttons = self._load_settings()
+        self.custom_commands = self.active_buttons.get("commands", {})
 
         # Set margins to match other tabs
         self.set_margin_start(15)
@@ -146,7 +147,15 @@ class PowerTab(Gtk.Box):
             "suspend": True,
             "hibernate": True,
             "reboot": True,
-            "shutdown": True
+            "shutdown": True,
+            "commands": {
+                "lock": "loginctl lock-session",
+                "logout": "loginctl terminate-user $USER",
+                "suspend": "systemctl suspend",
+                "hibernate": "systemctl hibernate",
+                "reboot": "systemctl reboot",
+                "shutdown": "systemctl poweroff"
+            }
         }
         
         try:
@@ -155,7 +164,13 @@ class PowerTab(Gtk.Box):
             
             if os.path.exists(self.config_file):
                 with open(self.config_file, 'r') as f:
-                    return json.load(f)
+                    settings = json.load(f)
+                    
+                    # Ensure commands exist in settings
+                    if "commands" not in settings:
+                        settings["commands"] = default_settings["commands"]
+                    
+                    return settings
             else:
                 # Create default settings file
                 with open(self.config_file, 'w') as f:
@@ -244,17 +259,27 @@ class PowerTab(Gtk.Box):
         box.set_margin_top(12)
         box.set_margin_bottom(12)
         
-        # Add title
-        title = Gtk.Label(label="Configure Power Menu Buttons")
-        title.set_halign(Gtk.Align.START)
-        title.set_markup("<b>Configure Power Menu Buttons</b>")
-        box.pack_start(title, False, False, 5)
+        # Create notebook for tabs
+        notebook = Gtk.Notebook()
+        notebook.set_size_request(400, 300)
+        
+        # ===== Visibility Tab =====
+        visibility_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        visibility_box.set_margin_start(10)
+        visibility_box.set_margin_end(10)
+        visibility_box.set_margin_top(10)
+        visibility_box.set_margin_bottom(10)
+        
+        visibility_label = Gtk.Label()
+        visibility_label.set_markup("<b>Show/Hide Buttons</b>")
+        visibility_label.set_halign(Gtk.Align.START)
+        visibility_box.pack_start(visibility_label, False, False, 0)
         
         # Add separator
         separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        box.pack_start(separator, False, False, 5)
+        visibility_box.pack_start(separator, False, False, 5)
         
-        # Create a checkbox for each power option
+        # Create a switch for each power option
         self.option_switches = {}
         for option in self.power_options:
             option_id = option["id"]
@@ -276,35 +301,144 @@ class PowerTab(Gtk.Box):
             
             self.option_switches[option_id] = switch
             option_box.pack_end(switch, False, False, 0)
-            box.pack_start(option_box, False, False, 5)
+            visibility_box.pack_start(option_box, False, False, 5)
+        
+        # Add visibility tab
+        visibility_tab_label = Gtk.Label(label="Buttons")
+        notebook.append_page(visibility_box, visibility_tab_label)
+        
+        # ===== Commands Tab =====
+        commands_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        commands_box.set_margin_start(10)
+        commands_box.set_margin_end(10)
+        commands_box.set_margin_top(10)
+        commands_box.set_margin_bottom(10)
+        
+        commands_label = Gtk.Label()
+        commands_label.set_markup("<b>Customize Commands</b>")
+        commands_label.set_halign(Gtk.Align.START)
+        commands_box.pack_start(commands_label, False, False, 0)
         
         # Add separator
-        separator2 = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        box.pack_start(separator2, False, False, 5)
+        commands_separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        commands_box.pack_start(commands_separator, False, False, 5)
+        
+        # Create command entry for each power option
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled_window.set_vexpand(True)
+        
+        commands_list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        
+        self.command_entries = {}
+        for option in self.power_options:
+            option_id = option["id"]
+            
+            # Get default command for this option
+            default_cmd = ""
+            if option_id == "lock":
+                default_cmd = "loginctl lock-session"
+            elif option_id == "logout":
+                default_cmd = "loginctl terminate-user $USER"
+            elif option_id == "suspend":
+                default_cmd = "systemctl suspend"
+            elif option_id == "hibernate":
+                default_cmd = "systemctl hibernate"
+            elif option_id == "reboot":
+                default_cmd = "systemctl reboot"
+            elif option_id == "shutdown":
+                default_cmd = "systemctl poweroff"
+            
+            # Get current saved command or use default
+            current_cmd = self.active_buttons.get("commands", {}).get(option_id, default_cmd)
+            
+            # Option label
+            cmd_label_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            
+            icon = Gtk.Image.new_from_icon_name(option["icon"], Gtk.IconSize.MENU)
+            cmd_label_box.pack_start(icon, False, False, 0)
+            
+            label = Gtk.Label(label=f"{option['label']} Command:")
+            label.set_halign(Gtk.Align.START)
+            cmd_label_box.pack_start(label, True, True, 0)
+            
+            commands_list_box.pack_start(cmd_label_box, False, False, 0)
+            
+            # Command entry
+            entry = Gtk.Entry()
+            entry.set_text(current_cmd)
+            entry.set_tooltip_text(f"Command to execute when {option['label']} button is clicked")
+            
+            self.command_entries[option_id] = entry
+            commands_list_box.pack_start(entry, False, False, 0)
+            
+            # Reset button
+            reset_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+            reset_box.set_halign(Gtk.Align.END)
+            
+            reset_button = Gtk.Button()
+            reset_button.set_tooltip_text(f"Reset to default command")
+            
+            reset_icon = Gtk.Image.new_from_icon_name("edit-undo-symbolic", Gtk.IconSize.MENU)
+            reset_button.add(reset_icon)
+            reset_button.connect("clicked", self.on_reset_command, option_id, entry, default_cmd)
+            
+            reset_box.pack_end(reset_button, False, False, 0)
+            commands_list_box.pack_start(reset_box, False, False, 0)
+            
+            # Add separator between entries
+            if option != self.power_options[-1]:
+                cmd_separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+                commands_list_box.pack_start(cmd_separator, False, False, 5)
+        
+        scrolled_window.add(commands_list_box)
+        commands_box.pack_start(scrolled_window, True, True, 0)
+        
+        # Add commands tab
+        commands_tab_label = Gtk.Label(label="Commands")
+        notebook.append_page(commands_box, commands_tab_label)
+        
+        box.pack_start(notebook, True, True, 0)
         
         # Add apply button
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         button_box.set_halign(Gtk.Align.END)
+        button_box.set_margin_top(10)
         
         apply_button = Gtk.Button(label="Apply")
         apply_button.connect("clicked", self.on_apply_settings)
         button_box.pack_end(apply_button, False, False, 0)
         
-        box.pack_start(button_box, False, False, 5)
+        box.pack_start(button_box, False, False, 0)
         
         box.show_all()
         self.settings_popover.add(box)
-        
+    
     def on_option_toggled(self, switch, gparam, option_id):
         """Handle option switch toggle"""
         self.active_buttons[option_id] = switch.get_active()
     
+    def on_reset_command(self, button, option_id, entry, default_cmd):
+        """Reset command to default value"""
+        entry.set_text(default_cmd)
+    
     def on_apply_settings(self, button):
         """Handle apply button click"""
+        # Get current commands from entries
+        commands = {}
+        for option_id, entry in self.command_entries.items():
+            commands[option_id] = entry.get_text()
+        
+        # Save commands to settings
+        self.active_buttons["commands"] = commands
+        
+        # Update custom commands
+        self.custom_commands = commands
+        
         self._save_settings()
         self._build_power_grid()
         self.settings_popover.popdown()
-        
+    
     def on_settings_clicked(self, button):
         """Handle settings button click"""
         self.settings_popover.popup()
@@ -379,52 +513,52 @@ class PowerTab(Gtk.Box):
         
         return button
     
+    def _execute_command(self, command):
+        """Execute a custom command"""
+        try:
+            # Handle special case for USER substitution
+            if "$USER" in command:
+                import os
+                username = os.environ.get('USER', os.environ.get('USERNAME', ''))
+                command = command.replace("$USER", username)
+            
+            self.logging.log(LogLevel.Info, f"Executing command: {command}")
+            subprocess.Popen(command.split())
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Failed to execute command: {e}")
+    
     def on_lock_clicked(self, widget):
         """Handle lock button click"""
-        self.logging.log(LogLevel.Info, "Lock button clicked, running loginctl lock-session")
-        try:
-            subprocess.Popen(["loginctl", "lock-session"])
-        except Exception as e:
-            self.logging.log(LogLevel.Error, f"Failed to lock: {e}")
+        command = self.custom_commands.get("lock", "loginctl lock-session")
+        self.logging.log(LogLevel.Info, f"Lock button clicked, running: {command}")
+        self._execute_command(command)
             
     def on_logout_clicked(self, widget):
         """Handle logout button click"""
-        self.logging.log(LogLevel.Info, "Logout button clicked, running loginctl terminate-user $USER")
-        try:
-            import os
-            username = os.environ.get('USER', os.environ.get('USERNAME'))
-            subprocess.Popen(["loginctl", "terminate-user", username])
-        except Exception as e:
-            self.logging.log(LogLevel.Error, f"Failed to logout: {e}")
+        command = self.custom_commands.get("logout", "loginctl terminate-user $USER")
+        self.logging.log(LogLevel.Info, f"Logout button clicked, running: {command}")
+        self._execute_command(command)
     
     def on_suspend_clicked(self, widget):
         """Handle suspend button click"""
-        self.logging.log(LogLevel.Info, "Suspend button clicked, running systemctl suspend")
-        try:
-            subprocess.Popen(["systemctl", "suspend"])
-        except Exception as e:
-            self.logging.log(LogLevel.Error, f"Failed to suspend: {e}")
+        command = self.custom_commands.get("suspend", "systemctl suspend")
+        self.logging.log(LogLevel.Info, f"Suspend button clicked, running: {command}")
+        self._execute_command(command)
             
     def on_hibernate_clicked(self, widget):
         """Handle hibernate button click"""
-        self.logging.log(LogLevel.Info, "Hibernate button clicked, running systemctl hibernate")
-        try:
-            subprocess.Popen(["systemctl", "hibernate"])
-        except Exception as e:
-            self.logging.log(LogLevel.Error, f"Failed to hibernate: {e}")
+        command = self.custom_commands.get("hibernate", "systemctl hibernate")
+        self.logging.log(LogLevel.Info, f"Hibernate button clicked, running: {command}")
+        self._execute_command(command)
     
     def on_reboot_clicked(self, widget):
         """Handle reboot button click"""
-        self.logging.log(LogLevel.Info, "Reboot button clicked, running systemctl reboot")
-        try:
-            subprocess.Popen(["systemctl", "reboot"])
-        except Exception as e:
-            self.logging.log(LogLevel.Error, f"Failed to reboot: {e}")
+        command = self.custom_commands.get("reboot", "systemctl reboot")
+        self.logging.log(LogLevel.Info, f"Reboot button clicked, running: {command}")
+        self._execute_command(command)
     
     def on_shutdown_clicked(self, widget):
         """Handle shutdown button click"""
-        self.logging.log(LogLevel.Info, "Shutdown button clicked, running systemctl poweroff")
-        try:
-            subprocess.Popen(["systemctl", "poweroff"])
-        except Exception as e:
-            self.logging.log(LogLevel.Error, f"Failed to shutdown: {e}") 
+        command = self.custom_commands.get("shutdown", "systemctl poweroff")
+        self.logging.log(LogLevel.Info, f"Shutdown button clicked, running: {command}")
+        self._execute_command(command) 
