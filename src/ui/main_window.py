@@ -23,12 +23,12 @@ from ui.tabs.settings_tab import SettingsTab
 from utils.settings import load_settings, save_settings
 from utils.logger import LogLevel, Logger
 from ui.css.animations import load_animations_css, animate_widget_show
-from utils.translations import English, Spanish, get_translations
+from utils.translations import English, Spanish, Portuguese, get_translations
 
 
 class BetterControl(Gtk.Window):
 
-    def __init__(self, txt: English|Spanish, arg_parser: ArgParse, logging: Logger) -> None:
+    def __init__(self, txt: English|Spanish|Portuguese, arg_parser: ArgParse, logging: Logger) -> None:
         super().__init__(title="Better Control")
 
         self.logging = logging
@@ -98,7 +98,9 @@ class BetterControl(Gtk.Window):
         self.animations_css_provider = load_animations_css()
 
         self.settings = load_settings(logging)
-        self.txt = get_translations(logging, self.settings.get("language", "en"))
+        lang = self.settings.get("language", "en")
+        self.logging.log(LogLevel.Info, f"Main window loaded language setting: {lang}")
+        self.txt = get_translations(logging, lang)
         self.logging.log(LogLevel.Info, "Settings loaded")
 
         self.notebook = Gtk.Notebook()
@@ -741,6 +743,16 @@ class BetterControl(Gtk.Window):
                         tab_order.append(tab_name)
             self.settings["tab_order"] = tab_order
 
+        # Load the latest settings to ensure we have the most recent language setting
+        latest_settings = load_settings(self.logging)
+
+        # Preserve the language setting if it exists in the latest settings
+        if "language" in latest_settings and "language" not in self.settings:
+            self.logging.log(LogLevel.Info, f"Preserving language setting from latest settings: {latest_settings['language']}")
+            self.settings["language"] = latest_settings["language"]
+        elif "language" in self.settings:
+            self.logging.log(LogLevel.Info, f"Language setting already in memory: {self.settings['language']}")
+
         # Signal all tabs to clean up their resources
         for tab_name, tab in self.tabs.items():
             if hasattr(tab, 'on_destroy'):
@@ -763,13 +775,16 @@ class BetterControl(Gtk.Window):
             self.logging.addHandler(handler)
             self.logging.setLevel(logging.Info)
 
+        # Log the final settings before saving
+        self.logging.log(LogLevel.Info, f"Final settings keys before saving: {list(self.settings.keys())}")
+        if "language" in self.settings:
+            self.logging.log(LogLevel.Info, f"Final language setting before saving: {self.settings['language']}")
+
         # Save settings in a separate thread to avoid blocking
         try:
-            save_thread = threading.Thread(target=save_settings, args=(self.settings, self.logging))
-            save_thread.daemon = True  # Allow Python to exit without waiting for thread
-            save_thread.start()
-            # Wait briefly for the thread to complete, but don't block shutdown
-            save_thread.join(timeout=0.5)
+            # Use a direct call to save_settings instead of a thread to ensure it completes
+            self.logging.log(LogLevel.Info, "Saving settings directly to ensure completion")
+            save_settings(self.settings, self.logging)
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Error saving settings: {e}")
 

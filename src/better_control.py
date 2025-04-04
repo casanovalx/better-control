@@ -12,7 +12,7 @@ from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
 from utils.logger import LogLevel, Logger
 from utils.settings import load_settings
-from utils.translations import English, Spanish, get_translations
+from utils.translations import English, Spanish, Portuguese, get_translations
 
 # Initialize GTK before imports
 gi.require_version("Gtk", "3.0")
@@ -50,9 +50,10 @@ if __name__ == "__main__":
 
     logging = Logger(arg_parser)
     logging.log(LogLevel.Info, "Starting Better Control")
-    
+
     settings = load_settings(logging)
-    lang  = settings.get("language", "en")
+    lang = settings.get("language", "en")
+    logging.log(LogLevel.Info, f"Loaded language setting from settings: {lang}")
     txt = get_translations(logging, lang)
 
     # Load animations CSS globally

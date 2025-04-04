@@ -2,7 +2,7 @@
 
 import gi
 
-from utils.translations import English, Spanish  # type: ignore
+from utils.translations import English, Spanish, Portuguese  # type: ignore
 gi.require_version('Gtk', '3.0')
 import subprocess
 import json
@@ -13,7 +13,7 @@ from utils.logger import LogLevel, Logger
 class PowerTab(Gtk.Box):
     """Power management tab with suspend, shutdown and reboot options"""
 
-    def __init__(self, logging: Logger, txt: English|Spanish):
+    def __init__(self, logging: Logger, txt: English|Spanish|Portuguese):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.txt = txt
 
@@ -809,15 +809,15 @@ class PowerTab(Gtk.Box):
         """Handle settings button click"""
         self.settings_icon.get_style_context().add_class("rotate-gear-active")
         self.settings_icon.get_style_context().remove_class("rotate-gear")
-        
+
         def on_popover_close(popover):
             self.settings_icon.get_style_context().remove_class("rotate-gear-active")
-            self.settings_icon.get_style_context().add_class("rotate-gear")    
+            self.settings_icon.get_style_context().add_class("rotate-gear")
             popover.disconnect(closed_handler)
         closed_handler = self.settings_popover.connect("closed", on_popover_close)
-        
+
         self.settings_popover.popup()
-        
+
     def _add_css(self):
         """Add CSS styling for power buttons"""
         css_provider = Gtk.CssProvider()

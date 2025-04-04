@@ -3,7 +3,7 @@
 import gi
 
 from utils.logger import LogLevel, Logger
-from utils.translations import English, Spanish # type: ignore
+from utils.translations import English, Spanish, Portuguese # type: ignore
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject # type: ignore
@@ -18,7 +18,7 @@ class SettingsTab(Gtk.Box):
         'tab-order-changed': (GObject.SignalFlags.RUN_LAST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
-    def __init__(self, logging: Logger, txt: English|Spanish):
+    def __init__(self, logging: Logger, txt: English|Spanish|Portuguese):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.txt = txt
         self.logging = logging
@@ -29,10 +29,10 @@ class SettingsTab(Gtk.Box):
         self.set_margin_end(10)
         self.set_hexpand(True)
         self.set_vexpand(True)
-        
+
         # Load settings
         self.settings = load_settings(logging)
-        
+
         # No scroll window - pack content directly to ensure all is visible
         self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         self.content_box.set_margin_top(10)
@@ -82,7 +82,7 @@ class SettingsTab(Gtk.Box):
         settings_frame.set_margin_top(5)
         settings_frame.set_margin_bottom(5)
         self.content_box.pack_start(settings_frame, True, True, 10)
-        
+
         # Tab settings section
         self.tab_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.tab_section.set_margin_top(10)
@@ -136,7 +136,7 @@ class SettingsTab(Gtk.Box):
             label.set_halign(Gtk.Align.START)
             # Allow label to expand and fill horizontally
             row.pack_start(label, True, True, 0)
-            
+
             switch = Gtk.Switch()
             # Get visibility from settings or default to True
             visible = self.settings.get("visibility", {}).get(tab_name, True)
@@ -155,37 +155,38 @@ class SettingsTab(Gtk.Box):
 
         # Add rows in the correct order
         self.update_ui_order()
-        
+
         # Add separator
         separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
         separator.set_margin_top(10)
         separator.set_margin_bottom(10)
         self.tab_section.pack_start(separator, False, False, 0)
-        
+
         # Add language selection
         lang_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         lang_box.set_margin_top(10)
         lang_box.set_margin_bottom(10)
-        
+
         lang_label = Gtk.Label(label=self.txt.settings_language)
         lang_label.set_halign(Gtk.Align.START)
-        
+
         lang_combo = Gtk.ComboBoxText()
         lang_combo.append("en", "English")
         lang_combo.append("es", "Español")
+        lang_combo.append("pt", "Português")
         lang_combo.set_active_id(self.settings.get("language", "en"))
         lang_combo.connect("changed", self.on_language_changed)
-        
+
         lang_box.pack_start(lang_label, True, True, 0)
         lang_box.pack_end(lang_combo, False, False, 0)
-        
+
         self.tab_section.pack_start(lang_box, False, False, 0)
 
     def update_ui_order(self):
         """Update the order of rows in the UI to match the current tab order"""
         # Get current tab order
         tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"])
-        
+
         # Make sure all known tabs are in the tab_order
         all_tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"]
         for tab in all_tabs:
@@ -203,12 +204,12 @@ class SettingsTab(Gtk.Box):
                     tab_order.append(tab)
                 else:
                     tab_order.append(tab)
-        
+
         # Update the settings with the modified order
         self.settings["tab_order"] = tab_order
         # Save the settings to the file
         save_settings(self.settings, self.logging)
-        
+
         # Remove all rows from the section
         for row in self.tab_section.get_children():
             if isinstance(row, Gtk.Box) and row != self.tab_section.get_children()[0]:  # Skip the label
@@ -261,14 +262,14 @@ class SettingsTab(Gtk.Box):
         """Handle move down button click"""
         # Get current tab order
         tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"])
-        
+
         # Find current index
         current_index = tab_order.index(tab_name)
-        
+
         # Don't allow moving down if it's already the last tab
         if current_index >= len(tab_order) - 1:
             return
-            
+
         # Swap with next tab
         tab_order[current_index], tab_order[current_index + 1] = tab_order[current_index + 1], tab_order[current_index]
 
@@ -281,10 +282,10 @@ class SettingsTab(Gtk.Box):
 
         # Emit signal to notify the main window
         self.emit("tab-order-changed", tab_order)
-            
+
     def save_window_size(self, width: int, height: int):
         """Save window size to settings
-        
+
         Args:
             width (int): Window width
             height (int): Window height
@@ -293,7 +294,7 @@ class SettingsTab(Gtk.Box):
         # but we'll still save the last used size for reference
         if "window_size" not in self.settings:
             self.settings["window_size"] = {}
-            
+
         self.settings["window_size"]["settings_width"] = width
         self.settings["window_size"]["settings_height"] = height
         save_settings(self.settings, self.logging)
@@ -303,7 +304,21 @@ class SettingsTab(Gtk.Box):
         """Handle language changes"""
         lang = combo.get_active_id()
         self.settings["language"] = lang
+        self.logging.log(LogLevel.Info, f"Language changed to {lang}, saving settings")
+
+        # Make sure the language setting is at the top level of the settings dictionary
+        if "language" not in self.settings:
+            self.logging.log(LogLevel.Warn, "Language key not in settings, adding it")
+
+        # Save settings
         save_settings(self.settings, self.logging)
+
+        # Verify settings were saved
+        saved_settings = load_settings(self.logging)
+        if saved_settings.get("language") == lang:
+            self.logging.log(LogLevel.Info, f"Language setting verified: {saved_settings.get('language')}")
+        else:
+            self.logging.log(LogLevel.Error, f"Language setting not saved correctly. Expected: {lang}, Got: {saved_settings.get('language')}")
 
         # Show restart dialog
         dialog = Gtk.MessageDialog(
