@@ -171,6 +171,9 @@ class SettingsTab(Gtk.Box):
         lang_label.set_halign(Gtk.Align.START)
 
         lang_combo = Gtk.ComboBoxText()
+        # Add Default option at the top - this will use the system's $LANG environment variable
+        # If the system language is not supported, it will fall back to English
+        lang_combo.append("default", "Default (System)")
         lang_combo.append("en", "English")
         lang_combo.append("es", "Español")
         lang_combo.append("pt", "Português")

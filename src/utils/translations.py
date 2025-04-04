@@ -11,6 +11,7 @@ eg :
         def __init__(self, logging: Logger, txt: English|Spanish|Portuguese|NEW_LANGUAGE):
 """
 
+import os
 from logging import Logger
 
 from utils.logger import LogLevel
@@ -519,11 +520,33 @@ def get_translations(logging: Logger = None, lang: str = "en") -> English|Spanis
     """Load the language according to the selected language
 
     Args:
-        lang (str): Language code ('en', 'es', 'pt')
+        lang (str): Language code ('en', 'es', 'pt', 'default')
+                   'default' will use the system's $LANG environment variable
 
     Returns:
         English|Spanish|Portuguese: Translation for the selected language
     """
+    # Handle 'default' option by checking system's LANG environment variable
+    if lang == "default":
+        system_lang = os.environ.get("LANG", "en_US.UTF-8").split("_")[0].lower()
+        if logging:
+            logging.log(LogLevel.Info, f"Using system language: {system_lang} from $LANG={os.environ.get('LANG', 'not set')}")
+
+        # Map system language code to our supported languages
+        if system_lang.startswith("es"):
+            lang = "es"
+            if logging:
+                logging.log(LogLevel.Info, f"System language '{system_lang}' mapped to Spanish (es)")
+        elif system_lang.startswith("pt"):
+            lang = "pt"
+            if logging:
+                logging.log(LogLevel.Info, f"System language '{system_lang}' mapped to Portuguese (pt)")
+        else:
+            # Default to English for unsupported languages
+            lang = "en"
+            if logging:
+                logging.log(LogLevel.Info, f"System language '{system_lang}' not supported, falling back to English (en)")
+
     if logging:
         logging.log(LogLevel.Info, f"Using language: {lang}")
 
