@@ -8,6 +8,7 @@ import threading
 import sys
 
 from utils.arg_parser import ArgParse
+from utils.warning_suppressor import suppress_specific_warnings
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk  # type: ignore
@@ -164,6 +165,11 @@ class BetterControl(Gtk.Window):
         """Create all tabs asynchronously"""
         self.logging.log(LogLevel.Info, "Starting asynchronous tab creation")
         # Start a thread to create tabs in the background
+        # Modern GTK threading approach:
+        # 1. Create tabs in a background thread
+        # 2. Use GLib.idle_add to update the UI from the background thread
+        # 3. Use Python threading primitives for synchronization
+        # 4. Never directly access GTK widgets from non-main threads
         try:
             thread = threading.Thread(target=self._create_tabs_thread)
             thread.daemon = True
@@ -180,8 +186,9 @@ class BetterControl(Gtk.Window):
         import time
         time.sleep(0.2)  # 200ms delay - increased for better stability
 
-        # Enter GDK threading context for PyGObject thread safety
-        Gdk.threads_enter()
+        # Use context manager to suppress specific deprecation warnings
+        with suppress_specific_warnings(DeprecationWarning, "Gdk.threads_enter is deprecated"):
+            Gdk.threads_enter()
 
         try:
             # Create all tabs
@@ -289,7 +296,8 @@ class BetterControl(Gtk.Window):
 
         finally:
             # Always leave GDK threading context
-            Gdk.threads_leave()
+            with suppress_specific_warnings(DeprecationWarning, "Gdk.threads_leave is deprecated"):
+                Gdk.threads_leave()
 
     def _add_tab_to_ui(self, tab_name, tab):
         """Add a tab to the UI (called from main thread)"""

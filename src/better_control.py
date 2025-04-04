@@ -14,17 +14,16 @@ from utils.pair import Pair
 from utils.logger import LogLevel, Logger
 from utils.settings import load_settings, ensure_config_dir
 from utils.translations import English, Spanish, Portuguese, get_translations
-
-# Suppress deprecation warnings for Gdk threading functions (temporary)
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+from utils.warning_suppressor import suppress_specific_warnings
 
 # Initialize GTK before imports
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, GLib, Gdk  # type: ignore
 
-# Initialize GDK threading - even though it's deprecated, it works (temporary)
-Gdk.threads_init()
+# Initialize GDK threading - using context manager to suppress specific deprecation warnings
+with suppress_specific_warnings(DeprecationWarning, "Gdk.threads_init is deprecated"):
+    Gdk.threads_init()
 
 from ui.main_window import BetterControl
 from utils.dependencies import check_all_dependencies
@@ -161,8 +160,9 @@ if __name__ == "__main__":
                 logging.log(LogLevel.Warn, f"Failed to set sway window rule: {e}")
 
         # Start GTK main loop with error handling and proper thread synchronization
-        # Enter GDK threading context
-        Gdk.threads_enter()
+        # Use context manager to suppress specific deprecation warnings
+        with suppress_specific_warnings(DeprecationWarning, "Gdk.threads_enter is deprecated"):
+            Gdk.threads_enter()
         try:
             Gtk.main()
         except KeyboardInterrupt:
@@ -174,7 +174,8 @@ if __name__ == "__main__":
             sys.exit(1)
         finally:
             # Always leave GDK threading context
-            Gdk.threads_leave()
+            with suppress_specific_warnings(DeprecationWarning, "Gdk.threads_leave is deprecated"):
+                Gdk.threads_leave()
 
     except Exception as e:
         logging.log(LogLevel.Error, f"Fatal error starting application: {e}")
