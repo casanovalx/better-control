@@ -65,6 +65,7 @@ if __name__ == "__main__":
         # Create the GTK window with proper error handling
         win = BetterControl(arg_parser, logging)
 
+        # Set the proctitle to "better-control" so that it can show up under top, pidof, etc with this name
         setproctitle("better-control")
 
         # Prevents startup delay - ensure thread is properly managed
