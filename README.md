@@ -85,7 +85,7 @@ yay -S better-control-git
 <details>
 <summary><b>❄️ Nix (Unofficial)</b></summary>
 
-> This is an unofficial Nix flake maintained by the community. All issues should be directed to their repository:
+> This is an unofficial Nix flake maintained by the community. All issues related to it should be directed to their repository:
 > 
 > https://github.com/Rishabh5321/better-control-flake
 </details>
