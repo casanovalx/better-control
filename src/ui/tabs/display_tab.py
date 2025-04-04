@@ -150,14 +150,14 @@ class DisplayTab(Gtk.Box):
 
         scroll_window.add(content_box)
         self.pack_start(scroll_window, True, True, 0)
-        
+
         # Connect destroy signal to cleanup
         self.connect("destroy", self.on_destroy)
-        
+
         # Connect visibility signals
         self.connect("map", self.on_mapped)
         self.connect("unmap", self.on_unmapped)
-        
+
         # Only start auto-refresh when the tab becomes visible
         if self.get_mapped():
             self.is_visible = True
@@ -225,23 +225,31 @@ class DisplayTab(Gtk.Box):
         saved_gamma = settings.get("gamma", 6500)
         # Convert temperature to percentage (non-inverted: 2500K = 0%, 6500K = 100%)
         percentage = (saved_gamma - 2500) / 40  # (6500-2500)/100 = 40
+
+        # Block the value-changed signal before updating the blue light filter slider
+        self.bluelight_scale.disconnect_by_func(self.on_bluelight_changed)
+
+        # Update blue light filter slider with saved value
         self.bluelight_scale.set_value(percentage)
+
+        # Reconnect the value-changed signal
+        self.bluelight_scale.connect("value-changed", self.on_bluelight_changed)
 
         # Return True to keep the timer running if this was called by the timer
         return True
-    
+
     def on_mapped(self, widget):
         """Called when the widget becomes visible"""
         self.is_visible = True
         self.start_auto_update()
         self.logging.log(LogLevel.Info, "Display tab became visible, starting auto-update")
-    
+
     def on_unmapped(self, widget):
         """Called when the widget is hidden"""
         self.is_visible = False
         self.stop_auto_update()
         self.logging.log(LogLevel.Info, "Display tab hidden, stopping auto-update")
-    
+
     def start_auto_update(self):
         """Start auto-updating display settings"""
         if self.update_timeout_id is None and self.is_visible:
@@ -249,14 +257,14 @@ class DisplayTab(Gtk.Box):
                 self.update_interval, self.refresh_display_settings
             )
             self.logging.log(LogLevel.Info, f"Auto-update started with {self.update_interval}ms interval")
-    
+
     def stop_auto_update(self):
         """Stop auto-updating display settings"""
         if self.update_timeout_id is not None:
             GLib.source_remove(self.update_timeout_id)
             self.update_timeout_id = None
             self.logging.log(LogLevel.Info, "Auto-update stopped")
-    
+
     def on_destroy(self, widget):
         """Clean up resources when widget is destroyed"""
         self.stop_auto_update()
