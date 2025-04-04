@@ -7,7 +7,6 @@ import gi  # type: ignore
 import sys
 import threading
 import signal
-from setproctitle import setproctitle
 from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
 from utils.logger import LogLevel, Logger
@@ -32,7 +31,6 @@ def signal_handler(sig, frame):
 
 if __name__ == "__main__":
     # Register signal handlers
-    setproctitle("better-control")
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
