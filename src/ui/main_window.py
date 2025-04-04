@@ -490,13 +490,12 @@ class BetterControl(Gtk.Window):
                     translated_tab_name = self.tab_name_mapping.get("Power", "Power") if hasattr(self, 'tab_name_mapping') else "Power"
                     self.set_title(f"Better Control - {translated_tab_name}")
             else:
-                # Use last active tab from settings
-                last_tab = self.settings.get("last_active_tab", 0)
-                if last_tab < self.notebook.get_n_pages():
-                    self.notebook.set_current_page(last_tab)
+                # Default to first tab instead of using last active tab from settings
+                if self.notebook.get_n_pages() > 0:
+                    self.notebook.set_current_page(0)
                     # Find which tab is at this position
                     for tab_name, tab_page in self.tab_pages.items():
-                        if tab_page == last_tab:
+                        if tab_page == 0:
                             active_tab = tab_name
                             if self.minimal_mode:
                                 translated_tab_name = self.tab_name_mapping.get(tab_name, tab_name) if hasattr(self, 'tab_name_mapping') else tab_name
@@ -840,10 +839,6 @@ class BetterControl(Gtk.Window):
                 translated_tab_name = self.tab_name_mapping.get(tab_name, tab_name) if hasattr(self, 'tab_name_mapping') else tab_name
                 self.set_title(f"Better Control - {translated_tab_name}")
 
-        # Save the active tab setting
-        self.settings["last_active_tab"] = page_num
-        save_settings(self.settings, self.logging)
-
     def on_notebook_key_press(self, widget, event):
         """Prevent tab selection with Tab key"""
         # Get keyval from event
@@ -880,9 +875,6 @@ class BetterControl(Gtk.Window):
         if hasattr(self, '_tab_creation_lock') and hasattr(self, 'tabs_thread_running'):
             with self._tab_creation_lock:
                 self.tabs_thread_running = False
-
-        # Save the current tab before exiting
-        self.settings["last_active_tab"] = self.notebook.get_current_page()
 
         # Ensure Autostart is in the tab_order setting before saving
         if "tab_order" in self.settings:
