@@ -169,6 +169,7 @@ class ArgParse:
         self.arg_print(f"  {GREEN}-h, --help{RESET}                      Prints this help message")
         self.arg_print(f"  {GREEN}-f, --force{RESET}                     Makes the app force to have all dependencies installed")
         self.arg_print(f"  {GREEN}-s, --size{RESET} {YELLOW}<intxint>{RESET}            Sets a custom window size")
+        self.arg_print(f"  {GREEN}-L, --lang{RESET}                      Sets the language of the app (en,es,pt)")
         self.arg_print(f"  {GREEN}-m, --minimal{RESET}                   Hides the notebook tabs and only shows the selected tab content\n")
 
         # Tab selection options

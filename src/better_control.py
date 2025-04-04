@@ -12,7 +12,7 @@ import signal
 from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
 from utils.logger import LogLevel, Logger
-from utils.settings import load_settings, ensure_config_dir
+from utils.settings import load_settings, ensure_config_dir, save_settings
 from utils.translations import English, Spanish, Portuguese, get_translations
 from utils.warning_suppressor import suppress_specific_warnings
 
@@ -36,6 +36,9 @@ def signal_handler(sig, frame):
     if Gtk.main_level() > 0:
         Gtk.main_quit()
     sys.exit(0)
+    
+# Set the version of the application 
+# This should be updated with each release
 
 if __name__ == "__main__":
     # Register signal handlers
@@ -77,7 +80,26 @@ if __name__ == "__main__":
 
     # Load settings after ensuring directories exist
     settings = load_settings(logging)
-    lang = settings.get("language", "en")
+
+    # Check for language args from the command
+    if arg_parser.find_arg(("-L", "--lang")):
+        lang = arg_parser.option_arg(("-L", "--lang"))
+        if lang not in ["en", "es", "pt"]:
+            logging.log(LogLevel.Warn, f"Invalid language code '{lang}'. Falling back to default(en)")
+            lang = "en"
+        settings["language"] = lang
+        save_settings(settings, logging)
+        logging.log(LogLevel.Info, f"Language set to: {lang}")
+    else:
+        # Get language from settings, fallback to "default" if invalid
+        lang = settings.get("language", "default")
+        if lang not in ["en", "es", "pt", "default"]:
+            lang = "en"
+            settings["language"] = lang
+            save_settings(settings, logging)
+            logging.log(LogLevel.Warn, f"Invalid language '{lang}' in settings. Falling back to default(en)")
+
+
     logging.log(LogLevel.Info, f"Loaded language setting from settings: {lang}")
     txt = get_translations(logging, lang)
 
