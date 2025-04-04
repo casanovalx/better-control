@@ -36,9 +36,6 @@ def signal_handler(sig, frame):
     if Gtk.main_level() > 0:
         Gtk.main_quit()
     sys.exit(0)
-    
-# Set the version of the application 
-# This should be updated with each release
 
 if __name__ == "__main__":
     # Register signal handlers
@@ -84,7 +81,12 @@ if __name__ == "__main__":
     # Check for language args from the command
     if arg_parser.find_arg(("-L", "--lang")):
         lang = arg_parser.option_arg(("-L", "--lang"))
-        if lang not in ["en", "es", "pt"]:
+        available_languages = ["en", "es", "pt"]
+        if lang not in available_languages:
+            # Print error message to console
+            print(f"\033[1;31mError: Invalid language code '{lang}'\033[0m")
+            print(f"Falling back to English (en)")
+            print(f"Available languages: {', '.join(available_languages)}")
             logging.log(LogLevel.Warn, f"Invalid language code '{lang}'. Falling back to default(en)")
             lang = "en"
         settings["language"] = lang
