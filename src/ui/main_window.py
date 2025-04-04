@@ -97,6 +97,7 @@ class BetterControl(Gtk.Window):
         # Load animations CSS
         self.animations_css_provider = load_animations_css()
 
+        # Load settings and ensure we have the latest language setting
         self.settings = load_settings(logging)
         lang = self.settings.get("language", "en")
         self.logging.log(LogLevel.Info, f"Main window loaded language setting: {lang}")
@@ -162,6 +163,17 @@ class BetterControl(Gtk.Window):
             "Display": DisplayTab,
             "Power": PowerTab,
             "Autostart": AutostartTab,
+        }
+
+        # Create a mapping between internal tab names and translated tab names
+        self.tab_name_mapping = {
+            "Volume": self.txt.msg_tab_volume,
+            "Wi-Fi": self.txt.msg_tab_wifi,
+            "Bluetooth": self.txt.msg_tab_bluetooth,
+            "Battery": self.txt.msg_tab_battery,
+            "Display": self.txt.msg_tab_display,
+            "Power": self.txt.msg_tab_power,
+            "Autostart": self.txt.msg_tab_autostart,
         }
 
         # Track if thread is still running to avoid segfaults during shutdown
@@ -302,7 +314,8 @@ class BetterControl(Gtk.Window):
                 self.notebook.set_current_page(page_num)
                 active_tab = "Autostart"
                 if self.minimal_mode:
-                    self.set_title(f"Better Control - Autostart")
+                    translated_tab_name = self.tab_name_mapping.get("Autostart", "Autostart") if hasattr(self, 'tab_name_mapping') else "Autostart"
+                    self.set_title(f"Better Control - {translated_tab_name}")
             elif (
                 self.arg_parser.find_arg(("-b", "--bluetooth"))
                 and "Bluetooth" in self.tab_pages
@@ -312,7 +325,8 @@ class BetterControl(Gtk.Window):
                 self.notebook.set_current_page(page_num)
                 active_tab = "Bluetooth"
                 if self.minimal_mode:
-                    self.set_title(f"Better Control - Bluetooth")
+                    translated_tab_name = self.tab_name_mapping.get("Bluetooth", "Bluetooth") if hasattr(self, 'tab_name_mapping') else "Bluetooth"
+                    self.set_title(f"Better Control - {translated_tab_name}")
             elif (
                 self.arg_parser.find_arg(("-B", "--battery"))
                 and "Battery" in self.tab_pages
@@ -322,7 +336,8 @@ class BetterControl(Gtk.Window):
                 self.notebook.set_current_page(page_num)
                 active_tab = "Battery"
                 if self.minimal_mode:
-                    self.set_title(f"Better Control - Battery")
+                    translated_tab_name = self.tab_name_mapping.get("Battery", "Battery") if hasattr(self, 'tab_name_mapping') else "Battery"
+                    self.set_title(f"Better Control - {translated_tab_name}")
             elif (
                 self.arg_parser.find_arg(("-d", "--display"))
                 and "Display" in self.tab_pages
@@ -332,7 +347,8 @@ class BetterControl(Gtk.Window):
                 self.notebook.set_current_page(page_num)
                 active_tab = "Display"
                 if self.minimal_mode:
-                    self.set_title(f"Better Control - Display")
+                    translated_tab_name = self.tab_name_mapping.get("Display", "Display") if hasattr(self, 'tab_name_mapping') else "Display"
+                    self.set_title(f"Better Control - {translated_tab_name}")
             elif (
                 self.arg_parser.find_arg(("-p", "--power"))
                 and "Power" in self.tab_pages
@@ -342,7 +358,8 @@ class BetterControl(Gtk.Window):
                 self.notebook.set_current_page(page_num)
                 active_tab = "Power"
                 if self.minimal_mode:
-                    self.set_title(f"Better Control - Power")
+                    translated_tab_name = self.tab_name_mapping.get("Power", "Power") if hasattr(self, 'tab_name_mapping') else "Power"
+                    self.set_title(f"Better Control - {translated_tab_name}")
             else:
                 # Use last active tab from settings
                 last_tab = self.settings.get("last_active_tab", 0)
@@ -353,7 +370,8 @@ class BetterControl(Gtk.Window):
                         if tab_page == last_tab:
                             active_tab = tab_name
                             if self.minimal_mode:
-                                self.set_title(f"Better Control - {tab_name}")
+                                translated_tab_name = self.tab_name_mapping.get(tab_name, tab_name) if hasattr(self, 'tab_name_mapping') else tab_name
+                                self.set_title(f"Better Control - {translated_tab_name}")
                             break
 
             # Set visibility status on the active tab
@@ -640,7 +658,7 @@ class BetterControl(Gtk.Window):
         """Create a tab label with icon and text
 
         Args:
-            text (str): Tab label text
+            text (str): Tab label text (internal name)
             icon_name (str): Icon name
 
         Returns:
@@ -648,7 +666,11 @@ class BetterControl(Gtk.Window):
         """
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.MENU)
-        label = Gtk.Label(label=text)
+
+        # Use the translated tab name if available
+        translated_text = self.tab_name_mapping.get(text, text) if hasattr(self, 'tab_name_mapping') else text
+        label = Gtk.Label(label=translated_text)
+
         box.pack_start(icon, False, False, 0)
         box.pack_start(label, False, False, 0)
         box.show_all()
@@ -684,7 +706,9 @@ class BetterControl(Gtk.Window):
 
             # Update window title in minimal mode
             if is_visible and self.minimal_mode:
-                self.set_title(f"Better Control - {tab_name}")
+                # Use translated tab name in window title
+                translated_tab_name = self.tab_name_mapping.get(tab_name, tab_name) if hasattr(self, 'tab_name_mapping') else tab_name
+                self.set_title(f"Better Control - {translated_tab_name}")
 
         # Save the active tab setting
         self.settings["last_active_tab"] = page_num
@@ -743,15 +767,16 @@ class BetterControl(Gtk.Window):
                         tab_order.append(tab_name)
             self.settings["tab_order"] = tab_order
 
-        # Load the latest settings to ensure we have the most recent language setting
+        # Always load the latest settings from disk to ensure we have the most recent language setting
         latest_settings = load_settings(self.logging)
-
-        # Preserve the language setting if it exists in the latest settings
-        if "language" in latest_settings and "language" not in self.settings:
-            self.logging.log(LogLevel.Info, f"Preserving language setting from latest settings: {latest_settings['language']}")
+        if "language" in latest_settings:
+            # Update our in-memory settings with the latest language setting from disk
+            self.logging.log(LogLevel.Info, f"Using latest language setting from disk: {latest_settings['language']}")
             self.settings["language"] = latest_settings["language"]
         elif "language" in self.settings:
-            self.logging.log(LogLevel.Info, f"Language setting already in memory: {self.settings['language']}")
+            self.logging.log(LogLevel.Info, f"Using language setting from memory: {self.settings['language']}")
+        else:
+            self.logging.log(LogLevel.Warn, "No language setting found in memory or on disk")
 
         # Signal all tabs to clean up their resources
         for tab_name, tab in self.tabs.items():

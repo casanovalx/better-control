@@ -320,6 +320,17 @@ class SettingsTab(Gtk.Box):
         else:
             self.logging.log(LogLevel.Error, f"Language setting not saved correctly. Expected: {lang}, Got: {saved_settings.get('language')}")
 
+            # Force the language setting in the file
+            self.logging.log(LogLevel.Info, "Forcing language setting in configuration file")
+            saved_settings["language"] = lang
+            save_settings(saved_settings, self.logging)
+
+        # Update the main window's settings as well
+        parent_window = self.get_toplevel()
+        if hasattr(parent_window, 'settings'):
+            parent_window.settings["language"] = lang
+            self.logging.log(LogLevel.Info, f"Updated main window's language setting to {lang}")
+
         # Show restart dialog
         dialog = Gtk.MessageDialog(
             transient_for=self.get_toplevel(),

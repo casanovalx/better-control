@@ -49,10 +49,23 @@ def save_settings(settings: dict, logging: Logger) -> None:
         # Log what we're saving
         logging.log(LogLevel.Info, f"Saving settings to {SETTINGS_FILE}")
         logging.log(LogLevel.Info, f"Settings keys: {list(settings.keys())}")
+
+        # Ensure language setting is preserved
         if "language" in settings:
             logging.log(LogLevel.Info, f"Saving language setting: {settings['language']}")
         else:
-            logging.log(LogLevel.Warn, "No language setting found in settings to save")
+            # Try to load existing settings to preserve language
+            if os.path.exists(SETTINGS_FILE):
+                try:
+                    with open(SETTINGS_FILE, "r") as f:
+                        existing_settings = json.load(f)
+                        if "language" in existing_settings:
+                            settings["language"] = existing_settings["language"]
+                            logging.log(LogLevel.Info, f"Preserved existing language setting: {settings['language']}")
+                except Exception as e:
+                    logging.log(LogLevel.Error, f"Error loading existing settings: {e}")
+            else:
+                logging.log(LogLevel.Warn, "No language setting found in settings to save")
 
         with open(SETTINGS_FILE, "w") as f:
             json.dump(settings, f, indent=4)
