@@ -2,7 +2,7 @@
 
 import gi # type: ignore
 
-from utils.translations import English, Spanish, Portuguese  # type: ignore
+from utils.translations import English, Spanish, Portuguese, French  # type: ignore
 gi.require_version('Gtk', '3.0')
 import subprocess
 import json
@@ -13,7 +13,7 @@ from utils.logger import LogLevel, Logger
 class PowerTab(Gtk.Box):
     """Power management tab with suspend, shutdown and reboot options"""
 
-    def __init__(self, logging: Logger, txt: English|Spanish|Portuguese):
+    def __init__(self, logging: Logger, txt: English|Spanish|Portuguese|French):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.txt = txt
 
@@ -30,7 +30,7 @@ class PowerTab(Gtk.Box):
         # Connect visibility signals
         self.connect("map", self.on_mapped)
         self.connect("unmap", self.on_unmapped)
-        
+
         # Log loaded shortcuts for debugging
         self.logging.log(LogLevel.Debug, f"Loaded shortcuts: {self.custom_shortcuts}")
 
@@ -179,7 +179,7 @@ class PowerTab(Gtk.Box):
             toplevel.connect("key-press-event", self.on_key_press)
             self.grab_focus()  # Try to grab focus again
         return False  # Don't call again
-    
+
     def on_mapped(self, widget):
         """Called when the widget becomes visible"""
         self.is_visible = True
@@ -203,7 +203,7 @@ class PowerTab(Gtk.Box):
         # Only handle keypress when tab is visible
         if not self.is_visible:
             return False
-        
+
         keyval = event.keyval
         keychar = chr(keyval).lower()
 

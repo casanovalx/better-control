@@ -3,7 +3,7 @@
 import gi
 
 from utils.logger import LogLevel, Logger
-from utils.translations import English, Spanish, Portuguese # type: ignore
+from utils.translations import English, Spanish, Portuguese, French # type: ignore
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject # type: ignore
@@ -18,7 +18,7 @@ class SettingsTab(Gtk.Box):
         'tab-order-changed': (GObject.SignalFlags.RUN_LAST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
-    def __init__(self, logging: Logger, txt: English|Spanish|Portuguese):
+    def __init__(self, logging: Logger, txt: English|Spanish|Portuguese|French):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.txt = txt
         self.logging = logging
@@ -177,6 +177,7 @@ class SettingsTab(Gtk.Box):
         lang_combo.append("en", "English")
         lang_combo.append("es", "Español")
         lang_combo.append("pt", "Português")
+        lang_combo.append("fr", "Français")
         lang_combo.set_active_id(self.settings.get("language", "en"))
         lang_combo.connect("changed", self.on_language_changed)
 

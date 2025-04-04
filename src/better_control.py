@@ -13,7 +13,7 @@ from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
 from utils.logger import LogLevel, Logger
 from utils.settings import load_settings, ensure_config_dir, save_settings
-from utils.translations import English, Spanish, Portuguese, get_translations
+from utils.translations import English, Spanish, Portuguese, French, get_translations
 from utils.warning_suppressor import suppress_specific_warnings
 
 # Initialize GTK before imports
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     # Check for language args from the command
     if arg_parser.find_arg(("-L", "--lang")):
         lang = arg_parser.option_arg(("-L", "--lang"))
-        available_languages = ["en", "es", "pt"]
+        available_languages = ["en", "es", "pt", "fr"]
         if lang not in available_languages:
             # Print error message to console
             print(f"\033[1;31mError: Invalid language code '{lang}'\033[0m")
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     else:
         # Get language from settings, fallback to "default" if invalid
         lang = settings.get("language", "default")
-        if lang not in ["en", "es", "pt", "default"]:
+        if lang not in ["en", "es", "pt", "fr", "default"]:
             lang = "en"
             settings["language"] = lang
             save_settings(settings, logging)

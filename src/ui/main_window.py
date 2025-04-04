@@ -24,12 +24,12 @@ from ui.tabs.settings_tab import SettingsTab
 from utils.settings import load_settings, save_settings
 from utils.logger import LogLevel, Logger
 from ui.css.animations import load_animations_css  # animate_widget_show not used
-from utils.translations import English, Spanish, Portuguese, get_translations
+from utils.translations import English, Spanish, Portuguese, French, get_translations
 
 
 class BetterControl(Gtk.Window):
 
-    def __init__(self, txt: English|Spanish|Portuguese, arg_parser: ArgParse, logging: Logger) -> None:
+    def __init__(self, txt: English|Spanish|Portuguese|French, arg_parser: ArgParse, logging: Logger) -> None:
         # Initialize thread lock before anything else
         self._tab_creation_lock = threading.RLock()
 
