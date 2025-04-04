@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import gi
+import gi # type: ignore
 
 from utils.translations import English, Spanish, Portuguese  # type: ignore
 gi.require_version('Gtk', '3.0')
@@ -27,6 +27,10 @@ class PowerTab(Gtk.Box):
         self.custom_shortcuts = self.active_buttons.get("shortcuts", {})
         self.show_keybinds = self.active_buttons.get("show_keybinds", True)
 
+        # Connect visibility signals
+        self.connect("map", self.on_mapped)
+        self.connect("unmap", self.on_unmapped)
+        
         # Log loaded shortcuts for debugging
         self.logging.log(LogLevel.Debug, f"Loaded shortcuts: {self.custom_shortcuts}")
 
@@ -175,6 +179,16 @@ class PowerTab(Gtk.Box):
             toplevel.connect("key-press-event", self.on_key_press)
             self.grab_focus()  # Try to grab focus again
         return False  # Don't call again
+    
+    def on_mapped(self, widget):
+        """Called when the widget becomes visible"""
+        self.is_visible = True
+        self.logging.log(LogLevel.Info, "Power tab became visible, deactivaing it's keybinding")
+
+    def on_unmapped(self, widget):
+        """Called when the widget is hidden"""
+        self.is_visible = False
+        self.logging.log(LogLevel.Info, "Power tab became visible, activaing it's keybinding")
 
     def _update_power_options_shortcuts(self):
         """Update power options with custom shortcuts"""
@@ -186,6 +200,10 @@ class PowerTab(Gtk.Box):
 
     def on_key_press(self, widget, event):
         """Handle key press events to trigger power actions"""
+        # Only handle keypress when tab is visible
+        if not self.is_visible:
+            return False
+        
         keyval = event.keyval
         keychar = chr(keyval).lower()
 
