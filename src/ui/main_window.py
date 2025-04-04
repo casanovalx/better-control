@@ -119,27 +119,34 @@ class BetterControl(Gtk.Window):
         self.tabs = {}
         self.tab_pages = {}
 
-        self.loading_spinner = Gtk.Spinner()
-        self.loading_spinner.start()
-        # Add animation class to spinner
-        self.loading_spinner.get_style_context().add_class("spinner-pulse")
+        # Skip loading spinner in minimal mode for faster startup
+        if not self.minimal_mode:
+            self.loading_spinner = Gtk.Spinner()
+            self.loading_spinner.start()
+            # Add animation class to spinner
+            self.loading_spinner.get_style_context().add_class("spinner-pulse")
 
-        self.loading_label = Gtk.Label(label=self.txt.loading_tabs)
-        # Add animation class to label
-        self.loading_label.get_style_context().add_class("fade-in")
+            self.loading_label = Gtk.Label(label=self.txt.loading_tabs)
+            # Add animation class to label
+            self.loading_label.get_style_context().add_class("fade-in")
 
-        loading_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        loading_box.set_halign(Gtk.Align.CENTER)
-        loading_box.set_valign(Gtk.Align.CENTER)
-        loading_box.pack_start(self.loading_spinner, False, False, 0)
-        loading_box.pack_start(self.loading_label, False, False, 0)
-        self.loading_page = self.notebook.append_page(
-            loading_box, Gtk.Label(label=self.txt.loading)
-        )
+            loading_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+            loading_box.set_halign(Gtk.Align.CENTER)
+            loading_box.set_valign(Gtk.Align.CENTER)
+            loading_box.pack_start(self.loading_spinner, False, False, 0)
+            loading_box.pack_start(self.loading_label, False, False, 0)
+            self.loading_page = self.notebook.append_page(
+                loading_box, Gtk.Label(label=self.txt.loading)
+            )
+        else:
+            # In minimal mode, we don't need a loading page
+            self.loading_page = -1  # Set to invalid page number
+
+        # Store arg_parser before creating tabs
+        self.arg_parser = arg_parser
 
         self.create_tabs_async()
         self.create_settings_button()
-        self.arg_parser = arg_parser
 
         self.connect("destroy", self.on_destroy)
         self.notebook.connect("switch-page", self.on_tab_switched)
@@ -179,32 +186,69 @@ class BetterControl(Gtk.Window):
         # Track if thread is still running to avoid segfaults during shutdown
         self.tabs_thread_running = True
 
-        # Create tabs one by one
-        for tab_name, tab_class in tab_classes.items():
-            try:
-                # Check if thread should still run
-                if not hasattr(self, 'tabs_thread_running') or not self.tabs_thread_running:
-                    self.logging.log(LogLevel.Info, "Tab creation thread stopped")
-                    return
+        # In minimal mode, only load the tab specified by command line arguments
+        if self.minimal_mode:
+            self.logging.log(LogLevel.Info, "Minimal mode: Only loading selected tab")
+            # Determine which tab to load based on command line arguments
+            tab_to_load = None
+            if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
+                tab_to_load = "Volume"
+            elif self.arg_parser.find_arg(("-w", "--wifi")):
+                tab_to_load = "Wi-Fi"
+            elif self.arg_parser.find_arg(("-a", "--autostart")):
+                tab_to_load = "Autostart"
+            elif self.arg_parser.find_arg(("-b", "--bluetooth")):
+                tab_to_load = "Bluetooth"
+            elif self.arg_parser.find_arg(("-B", "--battery")):
+                tab_to_load = "Battery"
+            elif self.arg_parser.find_arg(("-d", "--display")):
+                tab_to_load = "Display"
+            elif self.arg_parser.find_arg(("-p", "--power")):
+                tab_to_load = "Power"
+            else:
+                # Default to Volume if no tab specified but minimal mode is enabled
+                tab_to_load = "Volume"
+                self.logging.log(LogLevel.Info, "No tab specified in minimal mode, defaulting to Volume")
 
-                # Create the tab
-                self.logging.log(LogLevel.Debug, f"Starting to create {tab_name} tab")
-                tab = tab_class(self.logging, self.txt)
-                self.logging.log(LogLevel.Debug, f"Successfully created {tab_name} tab instance")
+            # Only create the selected tab
+            if tab_to_load in tab_classes:
+                try:
+                    self.logging.log(LogLevel.Info, f"Creating only {tab_to_load} tab for minimal mode")
+                    tab = tab_classes[tab_to_load](self.logging, self.txt)
+                    GLib.idle_add(self._add_tab_to_ui, tab_to_load, tab)
+                except Exception as e:
+                    error_msg = f"Failed creating {tab_to_load} tab: {e}"
+                    self.logging.log(LogLevel.Error, error_msg)
+                    import traceback
+                    traceback.print_exc()
+                    print(f"FATAL ERROR: {error_msg}", file=sys.stderr)
+        else:
+            # Normal mode: Create all tabs one by one
+            for tab_name, tab_class in tab_classes.items():
+                try:
+                    # Check if thread should still run
+                    if not hasattr(self, 'tabs_thread_running') or not self.tabs_thread_running:
+                        self.logging.log(LogLevel.Info, "Tab creation thread stopped")
+                        return
 
-                # Update UI from main thread safely
-                GLib.idle_add(self._add_tab_to_ui, tab_name, tab)
+                    # Create the tab
+                    self.logging.log(LogLevel.Debug, f"Starting to create {tab_name} tab")
+                    tab = tab_class(self.logging, self.txt)
+                    self.logging.log(LogLevel.Debug, f"Successfully created {tab_name} tab instance")
 
-                # Small delay to avoid blocking the UI
-                GLib.usleep(10000)  # 10ms delay
+                    # Update UI from main thread safely
+                    GLib.idle_add(self._add_tab_to_ui, tab_name, tab)
 
-            except Exception as e:
-                error_msg = f"Failed creating {tab_name} tab: {e}"
-                self.logging.log(LogLevel.Error, error_msg)
-                # Print full traceback to stderr
-                import traceback
-                traceback.print_exc()
-                print(f"FATAL ERROR: {error_msg}", file=sys.stderr)
+                    # Small delay to avoid blocking the UI
+                    GLib.usleep(10000)  # 10ms delay
+
+                except Exception as e:
+                    error_msg = f"Failed creating {tab_name} tab: {e}"
+                    self.logging.log(LogLevel.Error, error_msg)
+                    # Print full traceback to stderr
+                    import traceback
+                    traceback.print_exc()
+                    print(f"FATAL ERROR: {error_msg}", file=sys.stderr)
 
         # Complete initialization on main thread
         GLib.idle_add(self._finish_tab_loading)
@@ -248,47 +292,71 @@ class BetterControl(Gtk.Window):
     def _finish_tab_loading(self):
         """Finish tab loading by applying visibility and order (on main thread)"""
         try:
-            self.logging.log(LogLevel.Info, "All tabs created, finalizing UI")
+            # Handle minimal mode differently for faster loading
+            if self.minimal_mode:
+                self.logging.log(LogLevel.Info, "Minimal mode: Finalizing UI with single tab")
 
-            # Ensure all tabs are present in the tab_order setting
-            tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"])
+                # In minimal mode, we only need to set the active tab
+                # and remove the loading page
+                active_tab = None
 
-            # Make sure all created tabs are in the tab_order
-            for tab_name in self.tabs.keys():
-                if tab_name not in tab_order:
-                    # If we're adding Power for the first time, put it before Autostart
-                    if tab_name == "Power":
-                        # Find the position of Autostart
-                        if "Autostart" in tab_order:
-                            autostart_index = tab_order.index("Autostart")
-                            tab_order.insert(autostart_index, tab_name)
+                # Find the tab we loaded
+                if len(self.tab_pages) == 1:
+                    # We only have one tab, so use it
+                    tab_name = list(self.tab_pages.keys())[0]
+                    page_num = list(self.tab_pages.values())[0]
+                    self.notebook.set_current_page(page_num)
+                    active_tab = tab_name
+
+                    # Set the window title
+                    translated_tab_name = self.tab_name_mapping.get(tab_name, tab_name) if hasattr(self, 'tab_name_mapping') else tab_name
+                    self.set_title(f"Better Control - {translated_tab_name}")
+
+                    # Show all to ensure content is visible
+                    self.show_all()
+            else:
+                # Normal mode: Apply tab order and visibility
+                self.logging.log(LogLevel.Info, "All tabs created, finalizing UI")
+
+                # Ensure all tabs are present in the tab_order setting
+                tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"])
+
+                # Make sure all created tabs are in the tab_order
+                for tab_name in self.tabs.keys():
+                    if tab_name not in tab_order:
+                        # If we're adding Power for the first time, put it before Autostart
+                        if tab_name == "Power":
+                            # Find the position of Autostart
+                            if "Autostart" in tab_order:
+                                autostart_index = tab_order.index("Autostart")
+                                tab_order.insert(autostart_index, tab_name)
+                            else:
+                                tab_order.append(tab_name)
+                        # If we're adding Autostart for the first time, put it at the end
+                        elif tab_name == "Autostart":
+                            tab_order.append(tab_name)
                         else:
                             tab_order.append(tab_name)
-                    # If we're adding Autostart for the first time, put it at the end
-                    elif tab_name == "Autostart":
-                        tab_order.append(tab_name)
-                    else:
-                        tab_order.append(tab_name)
 
-            # Update the settings with the complete tab list
-            self.settings["tab_order"] = tab_order
+                # Update the settings with the complete tab list
+                self.settings["tab_order"] = tab_order
 
-            # Apply tab order (visibility is already applied)
-            try:
-                self.apply_tab_order()
-            except Exception as e:
-                self.logging.log(LogLevel.Error, f"Error applying tab order: {e}")
+                # Apply tab order (visibility is already applied)
+                try:
+                    self.apply_tab_order()
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Error applying tab order: {e}")
 
-            # Show all tabs to ensure content is visible
-            self.show_all()
+                # Show all tabs to ensure content is visible
+                self.show_all()
 
-            # Log tab page numbers for debugging
-            self.logging.log(
-                LogLevel.Debug, f"Tab pages: {self.tab_pages}"
-            )
+                # Log tab page numbers for debugging
+                self.logging.log(
+                    LogLevel.Debug, f"Tab pages: {self.tab_pages}"
+                )
 
-            # Initialize the active tab
-            active_tab = None
+                # Initialize the active tab
+                active_tab = None
 
             # Set active tab based on command line arguments
             if (self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", ""))) and "Volume" in self.tab_pages:
@@ -387,7 +455,8 @@ class BetterControl(Gtk.Window):
 
             # Remove loading tab with proper error handling
             try:
-                if self.loading_page < self.notebook.get_n_pages():
+                # Only try to remove the loading page if it exists (not in minimal mode)
+                if self.loading_page >= 0 and self.loading_page < self.notebook.get_n_pages():
                     self.notebook.remove_page(self.loading_page)
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Error removing loading page: {e}")
