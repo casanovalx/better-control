@@ -35,6 +35,14 @@ def load_animations_css():
     .power-button:hover {
         opacity: 0.9;
     }
+    
+    /* settings icon animation */
+    .roate-gear {
+        -gtk-icon-transform: rotate(0deg);
+    }
+    .rotate-gear-active {
+        -gtk-icon-transform: rotate(26deg);
+    }
     """
 
     css_provider.load_from_data(css.encode())

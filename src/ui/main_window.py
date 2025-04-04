@@ -23,11 +23,12 @@ from ui.tabs.settings_tab import SettingsTab
 from utils.settings import load_settings, save_settings
 from utils.logger import LogLevel, Logger
 from ui.css.animations import load_animations_css, animate_widget_show
+from utils.translations import English, Spanish, get_translations
 
 
 class BetterControl(Gtk.Window):
 
-    def __init__(self, arg_parser: ArgParse, logging: Logger) -> None:
+    def __init__(self, txt: English|Spanish, arg_parser: ArgParse, logging: Logger) -> None:
         super().__init__(title="Better Control")
 
         self.logging = logging
@@ -97,6 +98,7 @@ class BetterControl(Gtk.Window):
         self.animations_css_provider = load_animations_css()
 
         self.settings = load_settings(logging)
+        self.txt = get_translations(logging, self.settings.get("language", "en"))
         self.logging.log(LogLevel.Info, "Settings loaded")
 
         self.notebook = Gtk.Notebook()
@@ -119,7 +121,7 @@ class BetterControl(Gtk.Window):
         # Add animation class to spinner
         self.loading_spinner.get_style_context().add_class("spinner-pulse")
 
-        self.loading_label = Gtk.Label(label="Loading tabs...")
+        self.loading_label = Gtk.Label(label=self.txt.loading_tabs)
         # Add animation class to label
         self.loading_label.get_style_context().add_class("fade-in")
 
@@ -129,7 +131,7 @@ class BetterControl(Gtk.Window):
         loading_box.pack_start(self.loading_spinner, False, False, 0)
         loading_box.pack_start(self.loading_label, False, False, 0)
         self.loading_page = self.notebook.append_page(
-            loading_box, Gtk.Label(label="Loading...")
+            loading_box, Gtk.Label(label=self.txt.loading)
         )
 
         self.create_tabs_async()
@@ -173,7 +175,7 @@ class BetterControl(Gtk.Window):
 
                 # Create the tab
                 self.logging.log(LogLevel.Debug, f"Starting to create {tab_name} tab")
-                tab = tab_class(self.logging)
+                tab = tab_class(self.logging, self.txt)
                 self.logging.log(LogLevel.Debug, f"Successfully created {tab_name} tab instance")
 
                 # Update UI from main thread safely
@@ -496,11 +498,12 @@ class BetterControl(Gtk.Window):
             return
 
         settings_button = Gtk.Button()
-        settings_icon = Gtk.Image.new_from_icon_name(
+        self.settings_icon = Gtk.Image.new_from_icon_name(
             "preferences-system-symbolic", Gtk.IconSize.BUTTON
         )
-        settings_button.set_image(settings_icon)
-        settings_button.set_tooltip_text("Settings")
+        settings_button.set_image(self.settings_icon)
+        self.settings_icon.get_style_context().add_class("rotate-gear")
+        settings_button.set_tooltip_text(self.txt.settings_title)
 
         # Connect the clicked signal
         settings_button.connect("clicked", self.toggle_settings_panel)
@@ -517,18 +520,20 @@ class BetterControl(Gtk.Window):
         self.logging.log(
             LogLevel.Info, "Settings button clicked, opening settings dialog"
         )
+        self.settings_icon.get_style_context().add_class("rotate-gear-active")
+        self.settings_icon.get_style_context().remove_class("rotate-gear")
 
         try:
             dialog = Gtk.Dialog(
-                title="Settings",
+                title=self.txt.settings_title,
                 parent=self,
                 flags=Gtk.DialogFlags.MODAL,
-                buttons=(Gtk.STOCK_CLOSE, Gtk.ResponseType.CLOSE),
+                buttons=(self.txt.close, Gtk.ResponseType.CLOSE),
             )
             dialog.set_default_size(500, 400)
             dialog.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
             # Create a fresh instance of the settings tab to use in the dialog
-            settings_tab = SettingsTab(self.logging)
+            settings_tab = SettingsTab(self.logging, self.txt)
             settings_tab.connect(
                 "tab-visibility-changed", self.on_tab_visibility_changed
             )
@@ -552,6 +557,8 @@ class BetterControl(Gtk.Window):
 
             # Clean up the dialog
             dialog.destroy()
+            self.settings_icon.get_style_context().remove_class("rotate-gear-active")
+            self.settings_icon.get_style_context().add_class("rotate-gear")
 
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Error in toggle_settings_panel: {e}")

@@ -11,6 +11,8 @@ import signal
 from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
 from utils.logger import LogLevel, Logger
+from utils.settings import load_settings
+from utils.translations import English, Spanish, get_translations
 
 # Initialize GTK before imports
 gi.require_version("Gtk", "3.0")
@@ -48,6 +50,10 @@ if __name__ == "__main__":
 
     logging = Logger(arg_parser)
     logging.log(LogLevel.Info, "Starting Better Control")
+    
+    settings = load_settings(logging)
+    lang  = settings.get("language", "en")
+    txt = get_translations(logging, lang)
 
     # Load animations CSS globally
     animations_css = load_animations_css()
@@ -63,7 +69,7 @@ if __name__ == "__main__":
     # Use a try/except to catch any errors during startup
     try:
         # Create the GTK window with proper error handling
-        win = BetterControl(arg_parser, logging)
+        win = BetterControl(txt, arg_parser, logging)
 
         # Set the proctitle to "better-control" so that it can show up under top, pidof, etc with this name
         setproctitle("better-control")

@@ -3,6 +3,7 @@
 import gi  # type: ignore
 
 from utils.logger import LogLevel, Logger
+from utils.translations import English, Spanish
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib  # type: ignore
@@ -24,8 +25,9 @@ from ui.widgets.bluetooth_device_row import BluetoothDeviceRow
 class BluetoothTab(Gtk.Box):
     """Bluetooth settings tab"""
 
-    def __init__(self, logging: Logger):
+    def __init__(self, logging: Logger, txt: English|Spanish):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.txt = txt
         self.logging = logging
 
         self.set_margin_start(15)
@@ -56,7 +58,7 @@ class BluetoothTab(Gtk.Box):
         # Add title
         bluetooth_label = Gtk.Label()
         bluetooth_label.set_markup(
-            "<span weight='bold' size='large'>Bluetooth Devices</span>"
+            f"<span weight='bold' size='large'>{self.txt.bluetooth_title}</span>"
         )
         bluetooth_label.set_halign(Gtk.Align.START)
         title_box.pack_start(bluetooth_label, False, False, 0)
@@ -69,7 +71,7 @@ class BluetoothTab(Gtk.Box):
             "view-refresh-symbolic", Gtk.IconSize.BUTTON
         )
         self.scan_button.set_image(scan_icon)
-        self.scan_button.set_tooltip_text("Scan for Devices")
+        self.scan_button.set_tooltip_text(self.txt.bluetooth_tooltip_refresh)
         self.scan_button.connect("clicked", self.on_scan_clicked)
         # Set initial visibility based on Bluetooth status
         self.scan_button.set_visible(get_bluetooth_status(self.logging))
@@ -91,8 +93,8 @@ class BluetoothTab(Gtk.Box):
 
         # Bluetooth power switch
         power_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        power_label = Gtk.Label(label="Bluetooth")
-        power_label.set_markup("<b>Bluetooth</b>")
+        power_label = Gtk.Label(label=self.txt.bluetooth_power)
+        power_label.set_markup(f"<b>{self.txt.bluetooth_power}</b>")
         power_label.set_halign(Gtk.Align.START)
         self.power_switch = Gtk.Switch()
         self.power_switch.set_active(get_bluetooth_status(self.logging))
@@ -103,7 +105,7 @@ class BluetoothTab(Gtk.Box):
 
         # Device list section
         devices_label = Gtk.Label()
-        devices_label.set_markup("<b>Available Devices</b>")
+        devices_label.set_markup(f"<b>{self.txt.bluetooth_available_devices}</b>")
         devices_label.set_halign(Gtk.Align.START)
         devices_label.set_margin_top(15)
         content_box.pack_start(devices_label, False, True, 0)
@@ -144,7 +146,7 @@ class BluetoothTab(Gtk.Box):
             try:
                 devices = get_devices(self.logging)
                 for device in devices:
-                    device_row = BluetoothDeviceRow(device)
+                    device_row = BluetoothDeviceRow(device, self.txt)
                     device_row.connect_button.connect(
                         "clicked", self.on_connect_clicked, device["path"]
                     )
@@ -249,7 +251,7 @@ class BluetoothTab(Gtk.Box):
         self.logging.log(LogLevel.Info, "Starting Bluetooth device scan")
         # Disable button during scan
         button.set_sensitive(False)
-        button.set_label("Scanning...")
+        button.set_label(self.txt.bluetooth_scanning)
 
         # Start discovery
         try:
@@ -259,7 +261,7 @@ class BluetoothTab(Gtk.Box):
             self.logging.log(
                 LogLevel.Error, f"Failed to start Bluetooth discovery: {e}"
             )
-            button.set_label("Scan for Devices")
+            button.set_label(self.txt.bluetooth_scan_devices)
             button.set_sensitive(True)
             return
 
@@ -308,7 +310,7 @@ class BluetoothTab(Gtk.Box):
         self.logging.log(LogLevel.Info, "Stopping Bluetooth device scan")
         if not self.is_discovering:
             button.set_sensitive(True)
-            button.set_label("Scan for Devices")
+            button.set_label(self.txt.bluetooth_scan_devices)
             return
 
         try:
@@ -324,7 +326,7 @@ class BluetoothTab(Gtk.Box):
                 GLib.source_remove(self.discovery_check_id)
                 self.discovery_check_id = None
             button.set_sensitive(True)
-            button.set_label("Scan for Devices")
+            button.set_label(self.txt.bluetooth_scan_devices)
             self.update_device_list()
 
     def on_connect_clicked(self, button, device_path):
@@ -341,7 +343,7 @@ class BluetoothTab(Gtk.Box):
         
         # Disable the button and show a spinner to indicate connection in progress
         button.set_sensitive(False)
-        button.set_label("Connecting...")
+        button.set_label(self.txt.connecting)
         
         # Create a spinner and add it to the button
         spinner = Gtk.Spinner()
@@ -365,7 +367,7 @@ class BluetoothTab(Gtk.Box):
                     return False
                 
                 # Button is still valid, update it
-                stored_button.set_label("Connect")
+                stored_button.set_label(self.txt.connect)
                 stored_button.set_image(None)
                 stored_button.set_sensitive(True)
                 
@@ -382,9 +384,9 @@ class BluetoothTab(Gtk.Box):
                         modal=True,
                         message_type=Gtk.MessageType.ERROR,
                         buttons=Gtk.ButtonsType.OK,
-                        text="Failed to connect to device"
+                        text=self.txt.bluetooth_connect_failed
                     )
-                    dialog.format_secondary_text("Please try again later.")
+                    dialog.format_secondary_text(self.txt.bluetooth_try_again)
                     dialog.run()
                     dialog.destroy()
                 return False
@@ -408,7 +410,7 @@ class BluetoothTab(Gtk.Box):
         
         # Disable the button and show a spinner to indicate disconnection in progress
         button.set_sensitive(False)
-        button.set_label("Disconnecting...")
+        button.set_label(self.txt.disconnecting)
         
         # Create a spinner and add it to the button
         spinner = Gtk.Spinner()
@@ -432,7 +434,7 @@ class BluetoothTab(Gtk.Box):
                     return False
                 
                 # Button is still valid, update it
-                stored_button.set_label("Disconnect")
+                stored_button.set_label(self.txt.disconnect)
                 stored_button.set_image(None)
                 stored_button.set_sensitive(True)
                 
@@ -449,9 +451,9 @@ class BluetoothTab(Gtk.Box):
                         modal=True,
                         message_type=Gtk.MessageType.ERROR,
                         buttons=Gtk.ButtonsType.OK,
-                        text="Failed to disconnect from device"
+                        text=self.txt.bluetooth_disconnect_failed
                     )
-                    dialog.format_secondary_text("Please try again later.")
+                    dialog.format_secondary_text(self.txt.bluetooth_try_again)
                     dialog.run()
                     dialog.destroy()
                 return False

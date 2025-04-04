@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-import gi  # type: ignore
+import gi
+
+from utils.translations import English, Spanish  # type: ignore
 gi.require_version('Gtk', '3.0')
 import subprocess
 import json
@@ -11,8 +13,9 @@ from utils.logger import LogLevel, Logger
 class PowerTab(Gtk.Box):
     """Power management tab with suspend, shutdown and reboot options"""
 
-    def __init__(self, logging: Logger):
+    def __init__(self, logging: Logger, txt: English|Spanish):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.txt = txt
 
         self.logging = logging
 
@@ -52,7 +55,7 @@ class PowerTab(Gtk.Box):
         # Add title with better styling
         title_label = Gtk.Label()
         title_label.set_markup(
-            "<span weight='bold' size='x-large'>Power Management</span>"
+            f"<span weight='bold' size='x-large'>{self.txt.power_title}</span>"
         )
         title_label.get_style_context().add_class("header-title")
         title_label.set_halign(Gtk.Align.START)
@@ -62,11 +65,12 @@ class PowerTab(Gtk.Box):
 
         # Create settings button
         settings_button = Gtk.Button()
-        settings_button.set_tooltip_text("Configure Power Menu")
-        settings_icon = Gtk.Image.new_from_icon_name(
+        settings_button.set_tooltip_text(self.txt.power_tooltip_menu)
+        self.settings_icon = Gtk.Image.new_from_icon_name(
             "emblem-system-symbolic", Gtk.IconSize.MENU
         )
-        settings_button.add(settings_icon)
+        self.settings_icon.get_style_context().add_class("roate-gear")
+        settings_button.add(self.settings_icon)
         settings_button.get_style_context().add_class("flat")
         settings_button.connect("clicked", self.on_settings_clicked)
         header_box.pack_end(settings_button, False, False, 0)
@@ -82,54 +86,54 @@ class PowerTab(Gtk.Box):
         self.power_options = [
             {
                 "id": "lock",
-                "label": "Lock",
+                "label": self.txt.power_menu_lock,
                 "icon": "system-lock-screen-symbolic",
-                "tooltip": "Lock the screen",
+                "tooltip": self.txt.power_menu_tooltip_lock,
                 "callback": self.on_lock_clicked,
                 "color": "#4A90D9",
                 "default_shortcut": "l"
             },
             {
                 "id": "logout",
-                "label": "Logout",
+                "label": self.txt.power_menu_logout,
                 "icon": "system-log-out-symbolic",
-                "tooltip": "Log out of the current session",
+                "tooltip": self.txt.power_menu_tooltip_logout,
                 "callback": self.on_logout_clicked,
                 "color": "#729FCF",
                 "default_shortcut": "o"
             },
             {
                 "id": "suspend",
-                "label": "Suspend",
+                "label": self.txt.power_menu_suspend,
                 "icon": "system-suspend-symbolic",
-                "tooltip": "Suspend the system (sleep)",
+                "tooltip": self.txt.power_menu_tooltip_suspend,
                 "callback": self.on_suspend_clicked,
                 "color": "#8DB67A",
                 "default_shortcut": "s"
             },
             {
                 "id": "hibernate",
-                "label": "Hibernate",
+                "label": self.txt.power_menu_hibernate,
                 "icon": "document-save-symbolic",
-                "tooltip": "Hibernate the system",
+                "tooltip": self.txt.power_menu_tooltip_hibernate,
                 "callback": self.on_hibernate_clicked,
                 "color": "#AD7FA8",
                 "default_shortcut": "h"
             },
             {
                 "id": "reboot",
-                "label": "Reboot",
+                "label": self.txt.power_menu_reboot,
                 "icon": "system-reboot-symbolic",
-                "tooltip": "Restart the system",
+                "tooltip": self.txt.power_menu_tooltip_reboot,
                 "callback": self.on_reboot_clicked,
                 "color": "#F8C146",
                 "default_shortcut": "r"
             },
             {
                 "id": "shutdown",
-                "label": "Shutdown",
+                "label": self.txt.power_menu_shutdown,
                 "icon": "system-shutdown-symbolic",
-                "tooltip": "Power off the system",
+                "tooltip": self.txt.power_menu_tooltip_shutdown,
                 "callback": self.on_shutdown_clicked,
                 "color": "#EF5350",
                 "default_shortcut": "p"
@@ -376,7 +380,7 @@ class PowerTab(Gtk.Box):
         visibility_box.set_margin_bottom(10)
 
         visibility_label = Gtk.Label()
-        visibility_label.set_markup("<b>Show/Hide Buttons</b>")
+        visibility_label.set_markup(f"<b>{self.txt.power_menu_show_hide_buttons}</b>")
         visibility_label.set_halign(Gtk.Align.START)
         visibility_box.pack_start(visibility_label, False, False, 0)
 
@@ -386,7 +390,7 @@ class PowerTab(Gtk.Box):
 
         # Add toggle for showing keybinds
         keybinds_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        keybinds_label = Gtk.Label(label="Show Keyboard Shortcuts")
+        keybinds_label = Gtk.Label(label=self.txt.power_menu_show_keyboard_shortcut)
         keybinds_label.set_halign(Gtk.Align.START)
         keybinds_box.pack_start(keybinds_label, True, True, 0)
 
@@ -425,7 +429,7 @@ class PowerTab(Gtk.Box):
             visibility_box.pack_start(option_box, False, False, 5)
 
         # Add visibility tab
-        visibility_tab_label = Gtk.Label(label="Buttons")
+        visibility_tab_label = Gtk.Label(label=self.txt.power_menu_visibility)
         notebook.append_page(visibility_box, visibility_tab_label)
 
         # ===== Shortcuts Tab =====
@@ -436,7 +440,7 @@ class PowerTab(Gtk.Box):
         shortcuts_box.set_margin_bottom(10)
 
         shortcuts_label = Gtk.Label()
-        shortcuts_label.set_markup("<b>Keyboard Shortcuts</b>")
+        shortcuts_label.set_markup(f"<b>{self.txt.power_menu_keyboard_shortcut}</b>")
         shortcuts_label.set_halign(Gtk.Align.START)
         shortcuts_box.pack_start(shortcuts_label, False, False, 0)
 
@@ -511,7 +515,7 @@ class PowerTab(Gtk.Box):
         shortcuts_box.pack_start(shortcuts_scrolled, True, True, 0)
 
         # Add shortcuts tab
-        shortcuts_tab_label = Gtk.Label(label="Shortcuts")
+        shortcuts_tab_label = Gtk.Label(label=self.txt.power_menu_shortcuts_tab_label)
         notebook.append_page(shortcuts_box, shortcuts_tab_label)
 
         # ===== Commands Tab =====
@@ -602,7 +606,7 @@ class PowerTab(Gtk.Box):
         commands_box.pack_start(scrolled_window, True, True, 0)
 
         # Add commands tab
-        commands_tab_label = Gtk.Label(label="Commands")
+        commands_tab_label = Gtk.Label(label=self.txt.power_menu_commands)
         notebook.append_page(commands_box, commands_tab_label)
 
         # ===== Colors Tab =====
@@ -730,7 +734,7 @@ class PowerTab(Gtk.Box):
         colors_box.pack_start(colors_scrolled, True, True, 0)
 
         # Add colors tab
-        colors_tab_label = Gtk.Label(label="Colors")
+        colors_tab_label = Gtk.Label(label=self.txt.power_menu_colors)
         notebook.append_page(colors_box, colors_tab_label)
 
         box.pack_start(notebook, True, True, 0)
@@ -740,7 +744,7 @@ class PowerTab(Gtk.Box):
         button_box.set_halign(Gtk.Align.END)
         button_box.set_margin_top(10)
 
-        apply_button = Gtk.Button(label="Apply")
+        apply_button = Gtk.Button(label=self.txt.power_menu_apply)
         apply_button.connect("clicked", self.on_apply_settings)
         button_box.pack_end(apply_button, False, False, 0)
 
@@ -803,8 +807,17 @@ class PowerTab(Gtk.Box):
 
     def on_settings_clicked(self, button):
         """Handle settings button click"""
+        self.settings_icon.get_style_context().add_class("rotate-gear-active")
+        self.settings_icon.get_style_context().remove_class("rotate-gear")
+        
+        def on_popover_close(popover):
+            self.settings_icon.get_style_context().remove_class("rotate-gear-active")
+            self.settings_icon.get_style_context().add_class("rotate-gear")    
+            popover.disconnect(closed_handler)
+        closed_handler = self.settings_popover.connect("closed", on_popover_close)
+        
         self.settings_popover.popup()
-
+        
     def _add_css(self):
         """Add CSS styling for power buttons"""
         css_provider = Gtk.CssProvider()

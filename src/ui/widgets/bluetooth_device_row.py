@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 
-import gi # type: ignore
+import gi
+
+from utils.translations import English, Spanish # type: ignore
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 from gi.repository import Gtk, Pango # type: ignore
 
 class BluetoothDeviceRow(Gtk.ListBoxRow):
-    def __init__(self, device):
+    def __init__(self, device, txt:English|Spanish):
         super().__init__()
+        self.txt = txt
         self.set_margin_top(5)
         self.set_margin_bottom(5)
         self.set_margin_start(10)
@@ -43,7 +46,7 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
         name_box.pack_start(name_label, True, True, 0)
 
         if self.is_connected:
-            connected_label = Gtk.Label(label=" (Connected)")
+            connected_label = Gtk.Label(label=f" ({self.txt.connected})")
             connected_label.get_style_context().add_class("success-label")
             name_box.pack_start(connected_label, False, False, 0)
 
@@ -69,11 +72,11 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
         # Add connect/disconnect buttons
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
 
-        self.connect_button = Gtk.Button(label="Connect")
+        self.connect_button = Gtk.Button(label=self.txt.connect)
         self.connect_button.set_sensitive(not self.is_connected)
         button_box.pack_end(self.connect_button, False, False, 0)
 
-        self.disconnect_button = Gtk.Button(label="Disconnect")
+        self.disconnect_button = Gtk.Button(label=self.txt.disconnect)
         self.disconnect_button.set_sensitive(self.is_connected)
         button_box.pack_end(self.disconnect_button, False, False, 0)
 

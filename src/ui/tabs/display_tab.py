@@ -4,6 +4,7 @@ import gi  # type: ignore
 import subprocess
 
 from utils.logger import LogLevel, Logger
+from utils.translations import English, Spanish
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib  # type: ignore
@@ -15,8 +16,9 @@ from tools.display import get_brightness, set_brightness
 class DisplayTab(Gtk.Box):
     """Display settings tab"""
 
-    def __init__(self, logging: Logger):
+    def __init__(self, logging: Logger, txt: English|Spanish):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.txt = txt
         self.logging = logging
         self.update_timeout_id = None
         self.update_interval = 500  # milliseconds
@@ -45,7 +47,7 @@ class DisplayTab(Gtk.Box):
         # Add title
         display_label = Gtk.Label()
         display_label.set_markup(
-            "<span weight='bold' size='large'>Display Settings</span>"
+            f"<span weight='bold' size='large'>{self.txt.display_title}</span>"
         )
         display_label.set_halign(Gtk.Align.START)
         title_box.pack_start(display_label, False, False, 0)
@@ -68,7 +70,7 @@ class DisplayTab(Gtk.Box):
 
         # Brightness section
         brightness_label = Gtk.Label()
-        brightness_label.set_markup("<b>Screen Brightness</b>")
+        brightness_label.set_markup(f"<b>{self.txt.display_brightness}</b>")
         brightness_label.set_halign(Gtk.Align.START)
         content_box.pack_start(brightness_label, False, True, 0)
 
@@ -105,7 +107,7 @@ class DisplayTab(Gtk.Box):
 
         # Blue light section
         bluelight_label = Gtk.Label()
-        bluelight_label.set_markup("<b>Blue Light</b>")
+        bluelight_label.set_markup(f"<b>{self.txt.display_blue_light}</b>")
         bluelight_label.set_halign(Gtk.Align.START)
         bluelight_label.set_margin_top(15)
         content_box.pack_start(bluelight_label, False, True, 0)

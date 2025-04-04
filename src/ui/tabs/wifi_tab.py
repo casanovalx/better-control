@@ -7,6 +7,8 @@ import threading
 from utils.logger import LogLevel, Logger
 import subprocess
 
+from utils.translations import English, Spanish
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk # type: ignore
 from tools.globals import get_wifi_css
@@ -29,9 +31,10 @@ from tools.wifi import (
 class WiFiTab(Gtk.Box):
     """WiFi settings tab"""
 
-    def __init__(self, logging: Logger):
+    def __init__(self, logging: Logger, txt: English|Spanish):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         get_wifi_css()
+        self.txt = txt
         self.logging = logging
         self.logging.log(LogLevel.Info, "Initializing WiFi tab")
         self.set_margin_start(15)
@@ -65,7 +68,7 @@ class WiFiTab(Gtk.Box):
 
         # Add title
         wifi_label = Gtk.Label()
-        wifi_label.set_markup("<span weight='bold' size='large'>Wi-Fi Networks</span>")
+        wifi_label.set_markup(f"<span weight='bold' size='large'>{self.txt.wifi_title}</span>")
         wifi_label.set_halign(Gtk.Align.START)
         title_box.pack_start(wifi_label, False, False, 0)
 
@@ -75,7 +78,7 @@ class WiFiTab(Gtk.Box):
         refresh_button = Gtk.Button()
         refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
         refresh_button.set_image(refresh_icon)
-        refresh_button.set_tooltip_text("Refresh Networks")
+        refresh_button.set_tooltip_text(self.txt.wifi_refresh_tooltip)
         refresh_button.connect("clicked", self.on_refresh_clicked)
 
         # Disable refresh button if WiFi is not supported
@@ -100,8 +103,8 @@ class WiFiTab(Gtk.Box):
 
         # WiFi power switch
         power_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        power_label = Gtk.Label(label="Wi-Fi")
-        power_label.set_markup("<b>Wi-Fi</b>")
+        power_label = Gtk.Label(label=self.txt.wifi_power)
+        power_label.set_markup(f"<b>{self.txt.wifi_power}</b>")
         power_label.set_halign(Gtk.Align.START)
         self.power_switch = Gtk.Switch()
 
@@ -120,14 +123,14 @@ class WiFiTab(Gtk.Box):
         speed_box.set_margin_top(10)
         speed_box.set_margin_bottom(5)
         speed_label = Gtk.Label()
-        speed_label.set_markup("<b>Connection Speed</b>")
+        speed_label.set_markup(f"<b>{self.txt.wifi_speed}</b>")
         speed_label.set_halign(Gtk.Align.START)
         speed_box.pack_start(speed_label, True, True, 0)
         content_box.pack_start(speed_box, False, True, 0)
         speed_values_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
-        self.upload_label = Gtk.Label(label="Upload: 0 Mbps")
+        self.upload_label = Gtk.Label(label=f"{self.txt.wifi_upload}: 0 Mbps")
         self.upload_label.set_halign(Gtk.Align.START)
-        self.download_label = Gtk.Label(label="Download: 0 Mbps")
+        self.download_label = Gtk.Label(label=f"{self.txt.wifi_download}: 0 Mbps")
         self.download_label.set_halign(Gtk.Align.START)
         speed_values_box.pack_start(self.download_label, False, True, 0)
         speed_values_box.pack_start(self.upload_label, False, True, 0)
@@ -135,7 +138,7 @@ class WiFiTab(Gtk.Box):
 
         # Network list section
         networks_label = Gtk.Label()
-        networks_label.set_markup("<b>Available Networks</b>")
+        networks_label.set_markup(f"<b>{self.txt.wifi_available}</b>")
         networks_label.set_halign(Gtk.Align.START)
         networks_label.set_margin_top(15)
         content_box.pack_start(networks_label, False, True, 0)
@@ -155,15 +158,15 @@ class WiFiTab(Gtk.Box):
         # Action buttons - moved outside of the scrollable area
         action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         action_box.set_margin_top(10)
-        connect_button = Gtk.Button(label="Connect")
+        connect_button = Gtk.Button(label=self.txt.connect)
         connect_button.connect("clicked", self.on_connect_clicked)
         action_box.pack_start(connect_button, True, True, 0)
 
-        disconnect_button = Gtk.Button(label="Disconnect")
+        disconnect_button = Gtk.Button(label=self.txt.disconnect)
         disconnect_button.connect("clicked", self.on_disconnect_clicked)
         action_box.pack_start(disconnect_button, True, True, 0)
 
-        forget_button = Gtk.Button(label="Forget")
+        forget_button = Gtk.Button(label=self.txt.wifi_forget)
         forget_button.connect("clicked", self.on_forget_clicked)
         action_box.pack_start(forget_button, True, True, 0)
 
@@ -370,7 +373,7 @@ class WiFiTab(Gtk.Box):
                 # Connected indicator (moved before security icon)
                 if network["in_use"]:
                     connected_icon = Gtk.Image.new_from_icon_name("emblem-ok-symbolic", Gtk.IconSize.MENU)
-                    connected_label = Gtk.Label(label="Connected")
+                    connected_label = Gtk.Label(label=self.txt.connected)
                     connected_label.get_style_context().add_class("dim-label")
                     connected_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
                     connected_box.pack_start(connected_icon, False, False, 0)
@@ -473,7 +476,7 @@ class WiFiTab(Gtk.Box):
         spinner.start()
         box.pack_start(spinner, False, False, 0)
 
-        label = Gtk.Label(label="Loading networks...")
+        label = Gtk.Label(label=self.txt.wifi_loading_networks)
         label.set_halign(Gtk.Align.START)
         box.pack_start(label, True, True, 0)
 
@@ -835,7 +838,7 @@ class WiFiTab(Gtk.Box):
                 )
 
                 qr_dialog = Gtk.Dialog(
-                    title="Share Network",
+                    title=self.txt.wifi_share_title,
                     parent=self.get_toplevel(),
                     flags=Gtk.DialogFlags.MODAL,
                 )
@@ -845,7 +848,7 @@ class WiFiTab(Gtk.Box):
                 # header
                 header_bar = Gtk.HeaderBar()
                 header_bar.set_show_close_button(True)
-                header_bar.set_title("Share Network")
+                header_bar.set_title(self.txt.wifi_share_title)
                 qr_dialog.set_titlebar(header_bar)
 
                 # content area
@@ -867,7 +870,7 @@ class WiFiTab(Gtk.Box):
                 qr_button.get_style_context().add_class("qr_image_holder")
                 top_box.pack_start(qr_button, False, False, 0)
 
-                scan_label = Gtk.Label(label="Scan to connect")
+                scan_label = Gtk.Label(label=self.txt.wifi_share_scan)
                 scan_label.get_style_context().add_class("scan_label")
                 top_box.pack_start(scan_label, False, False, 0)
 
@@ -893,9 +896,9 @@ class WiFiTab(Gtk.Box):
                 ssid_box.set_size_request(320, 50)
                 ssid_box.get_style_context().add_class("ssid-box")
 
-                ssid_label = Gtk.Label(label="Network Name")
+                ssid_label = Gtk.Label(label=self.txt.wifi_network_name)
                 ssid_label.get_style_context().add_class("dimmed-label")
-                ssid_label.set_markup("<b>Network Name </b>")
+                ssid_label.set_markup(f"<b>{self.txt.wifi_network_name}</b>")
                 ssid_label.set_halign(Gtk.Align.START)
 
                 ssid_name = Gtk.Label(label=current_network["ssid"])
@@ -909,9 +912,9 @@ class WiFiTab(Gtk.Box):
                 security_box.set_size_request(320, 50)
                 security_box.get_style_context().add_class("secrity-box")
 
-                security_label = Gtk.Label(label="Password")
+                security_label = Gtk.Label(label=self.txt.wifi_password)
                 security_label.get_style_context().add_class("dimmed-label")
-                security_label.set_markup("<b>Password </b>")
+                security_label.set_markup(f"<b>{self.txt.wifi_password}</b>")
                 security_label.set_halign(Gtk.Align.START)
 
                 passwd = Gtk.Label(label=connection_info.get("password", "Hidden"))

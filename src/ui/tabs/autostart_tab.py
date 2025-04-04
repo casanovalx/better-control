@@ -2,7 +2,9 @@
 
 import subprocess
 import threading
-import gi  # type: ignore
+import gi
+
+from utils.translations import English, Spanish  # type: ignore
 gi.require_version('Gtk', '3.0')
 import glob
 import os
@@ -17,9 +19,9 @@ from tools.swaywm import get_sway_startup_apps, toggle_sway_startup
 class AutostartTab(Gtk.Box):
     """Autostart settings tab"""
 
-    def __init__(self, logging: Logger):
+    def __init__(self, logging: Logger, txt: English|Spanish):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        
+        self.txt = txt
         self.logging = logging
         self.startup_apps = {}
         
@@ -56,7 +58,7 @@ class AutostartTab(Gtk.Box):
         # Add title with better styling
         display_label = Gtk.Label()
         display_label.set_markup(
-            "<span weight='bold' size='large'>Autostart Applications</span>"
+            f"<span weight='bold' size='large'>{self.txt.autostart_title}</span>"
         )
         display_label.get_style_context().add_class("header-title")
         display_label.set_halign(Gtk.Align.START)
@@ -70,7 +72,7 @@ class AutostartTab(Gtk.Box):
             "view-refresh-symbolic", Gtk.IconSize.BUTTON
         )
         self.scan_button.set_image(scan_icon)
-        self.scan_button.set_tooltip_text("Rescan autostart apps")
+        self.scan_button.set_tooltip_text(self.txt.autostart_tooltip_rescan)
         self.scan_button.connect("clicked", self.on_scan_clicked)
         self.scan_button.get_style_context().add_class("scan-button")
         self.scan_button.set_visible(True)
@@ -84,7 +86,7 @@ class AutostartTab(Gtk.Box):
             session_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
             session_box.set_margin_bottom(5)
             
-            session_label = Gtk.Label(label=f"Session: {current_session}")
+            session_label = Gtk.Label(label=f"{self.txt.autostart_session}: {current_session}")
             session_label.get_style_context().add_class("session-label")
             session_box.pack_start(session_label, False, False, 0)
             
@@ -104,7 +106,7 @@ class AutostartTab(Gtk.Box):
         
         # System autostart apps toggle with better layout
         toggle1_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        toggle1_label = Gtk.Label(label="Show system autostart applications")
+        toggle1_label = Gtk.Label(label=self.txt.autostart_show_system_apps)
         toggle1_label.get_style_context().add_class("toggle-label")
         toggle1_label.set_halign(Gtk.Align.START)
         self.toggle1_switch = Gtk.Switch()
@@ -134,7 +136,7 @@ class AutostartTab(Gtk.Box):
         apps_section_box.pack_start(apps_icon, False, False, 0)
         
         apps_title = Gtk.Label()
-        apps_title.set_markup("<span weight='bold'>Configured Applications</span>")
+        apps_title.set_markup(f"<span weight='bold'>{self.txt.autostart_configured_applications}</span>")
         apps_title.set_halign(Gtk.Align.START)
         apps_section_box.pack_start(apps_title, False, False, 0)
         
@@ -172,7 +174,7 @@ class AutostartTab(Gtk.Box):
     def on_toggle1_changed(self, switch, gparam):
         """Handle toggle for system autostart apps"""
         show_system = switch.get_active()
-        self.logging.log(LogLevel.Info, f"Show system autostart apps: {show_system}")
+        self.logging.log(LogLevel.Info, f"Show system autostart : {show_system}")
         self.refresh_list()
     
     def get_startup_apps(self):
@@ -334,7 +336,7 @@ class AutostartTab(Gtk.Box):
         hbox.pack_start(info_box, True, True, 0)
         
         # Toggle button with better styling
-        button_label = "Disable" if app["enabled"] else "Enable"
+        button_label = self.txt.disable if app["enabled"] else self.txt.enable
         button = Gtk.Button(label=button_label)
         button.get_style_context().add_class("toggle-button")
         button.get_style_context().add_class("enabled" if app["enabled"] else "disabled")
@@ -380,7 +382,7 @@ class AutostartTab(Gtk.Box):
             toggle_hyprland_startup(app_name)
 
             app["enabled"] = not app["enabled"]
-            button.set_label("Disable" if app["enabled"] else "Enable")
+            button.set_label(self.txt.disable if app["enabled"] else self.txt.enable)
             
             style_context = button.get_style_context()
             if app["enabled"]:
@@ -397,7 +399,7 @@ class AutostartTab(Gtk.Box):
             toggle_sway_startup(app_name)
 
             app["enabled"] = not app["enabled"]
-            button.set_label("Disable" if app["enabled"] else "Enable")
+            button.set_label(self.txt.disable if app["enabled"] else self.txt.enable)
             
             style_context = button.get_style_context()
             if app["enabled"]:
