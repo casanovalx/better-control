@@ -39,7 +39,6 @@ def signal_handler(sig, frame):
     
 # Set the version of the application 
 # This should be updated with each release
-VERSION = 6.1
 
 if __name__ == "__main__":
     # Register signal handlers
@@ -62,10 +61,6 @@ if __name__ == "__main__":
 
     if arg_parser.find_arg(("-h", "--help")):
         arg_parser.print_help_msg(sys.stdout)
-        sys.exit(0)
-    # Check for version argument
-    if arg_parser.find_arg(("--version")):
-        print(f"better-control v.{VERSION}")
         sys.exit(0)
 
     logging = Logger(arg_parser)
@@ -90,19 +85,20 @@ if __name__ == "__main__":
     if arg_parser.find_arg(("-L", "--lang")):
         lang = arg_parser.option_arg(("-L", "--lang"))
         if lang not in ["en", "es", "pt"]:
-            logging.log(LogLevel.Warn, f"Invalid language code '{lang}'. Falling back to default")
-            lang = "default"
+            logging.log(LogLevel.Warn, f"Invalid language code '{lang}'. Falling back to default(en)")
+            lang = "en"
         settings["language"] = lang
         save_settings(settings, logging)
         logging.log(LogLevel.Info, f"Language set to: {lang}")
     else:
         # Get language from settings, fallback to "default" if invalid
-        lang = settings.get("language", "en")
-        if lang not in ["en", "es", "pt"]:
-            logging.log(LogLevel.Warn, f"Invalid language '{lang}' in settings. Falling back to default")
-            lang = "default"
+        lang = settings.get("language", "default")
+        if lang not in ["en", "es", "pt", "default"]:
+            lang = "en"
             settings["language"] = lang
             save_settings(settings, logging)
+            logging.log(LogLevel.Warn, f"Invalid language '{lang}' in settings. Falling back to default(en)")
+
 
     logging.log(LogLevel.Info, f"Loaded language setting from settings: {lang}")
     txt = get_translations(logging, lang)
