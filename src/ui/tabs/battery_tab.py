@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-import gi  # type: ignore
+import gi
+
+from utils.translations import English, Spanish  # type: ignore
 gi.require_version('Gtk', '3.0')
 import subprocess
 import os
@@ -11,8 +13,9 @@ from utils.logger import LogLevel, Logger
 
 
 class BatteryTab(Gtk.Box):
-    def __init__(self, logging: Logger, parent=None):
+    def __init__(self, logging: Logger, txt: English|Spanish, parent=None):
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.txt = txt
         self.logging = logging
 
         self.last_refresh_time = datetime.now()
@@ -23,9 +26,9 @@ class BatteryTab(Gtk.Box):
 
         self.power_mode_dropdown = Gtk.ComboBoxText()
         self.power_modes = {
-            "Power Saving": "power-saver",
-            "Balanced": "balanced",
-            "Performance": "performance",
+            self.txt.battery_power_saving: "power-saver",
+            self.txt.battery_balanced: "balanced",
+            self.txt.battery_performance: "performance",
         }
 
         for mode in self.power_modes.keys():
@@ -53,7 +56,7 @@ class BatteryTab(Gtk.Box):
 
         matching_label = next(
             (label for label, value in self.power_modes.items() if value == saved_mode),
-            "Balanced",
+            self.txt.battery_balanced,
         )
         if matching_label:
             self.power_mode_dropdown.set_active(
@@ -329,12 +332,12 @@ class BatteryTab(Gtk.Box):
         notebook = Gtk.Notebook()
         
         # Create tabs for different categories
-        self.add_info_tab(notebook, "Overview", battery_info, [
+        self.add_info_tab(notebook, self.txt.battery_overview, battery_info, [
             "Charge", "State", "Capacity", "Technology", 
             "Energy Rate", "Voltage"
         ])
         
-        self.add_info_tab(notebook, "Details", battery_info, [
+        self.add_info_tab(notebook, self.txt.battery_details, battery_info, [
             "Energy", "Energy Empty", "Energy Full", 
             "Energy Full Design", "Warning Level"
         ])
@@ -418,9 +421,9 @@ class BatteryTab(Gtk.Box):
         mode_selector.set_homogeneous(True)  # Make all buttons equal width
         
         mode_icons = {
-            "Power Saving": "power-profile-power-saver-symbolic",
-            "Balanced": "power-profile-balanced-symbolic",
-            "Performance": "power-profile-performance-symbolic"
+            self.txt.battery_power_saving: "power-profile-power-saver-symbolic",
+            self.txt.battery_balanced: "power-profile-balanced-symbolic",
+            self.txt.battery_performance: "power-profile-performance-symbolic"
         }
         
         # Get current active mode
@@ -482,7 +485,7 @@ class BatteryTab(Gtk.Box):
             
             # Message
             no_battery_label = Gtk.Label()
-            no_battery_label.set_markup("<span size='large'>No battery detected</span>")
+            no_battery_label.set_markup(f"<span size='large'>{self.battery_no_batteries}</span>")
             no_battery_box.pack_start(no_battery_label, False, False, 10)
             
             self.content_box.pack_start(no_battery_box, True, True, 0)
@@ -494,7 +497,7 @@ class BatteryTab(Gtk.Box):
             
             # Title for batteries section
             batteries_title = Gtk.Label(xalign=0)
-            batteries_title.set_markup("<span weight='bold' size='large'>Batteries</span>")
+            batteries_title.set_markup(f"<span weight='bold' size='large'>{self.txt.battery_batteries}</span>")
             batteries_title.set_margin_top(5)
             batteries_title.set_margin_bottom(5)
             batteries_container.pack_start(batteries_title, False, False, 0)
@@ -569,7 +572,7 @@ class BatteryTab(Gtk.Box):
         # Add title
         self.battery_label = Gtk.Label()
         self.battery_label.set_markup(
-            "<span weight='bold' size='large'>Battery Dashboard</span>"
+            f"<span weight='bold' size='large'>{self.txt.battery_title}</span>"
         )
         self.battery_label.set_halign(Gtk.Align.START)
         title_box.pack_start(self.battery_label, False, False, 0)
@@ -582,7 +585,7 @@ class BatteryTab(Gtk.Box):
             "view-refresh-symbolic", Gtk.IconSize.BUTTON
         )
         refresh_button.set_image(refresh_icon)
-        refresh_button.set_tooltip_text("Refresh Battery Information")
+        refresh_button.set_tooltip_text(self.txt.battery_tooltip_refresh)
         refresh_button.connect("clicked", self.refresh_battery_info)
         header_box.pack_end(refresh_button, False, False, 0)
 

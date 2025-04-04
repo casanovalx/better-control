@@ -7,9 +7,12 @@ import gi  # type: ignore
 import sys
 import threading
 import signal
+from setproctitle import setproctitle
 from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
 from utils.logger import LogLevel, Logger
+from utils.settings import load_settings
+from utils.translations import English, Spanish, get_translations
 
 # Initialize GTK before imports
 gi.require_version("Gtk", "3.0")
@@ -29,6 +32,7 @@ def signal_handler(sig, frame):
 
 if __name__ == "__main__":
     # Register signal handlers
+    setproctitle("better-control")
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
@@ -47,6 +51,10 @@ if __name__ == "__main__":
 
     logging = Logger(arg_parser)
     logging.log(LogLevel.Info, "Starting Better Control")
+    
+    settings = load_settings(logging)
+    lang  = settings.get("language", "en")
+    txt = get_translations(logging, lang)
 
     # Load animations CSS globally
     animations_css = load_animations_css()
@@ -62,7 +70,7 @@ if __name__ == "__main__":
     # Use a try/except to catch any errors during startup
     try:
         # Create the GTK window with proper error handling
-        win = BetterControl(arg_parser, logging)
+        win = BetterControl(txt, arg_parser, logging)
 
         # Prevents startup delay - ensure thread is properly managed
         # Only start the audio thread after window creation to avoid race conditions

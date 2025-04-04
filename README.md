@@ -41,7 +41,7 @@ Before installing, ensure you have `git` and `base-devel` installed.
 | Dependency | Purpose |
 |------------|---------|
 | **GTK 3** | UI framework |
-| **Python Libraries** | python-gobject, python-dbus, python-psutil |
+| **Python Libraries** | python-gobject, python-dbus, python-psutil, python-setproctitle |
 
 ### Feature-Specific Dependencies
 
@@ -131,6 +131,9 @@ make
 sudo make install
 ```
 
+## Contribution
+Feel free to propose PR and suggest new features, improvements. If you wish to contribute with translation for the app into your language, please see the `utils/translations.py` file.
+
 ## 📚 Documentation
 
 For more information, please refer to the [official documentation](https://github.com/quantumvoid0/better-control/wiki).
@@ -207,6 +210,6 @@ Better-Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasm
 
 [Report Bug](https://github.com/quantumvoid0/better-control/issues) • 
 [Request Feature](https://github.com/quantumvoid0/better-control/issues) • 
-[Contribute](https://github.com/quantumvoid0/better-control/pulls)
+[Contribute](#contribution)
 
 </div>

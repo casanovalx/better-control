@@ -2,7 +2,8 @@
 
 import gi
 
-from utils.logger import LogLevel, Logger # type: ignore
+from utils.logger import LogLevel, Logger
+from utils.translations import English, Spanish # type: ignore
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject # type: ignore
@@ -17,8 +18,9 @@ class SettingsTab(Gtk.Box):
         'tab-order-changed': (GObject.SignalFlags.RUN_LAST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
-    def __init__(self, logging: Logger):
+    def __init__(self, logging: Logger, txt: English|Spanish):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.txt = txt
         self.logging = logging
 
         self.set_margin_top(10)
@@ -65,8 +67,8 @@ class SettingsTab(Gtk.Box):
         )
         header_box.pack_start(settings_icon, False, False, 0)
 
-        settings_label = Gtk.Label(label="Settings")
-        settings_label.set_markup("<span size='x-large' weight='bold'>Settings</span>")
+        settings_label = Gtk.Label(label=self.txt.settings_title)
+        settings_label.set_markup(f"<span size='x-large' weight='bold'>{self.txt.settings_title}</span>")
         header_box.pack_start(settings_label, False, False, 0)
 
         self.content_box.pack_start(header_box, False, False, 0)
@@ -92,8 +94,8 @@ class SettingsTab(Gtk.Box):
         self.tab_section.set_vexpand(True)
         settings_frame.add(self.tab_section)
 
-        section_label = Gtk.Label(label="Tab Settings")
-        section_label.set_markup("<span weight='bold'>Tab Settings</span>")
+        section_label = Gtk.Label(label=self.txt.settings_tab_settings)
+        section_label.set_markup(f"<span weight='bold'>{self.txt.settings_tab_settings}</span>")
         section_label.set_halign(Gtk.Align.START)
         self.tab_section.pack_start(section_label, False, False, 0)
 
@@ -130,7 +132,7 @@ class SettingsTab(Gtk.Box):
             row.pack_start(button_box, False, False, 0)
 
             # Add tab name and switch
-            label = Gtk.Label(label=f"Show {tab_name} tab")
+            label = Gtk.Label(label=f"{self.txt.show} {tab_name} tab")
             label.set_halign(Gtk.Align.START)
             # Allow label to expand and fill horizontally
             row.pack_start(label, True, True, 0)
@@ -153,6 +155,31 @@ class SettingsTab(Gtk.Box):
 
         # Add rows in the correct order
         self.update_ui_order()
+        
+        # Add separator
+        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        separator.set_margin_top(10)
+        separator.set_margin_bottom(10)
+        self.tab_section.pack_start(separator, False, False, 0)
+        
+        # Add language selection
+        lang_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        lang_box.set_margin_top(10)
+        lang_box.set_margin_bottom(10)
+        
+        lang_label = Gtk.Label(label=self.txt.settings_language)
+        lang_label.set_halign(Gtk.Align.START)
+        
+        lang_combo = Gtk.ComboBoxText()
+        lang_combo.append("en", "English")
+        lang_combo.append("es", "Español")
+        lang_combo.set_active_id(self.settings.get("language", "en"))
+        lang_combo.connect("changed", self.on_language_changed)
+        
+        lang_box.pack_start(lang_label, True, True, 0)
+        lang_box.pack_end(lang_combo, False, False, 0)
+        
+        self.tab_section.pack_start(lang_box, False, False, 0)
 
     def update_ui_order(self):
         """Update the order of rows in the UI to match the current tab order"""
@@ -271,3 +298,23 @@ class SettingsTab(Gtk.Box):
         self.settings["window_size"]["settings_height"] = height
         save_settings(self.settings, self.logging)
         self.logging.log(LogLevel.Info, f"Saved reference window size: {width}x{height}")
+
+    def on_language_changed(self, combo):
+        """Handle language changes"""
+        lang = combo.get_active_id()
+        self.settings["language"] = lang
+        save_settings(self.settings, self.logging)
+
+        # Show restart dialog
+        dialog = Gtk.MessageDialog(
+            transient_for=self.get_toplevel(),
+            flags=0,
+            message_type=Gtk.MessageType.INFO,
+            buttons=Gtk.ButtonsType.OK,
+            text=self.txt.settings_language_changed
+        )
+        dialog.format_secondary_text(
+            self.txt.settings_language_changed_restart
+        )
+        dialog.run()
+        dialog.destroy()
