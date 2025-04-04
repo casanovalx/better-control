@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
-import timeit
+# import timeit  # Not used
 import traceback
 import gi  # type: ignore
 import threading
@@ -22,18 +22,27 @@ from ui.tabs.wifi_tab import WiFiTab
 from ui.tabs.settings_tab import SettingsTab
 from utils.settings import load_settings, save_settings
 from utils.logger import LogLevel, Logger
-from ui.css.animations import load_animations_css, animate_widget_show
+from ui.css.animations import load_animations_css  # animate_widget_show not used
 from utils.translations import English, Spanish, Portuguese, get_translations
 
 
 class BetterControl(Gtk.Window):
 
     def __init__(self, txt: English|Spanish|Portuguese, arg_parser: ArgParse, logging: Logger) -> None:
+        # Initialize thread lock before anything else
+        self._tab_creation_lock = threading.RLock()
+
+        # Initialize GTK window
         super().__init__(title="Better Control")
 
         self.logging = logging
         self.set_default_size(600, 400)
         self.logging.log(LogLevel.Info, "Initializing application")
+
+        # Initialize important instance variables to prevent segfaults
+        self.tabs = {}
+        self.tab_pages = {}
+        self.tabs_thread_running = False
 
         # Check if minimal mode is enabled
         self.minimal_mode = arg_parser.find_arg(("-m", "--minimal"))
@@ -116,8 +125,8 @@ class BetterControl(Gtk.Window):
         # Also connect key-press-event to the main window to catch all tab presses
         self.connect("key-press-event", self.on_key_press)
 
-        self.tabs = {}
-        self.tab_pages = {}
+        # Initialize tabs and tab_pages earlier to avoid race conditions
+        # These were previously initialized here but moved up to prevent segfaults
 
         # Skip loading spinner in minimal mode for faster startup
         if not self.minimal_mode:
@@ -155,106 +164,132 @@ class BetterControl(Gtk.Window):
         """Create all tabs asynchronously"""
         self.logging.log(LogLevel.Info, "Starting asynchronous tab creation")
         # Start a thread to create tabs in the background
-        thread = threading.Thread(target=self._create_tabs_thread)
-        thread.daemon = True
-        thread.start()
+        try:
+            thread = threading.Thread(target=self._create_tabs_thread)
+            thread.daemon = True
+            thread.start()
+            self.logging.log(LogLevel.Info, "Tab creation thread started successfully")
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Failed to start tab creation thread: {e}")
+            # Create a fallback empty tab if thread creation fails
+            self._create_fallback_tab()
 
     def _create_tabs_thread(self):
         """Thread function to create tabs"""
-        # Create all tabs
-        tab_classes = {
-            "Volume": VolumeTab,
-            "Wi-Fi": WiFiTab,
-            "Bluetooth": BluetoothTab,
-            "Battery": BatteryTab,
-            "Display": DisplayTab,
-            "Power": PowerTab,
-            "Autostart": AutostartTab,
-        }
+        # Add a small delay to ensure GTK is fully initialized
+        import time
+        time.sleep(0.2)  # 200ms delay - increased for better stability
 
-        # Create a mapping between internal tab names and translated tab names
-        self.tab_name_mapping = {
-            "Volume": self.txt.msg_tab_volume,
-            "Wi-Fi": self.txt.msg_tab_wifi,
-            "Bluetooth": self.txt.msg_tab_bluetooth,
-            "Battery": self.txt.msg_tab_battery,
-            "Display": self.txt.msg_tab_display,
-            "Power": self.txt.msg_tab_power,
-            "Autostart": self.txt.msg_tab_autostart,
-        }
+        # Enter GDK threading context for PyGObject thread safety
+        Gdk.threads_enter()
 
-        # Track if thread is still running to avoid segfaults during shutdown
-        self.tabs_thread_running = True
+        try:
+            # Create all tabs
+            tab_classes = {
+                "Volume": VolumeTab,
+                "Wi-Fi": WiFiTab,
+                "Bluetooth": BluetoothTab,
+                "Battery": BatteryTab,
+                "Display": DisplayTab,
+                "Power": PowerTab,
+                "Autostart": AutostartTab,
+            }
 
-        # In minimal mode, only load the tab specified by command line arguments
-        if self.minimal_mode:
-            self.logging.log(LogLevel.Info, "Minimal mode: Only loading selected tab")
-            # Determine which tab to load based on command line arguments
-            tab_to_load = None
-            if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
-                tab_to_load = "Volume"
-            elif self.arg_parser.find_arg(("-w", "--wifi")):
-                tab_to_load = "Wi-Fi"
-            elif self.arg_parser.find_arg(("-a", "--autostart")):
-                tab_to_load = "Autostart"
-            elif self.arg_parser.find_arg(("-b", "--bluetooth")):
-                tab_to_load = "Bluetooth"
-            elif self.arg_parser.find_arg(("-B", "--battery")):
-                tab_to_load = "Battery"
-            elif self.arg_parser.find_arg(("-d", "--display")):
-                tab_to_load = "Display"
-            elif self.arg_parser.find_arg(("-p", "--power")):
-                tab_to_load = "Power"
+            # Create a lock for thread safety if it doesn't exist yet
+            if not hasattr(self, '_tab_creation_lock'):
+                self._tab_creation_lock = threading.RLock()
+                self.logging.log(LogLevel.Info, "Created tab creation lock")
+
+            # Create a mapping between internal tab names and translated tab names
+            self.tab_name_mapping = {
+                "Volume": self.txt.msg_tab_volume,
+                "Wi-Fi": self.txt.msg_tab_wifi,
+                "Bluetooth": self.txt.msg_tab_bluetooth,
+                "Battery": self.txt.msg_tab_battery,
+                "Display": self.txt.msg_tab_display,
+                "Power": self.txt.msg_tab_power,
+                "Autostart": self.txt.msg_tab_autostart,
+            }
+
+            # Track if thread is still running to avoid segfaults during shutdown
+            with self._tab_creation_lock:
+                self.tabs_thread_running = True
+
+            # In minimal mode, only load the tab specified by command line arguments
+            if self.minimal_mode:
+                self.logging.log(LogLevel.Info, "Minimal mode: Only loading selected tab")
+                # Determine which tab to load based on command line arguments
+                tab_to_load = None
+                if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
+                    tab_to_load = "Volume"
+                elif self.arg_parser.find_arg(("-w", "--wifi")):
+                    tab_to_load = "Wi-Fi"
+                elif self.arg_parser.find_arg(("-a", "--autostart")):
+                    tab_to_load = "Autostart"
+                elif self.arg_parser.find_arg(("-b", "--bluetooth")):
+                    tab_to_load = "Bluetooth"
+                elif self.arg_parser.find_arg(("-B", "--battery")):
+                    tab_to_load = "Battery"
+                elif self.arg_parser.find_arg(("-d", "--display")):
+                    tab_to_load = "Display"
+                elif self.arg_parser.find_arg(("-p", "--power")):
+                    tab_to_load = "Power"
+                else:
+                    # Default to Volume if no tab specified but minimal mode is enabled
+                    tab_to_load = "Volume"
+                    self.logging.log(LogLevel.Info, "No tab specified in minimal mode, defaulting to Volume")
+
+                # Only create the selected tab
+                if tab_to_load in tab_classes:
+                    try:
+                        self.logging.log(LogLevel.Info, f"Creating only {tab_to_load} tab for minimal mode")
+                        tab = tab_classes[tab_to_load](self.logging, self.txt)
+                        GLib.idle_add(self._add_tab_to_ui, tab_to_load, tab)
+                    except Exception as e:
+                        error_msg = f"Failed creating {tab_to_load} tab: {e}"
+                        self.logging.log(LogLevel.Error, error_msg)
+                        import traceback
+                        traceback.print_exc()
+                        print(f"FATAL ERROR: {error_msg}", file=sys.stderr)
             else:
-                # Default to Volume if no tab specified but minimal mode is enabled
-                tab_to_load = "Volume"
-                self.logging.log(LogLevel.Info, "No tab specified in minimal mode, defaulting to Volume")
+                # Normal mode: Create all tabs one by one
+                for tab_name, tab_class in tab_classes.items():
+                    try:
+                        # Check if thread should still run - use lock to prevent race conditions
+                        with self._tab_creation_lock:
+                            if not hasattr(self, 'tabs_thread_running') or not self.tabs_thread_running:
+                                self.logging.log(LogLevel.Info, "Tab creation thread stopped")
+                                return
 
-            # Only create the selected tab
-            if tab_to_load in tab_classes:
-                try:
-                    self.logging.log(LogLevel.Info, f"Creating only {tab_to_load} tab for minimal mode")
-                    tab = tab_classes[tab_to_load](self.logging, self.txt)
-                    GLib.idle_add(self._add_tab_to_ui, tab_to_load, tab)
-                except Exception as e:
-                    error_msg = f"Failed creating {tab_to_load} tab: {e}"
-                    self.logging.log(LogLevel.Error, error_msg)
-                    import traceback
-                    traceback.print_exc()
-                    print(f"FATAL ERROR: {error_msg}", file=sys.stderr)
-        else:
-            # Normal mode: Create all tabs one by one
-            for tab_name, tab_class in tab_classes.items():
-                try:
-                    # Check if thread should still run
-                    if not hasattr(self, 'tabs_thread_running') or not self.tabs_thread_running:
-                        self.logging.log(LogLevel.Info, "Tab creation thread stopped")
-                        return
+                        # Create the tab
+                        self.logging.log(LogLevel.Debug, f"Starting to create {tab_name} tab")
+                        tab = tab_class(self.logging, self.txt)
+                        self.logging.log(LogLevel.Debug, f"Successfully created {tab_name} tab instance")
 
-                    # Create the tab
-                    self.logging.log(LogLevel.Debug, f"Starting to create {tab_name} tab")
-                    tab = tab_class(self.logging, self.txt)
-                    self.logging.log(LogLevel.Debug, f"Successfully created {tab_name} tab instance")
+                        # Update UI from main thread safely
+                        GLib.idle_add(self._add_tab_to_ui, tab_name, tab)
 
-                    # Update UI from main thread safely
-                    GLib.idle_add(self._add_tab_to_ui, tab_name, tab)
+                        # Small delay to avoid blocking the UI
+                        GLib.usleep(10000)  # 10ms delay
 
-                    # Small delay to avoid blocking the UI
-                    GLib.usleep(10000)  # 10ms delay
+                    except Exception as e:
+                        error_msg = f"Failed creating {tab_name} tab: {e}"
+                        self.logging.log(LogLevel.Error, error_msg)
+                        # Print full traceback to stderr
+                        import traceback
+                        traceback.print_exc()
+                        print(f"FATAL ERROR: {error_msg}", file=sys.stderr)
 
-                except Exception as e:
-                    error_msg = f"Failed creating {tab_name} tab: {e}"
-                    self.logging.log(LogLevel.Error, error_msg)
-                    # Print full traceback to stderr
-                    import traceback
-                    traceback.print_exc()
-                    print(f"FATAL ERROR: {error_msg}", file=sys.stderr)
+            # Complete initialization on main thread
+            GLib.idle_add(self._finish_tab_loading)
 
-        # Complete initialization on main thread
-        GLib.idle_add(self._finish_tab_loading)
+            # Mark thread as completed - use lock to prevent race conditions
+            with self._tab_creation_lock:
+                self.tabs_thread_running = False
 
-        # Mark thread as completed
-        self.tabs_thread_running = False
+        finally:
+            # Always leave GDK threading context
+            Gdk.threads_leave()
 
     def _add_tab_to_ui(self, tab_name, tab):
         """Add a tab to the UI (called from main thread)"""
@@ -288,6 +323,24 @@ class BetterControl(Gtk.Window):
 
         self.logging.log(LogLevel.Info, f"Created {tab_name} tab")
         return False  # Required for GLib.idle_add
+
+    def _create_fallback_tab(self):
+        """Create a fallback tab if thread creation fails"""
+        try:
+            self.logging.log(LogLevel.Info, "Creating fallback tab")
+            # Create a simple label
+            label = Gtk.Label(label="Failed to load tabs. Please restart the application.")
+            label.set_margin_top(20)
+            label.set_margin_bottom(20)
+            label.set_margin_start(20)
+            label.set_margin_end(20)
+
+            # Add it to the notebook
+            self.notebook.append_page(label, Gtk.Label(label="Error"))
+            self.notebook.show_all()
+            self.logging.log(LogLevel.Info, "Fallback tab created")
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Failed to create fallback tab: {e}")
 
     def _finish_tab_loading(self):
         """Finish tab loading by applying visibility and order (on main thread)"""
@@ -815,9 +868,10 @@ class BetterControl(Gtk.Window):
         """Save settings and quit"""
         self.logging.log(LogLevel.Info, "Application shutting down")
 
-        # Stop any ongoing tab creation
-        if hasattr(self, 'tabs_thread_running'):
-            self.tabs_thread_running = False
+        # Stop any ongoing tab creation - use lock to prevent race conditions
+        if hasattr(self, '_tab_creation_lock') and hasattr(self, 'tabs_thread_running'):
+            with self._tab_creation_lock:
+                self.tabs_thread_running = False
 
         # Save the current tab before exiting
         self.settings["last_active_tab"] = self.notebook.get_current_page()

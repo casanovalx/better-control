@@ -8,12 +8,28 @@ CONFIG_DIR = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
 CONFIG_PATH = os.path.join(CONFIG_DIR, "better-control")
 SETTINGS_FILE = os.path.join(CONFIG_PATH, "settings.json")
 
+def ensure_config_dir(logging: Logger) -> None:
+    """Ensure the config directory exists
+
+    Args:
+        logging (Logger): Logger instance
+    """
+    try:
+        logging.log(LogLevel.Info, f"Ensuring config directory exists at {CONFIG_PATH}")
+        os.makedirs(CONFIG_PATH, exist_ok=True)
+        logging.log(LogLevel.Info, f"Config directory check complete")
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Error creating config directory: {e}")
+
 def load_settings(logging: Logger) -> dict:
     """Load settings from the settings file
 
     Returns:
         dict: Dictionary containing settings
     """
+    # Ensure config directory exists before attempting to load settings
+    ensure_config_dir(logging)
+
     settings = {"visibility": {}, "positions": {}}
     logging.log(LogLevel.Info, f"Loading settings from {SETTINGS_FILE}")
     if os.path.exists(SETTINGS_FILE):
@@ -44,7 +60,7 @@ def save_settings(settings: dict, logging: Logger) -> None:
     """
     try:
         # Ensure the config directory exists
-        os.makedirs(CONFIG_PATH, exist_ok=True)
+        ensure_config_dir(logging)
 
         # Log what we're saving
         logging.log(LogLevel.Info, f"Saving settings to {SETTINGS_FILE}")
