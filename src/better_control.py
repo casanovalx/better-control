@@ -6,6 +6,7 @@ from typing import Any
 import gi  # type: ignore
 import sys
 import threading
+from setproctitle import setproctitle
 import signal
 from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
@@ -63,6 +64,9 @@ if __name__ == "__main__":
     try:
         # Create the GTK window with proper error handling
         win = BetterControl(arg_parser, logging)
+
+        # Set the proctitle to "better-control" so that it can show up under top, pidof, etc with this name
+        setproctitle("better-control")
 
         # Prevents startup delay - ensure thread is properly managed
         # Only start the audio thread after window creation to avoid race conditions
