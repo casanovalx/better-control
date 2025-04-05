@@ -1,4 +1,10 @@
 #!/bin/bash
+############################# 
+# download this script
+# run this script
+#############################
+
+
 # USBGuard Permission Setup Script
 echo "=== USBGuard Permission Setup ==="
 echo "This will configure your system to allow USBGuard access"
