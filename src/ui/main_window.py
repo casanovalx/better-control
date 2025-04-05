@@ -312,6 +312,11 @@ class BetterControl(Gtk.Window):
         # Add animation class to the tab
         tab.get_style_context().add_class("fade-in")
 
+        tab.set_margin_start(12)
+        tab.set_margin_end(12)
+        tab.set_margin_top(6)
+        tab.set_margin_bottom(6)
+
         # Remove animation class after animation completes
         def remove_animation_class():
             if tab and not tab.get_parent() is None:
@@ -328,9 +333,18 @@ class BetterControl(Gtk.Window):
         if should_show:
             # Add tab to notebook with proper label
             page_num = self.notebook.append_page(
-                tab, self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
+                tab, 
+                self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
             )
             self.tab_pages[tab_name] = page_num
+
+            # Apply consistent padding to tab conten
+            content = self.notebook.get_nth_page(page_num)
+            if content:
+                content.set_margin_start(12)
+                content.set_margin_end(12)
+                content.set_margin_top(6)
+                content.set_margin_bottom(6)
 
         self.logging.log(LogLevel.Info, f"Created {tab_name} tab")
         return False  # Required for GLib.idle_add
@@ -383,7 +397,7 @@ class BetterControl(Gtk.Window):
                 self.logging.log(LogLevel.Info, "All tabs created, finalizing UI")
 
                 # Ensure all tabs are present in the tab_order setting
-                tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"])
+                tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"])
 
                 # Make sure all created tabs are in the tab_order
                 for tab_name in self.tabs.keys():
@@ -582,16 +596,14 @@ class BetterControl(Gtk.Window):
         # Make sure all tabs are present in the tab_order
         for tab_name in self.tabs.keys():
             if tab_name not in tab_order:
-                # If we're adding Power for the first time, put it before Autostart
-                if tab_name == "Power":
-                    # Find the position of Autostart
-                    if "Autostart" in tab_order:
-                        autostart_index = tab_order.index("Autostart")
+                if tab_name == "Autostart":
+                    # Find the position of USBGuard
+                    if "USBGuard" in tab_order:
+                        autostart_index = tab_order.index("USBGuard")
                         tab_order.insert(autostart_index, tab_name)
                     else:
                         tab_order.append(tab_name)
-                # If we're adding Autostart for the first time, put it at the end
-                elif tab_name == "Autostart":
+                elif tab_name == "USBGuard":
                     tab_order.append(tab_name)
                 else:
                     tab_order.append(tab_name)
@@ -746,7 +758,7 @@ class BetterControl(Gtk.Window):
 
                 # Then reorder it according to the tab_order setting
                 tab_order = self.settings.get(
-                    "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"]
+                    "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"]
                 )
                 if tab_name in tab_order:
                     # Find the desired position for this tab
@@ -880,15 +892,15 @@ class BetterControl(Gtk.Window):
             with self._tab_creation_lock:
                 self.tabs_thread_running = False
 
-        # Ensure Autostart is in the tab_order setting before saving
+        # Ensure USBGuard is in the tab_order setting before saving
         if "tab_order" in self.settings:
             tab_order = self.settings["tab_order"]
             # Make sure all known tabs are included
-            all_tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"]
+            all_tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"]
             for tab_name in all_tabs:
                 if tab_name not in tab_order:
-                    # If we're adding Autostart for the first time, put it at the end
-                    if tab_name == "Autostart":
+                    # If we're adding USBGuard for the first time, put it at the end
+                    if tab_name == "USBGuard":
                         tab_order.append(tab_name)
                     else:
                         tab_order.append(tab_name)
