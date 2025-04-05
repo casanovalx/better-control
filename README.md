@@ -2,7 +2,7 @@
 
 # ⚙️ Better Control ⚙️
 
-<img src="https://github.com/user-attachments/assets/4ac1bfc4-6a0e-4134-83c3-1356d5a71e33" width="650">
+<img src="https://github.com/user-attachments/assets/28daa773-6c0a-4169-b9fc-27813d8d2b44" width="650">
 
 ### *A sleek GTK-themed control panel for Linux* 🐧
 
