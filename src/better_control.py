@@ -109,7 +109,7 @@ if __name__ == "__main__":
     animations_css = load_animations_css()
     logging.log(LogLevel.Info, "Loaded animations CSS")
 
-    if not check_all_dependencies(logging) and not arg_parser.find_arg(("-f", "--force")):
+    if arg_parser.find_arg(("-f", "--force")) and not check_all_dependencies(logging):
         logging.log(
             LogLevel.Error,
             "Missing required dependencies. Please install them and try again or use -f to force start.",
