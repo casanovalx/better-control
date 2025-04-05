@@ -73,7 +73,7 @@ class PowerTab(Gtk.Box):
         self.settings_icon = Gtk.Image.new_from_icon_name(
             "emblem-system-symbolic", Gtk.IconSize.MENU
         )
-        self.settings_icon.get_style_context().add_class("roate-gear")
+        self.settings_icon.get_style_context().add_class("rotate-gear")
         settings_button.add(self.settings_icon)
         settings_button.get_style_context().add_class("flat")
         settings_button.connect("clicked", self.on_settings_clicked)
