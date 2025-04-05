@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################# 
 # download this script
-# run this script
+# run this script with sudo
 #############################
 
 
