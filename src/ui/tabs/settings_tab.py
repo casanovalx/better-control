@@ -100,7 +100,7 @@ class SettingsTab(Gtk.Box):
         self.tab_section.pack_start(section_label, False, False, 0)
 
         # Create a switch for each tab
-        tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"]
+        tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"]
         self.tab_switches = {}
         self.tab_rows = {}
 
@@ -190,22 +190,22 @@ class SettingsTab(Gtk.Box):
     def update_ui_order(self):
         """Update the order of rows in the UI to match the current tab order"""
         # Get current tab order
-        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"])
+        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"])
 
         # Make sure all known tabs are in the tab_order
-        all_tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"]
+        all_tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"]
         for tab in all_tabs:
             if tab not in tab_order:
-                # If we're adding Power for the first time, put it before Autostart
-                if tab == "Power":
-                    # Find the position of Autostart
-                    if "Autostart" in tab_order:
-                        autostart_index = tab_order.index("Autostart")
+                # If we're adding Autostart for the first time, put it before USBGuard
+                if tab == "Autostart":
+                    # Find the position of USBGuard
+                    if "USBGuard" in tab_order:
+                        autostart_index = tab_order.index("USBGuard")
                         tab_order.insert(autostart_index, tab)
                     else:
                         tab_order.append(tab)
-                # If we're adding Autostart for the first time, put it at the end
-                elif tab == "Autostart":
+                # If we're adding USBGuard for the first time, put it at the end
+                elif tab == "USBGuard":
                     tab_order.append(tab)
                 else:
                     tab_order.append(tab)
@@ -246,7 +246,7 @@ class SettingsTab(Gtk.Box):
     def on_move_up_clicked(self, button, tab_name):
         """Handle move up button click"""
         # Get current tab order
-        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"])
+        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"])
         # Find current index
         current_index = tab_order.index(tab_name)
         if current_index > 0:
@@ -266,7 +266,7 @@ class SettingsTab(Gtk.Box):
     def on_move_down_clicked(self, button, tab_name):
         """Handle move down button click"""
         # Get current tab order
-        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"])
+        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"])
 
         # Find current index
         current_index = tab_order.index(tab_name)

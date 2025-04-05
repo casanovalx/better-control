@@ -19,3 +19,20 @@
 .fade-in {
     animation: fadeIn 200ms ease-in forwards;
 }
+
+/* Tab container styling */
+notebook tab {
+    margin: 6px;
+    padding: 6px 12px;
+}
+
+notebook tab:active,
+notebook tab:checked {
+    margin: 6px;
+    padding: 6px 12px;
+}
+
+/* Content area padding */
+notebook > stack {
+    padding: 12px;
+}

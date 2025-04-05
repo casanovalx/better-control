@@ -17,10 +17,18 @@ class USBGuardTab(Gtk.Box):
         self.set_margin_top(10)
         self.set_margin_bottom(10)
         
-        # Header
-        header = Gtk.Label(label=get_translations().usbguard_title)
-        header.get_style_context().add_class("header")
-        self.pack_start(header, False, False, 0)
+        # Header with icon and title in one line
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        
+        usb_icon = Gtk.Image.new_from_icon_name("drive-removable-media-symbolic", Gtk.IconSize.DIALOG)
+        header_box.pack_start(usb_icon, False, False, 0)
+
+        usb_label = Gtk.Label()
+        usb_label.set_markup(f"<span weight='bold' size='large'>USBGuard</span>")
+        usb_label.set_halign(Gtk.Align.START)
+        header_box.pack_start(usb_label, False, False, 0)
+        
+        self.pack_start(header_box, False, False, 0)
         
         # Status label
         self.status_label = Gtk.Label()
