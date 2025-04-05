@@ -55,6 +55,7 @@ Before installing, ensure you have `git` and `base-devel` installed.
 | **Blue Light Filter** | gammastep |
 | **USBGuard** | usbguard |
 
+
 > [!TIP]
 > If you don't need a specific feature, you can safely omit its corresponding dependency and hide its tab in the settings.
 
@@ -104,7 +105,7 @@ makepkg -si
 <summary><b>🐧 Debian-based Distributions</b></summary>
 
 ```bash
-sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode
+sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle
 ```
 </details>
 
@@ -112,7 +113,7 @@ sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-
 <summary><b>🎩 Fedora-based Distributions</b></summary>
 
 ```bash
-sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode
+sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle
 ```
 </details>
 
@@ -121,6 +122,9 @@ sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessc
 
 ```bash
 sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode
+sudo xbps-install -S python3-pip
+pip install setproctitle
+
 ```
 </details>
 
@@ -128,7 +132,9 @@ sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pulseaudio brightness
 <summary><b>🏔️ Alpine Linux</b></summary>
 
 ```bash
-sudo apk add gtk3 networkmanager bluez bluez-utils pulseaudio brightnessctl py3-gobject py3-dbus python3 power-profiles-daemon gammastep py3-requests py3-qrcode
+sudo apk add gtk3 networkmanager bluez bluez-utils pulseaudio brightnessctl py3-gobject py3-dbus python3 power-profiles-daemon gammastep py3-requests py3-qrcode py3-pip py3-setuptools gcc musl-dev python3-dev
+pip install setproctitle
+
 ```
 </details>
 
