@@ -53,6 +53,7 @@ Before installing, ensure you have `git` and `base-devel` installed.
 | **Brightness** | brightnessctl |
 | **Power Management** | power-profiles-daemon, upower |
 | **Blue Light Filter** | gammastep |
+| **USBGuard** | usbguard |
 
 > [!TIP]
 > If you don't need a specific feature, you can safely omit its corresponding dependency and hide its tab in the settings.
