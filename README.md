@@ -142,7 +142,7 @@ For more information, please refer to the [official documentation](https://githu
 
 ## 📄 License
 
-This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for more details.
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) for more details.
 
 <br>
 
@@ -205,7 +205,7 @@ Better-Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasm
 <br>
 
 <div align="center">
-  
+
 ### Made with ❤️ for the Linux community
 
 [Report Bug](https://github.com/quantumvoid0/better-control/issues) • 
