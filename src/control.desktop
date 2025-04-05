@@ -3,9 +3,12 @@
 [Desktop Entry]
 Type=Application
 Name=Better Control
-GenericName=Better Control
+Name[fr]=Meilleur Contrôle
+Name[es]=Mejor Control
+Name[pt]=Melhor Controlo
+Name[pt-BR]=Melhor Controle
+Name[id]=Kontrol Terbaik
 Comment=Fast & feature-rich control center
-TryExec=better-control
 StartupNotify=true
 Exec=/usr/bin/better-control
 Icon=settings
