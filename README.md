@@ -121,7 +121,7 @@ sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessc
 <summary><b>🌀 Void Linux</b></summary>
 
 ```bash
-sudo xbps-install -S gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode
+sudo xbps-install -S NetworkManager pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode gtk+3 bluez
 sudo xbps-install -S python3-pip
 pip install setproctitle
 
