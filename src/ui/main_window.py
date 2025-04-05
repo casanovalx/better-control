@@ -25,12 +25,12 @@ from ui.tabs.usbguard_tab import USBGuardTab
 from utils.settings import load_settings, save_settings
 from utils.logger import LogLevel, Logger
 from ui.css.animations import load_animations_css  # animate_widget_show not used
-from utils.translations import English, Spanish, Portuguese, French, get_translations
+from utils.translations import Translation, get_translations
 
 
 class BetterControl(Gtk.Window):
 
-    def __init__(self, txt: English|Spanish|Portuguese|French, arg_parser: ArgParse, logging: Logger) -> None:
+    def __init__(self, txt: Translation, arg_parser: ArgParse, logging: Logger) -> None:
         # Initialize thread lock before anything else
         self._tab_creation_lock = threading.RLock()
 
@@ -333,7 +333,7 @@ class BetterControl(Gtk.Window):
         if should_show:
             # Add tab to notebook with proper label
             page_num = self.notebook.append_page(
-                tab, 
+                tab,
                 self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
             )
             self.tab_pages[tab_name] = page_num

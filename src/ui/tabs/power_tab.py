@@ -2,7 +2,7 @@
 
 import gi # type: ignore
 
-from utils.translations import English, Spanish, Portuguese, French  # type: ignore
+from utils.translations import Translation  # type: ignore
 gi.require_version('Gtk', '3.0')
 import subprocess
 import json
@@ -13,7 +13,7 @@ from utils.logger import LogLevel, Logger
 class PowerTab(Gtk.Box):
     """Power management tab with suspend, shutdown and reboot options"""
 
-    def __init__(self, logging: Logger, txt: English|Spanish|Portuguese|French):
+    def __init__(self, logging: Logger, txt: Translation):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.txt = txt
 

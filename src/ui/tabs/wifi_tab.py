@@ -7,7 +7,7 @@ import threading
 from utils.logger import LogLevel, Logger
 import subprocess
 
-from utils.translations import English, Spanish
+from utils.translations import Translation
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk # type: ignore
@@ -31,7 +31,7 @@ from tools.wifi import (
 class WiFiTab(Gtk.Box):
     """WiFi settings tab"""
 
-    def __init__(self, logging: Logger, txt: English|Spanish):
+    def __init__(self, logging: Logger, txt: Translation):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         get_wifi_css()
         self.txt = txt

@@ -13,7 +13,7 @@ from utils.arg_parser import ArgParse, sprint
 from utils.pair import Pair
 from utils.logger import LogLevel, Logger
 from utils.settings import load_settings, ensure_config_dir, save_settings
-from utils.translations import English, Spanish, Portuguese, French, get_translations
+from utils.translations import Translation, get_translations
 from utils.warning_suppressor import suppress_specific_warnings
 
 # Initialize GTK before imports

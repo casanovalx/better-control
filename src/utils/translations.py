@@ -1,20 +1,52 @@
 """
 Adding new languages for better user preferences
 
-To add a new language, create a new class with the same name as the language
- and update the get_translations function to include the new language.
+To add a new language, create a new class that inherits from the Translation base class
+and update the get_translations function to include the new language.
 The class should contain all the translations for the new language.
 
-Also update all other tabs to use the new language class.
-eg :
-    class SettingsTab(Gtk.Box):
-        def __init__(self, logging: Logger, txt: English|Spanish|Portuguese|French|NEW_LANGUAGE):
+Usage in tab files:
+    from utils.translations import Translation
+
+    class SomeTab(Gtk.Box):
+        def __init__(self, logging: Logger, txt: Translation):
+            # Use txt for translations
 """
 
 import os
 from logging import Logger
+from typing import Protocol
 
 from utils.logger import LogLevel
+
+
+class Translation(Protocol):
+    """Base protocol for all translations in the application.
+
+    This provides type hints without needing to import all language classes.
+    All language classes should implement these properties and methods.
+    """
+    # Common properties that all translations must have
+    msg_desc: str
+    msg_app_url: str
+    msg_usage: str
+
+    # Tab names
+    msg_tab_volume: str
+    msg_tab_wifi: str
+    msg_tab_bluetooth: str
+    msg_tab_battery: str
+    msg_tab_display: str
+    msg_tab_power: str
+    msg_tab_autostart: str
+    msg_tab_usbguard: str
+
+    # Common UI elements
+    loading: str
+    loading_tabs: str
+    close: str
+    enable: str
+    disable: str
 
 
 class English:
@@ -909,7 +941,7 @@ class Indonesian:
         self.settings_language_changed_restart = "Mulai ulang aplikasi agar perubahan bahasa diterapkan."
         self.settings_language_changed = "Bahasa telah diubah"
 
-def get_translations(logging: Logger = None, lang: str = "en") -> English|Spanish|Portuguese|French:
+def get_translations(logging: Logger = None, lang: str = "en") -> Translation:
     """Load the language according to the selected language
 
     Args:
