@@ -164,7 +164,7 @@ class USBGuardTab(Gtk.Box):
                 vendor_name = self.VENDOR_MAP.get(vendor_id.lower(), vendor_id)
                 product_type = self.PRODUCT_TYPE_MAP.get(product_id[:6].lower(), "USB Device") if product_id != "Unknown" else "USB Device"
                 
-                # Get human-readable status
+                # Get human-readable status and some visul enhancements
                 status_text = {
                     "allow": "✅ Allowed",
                     "block": "❌ Blocked",
