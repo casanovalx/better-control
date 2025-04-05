@@ -53,6 +53,7 @@ Before installing, ensure you have `git` and `base-devel` installed.
 | **Brightness** | brightnessctl |
 | **Power Management** | power-profiles-daemon, upower |
 | **Blue Light Filter** | gammastep |
+| **USBGuard** | usbguard |
 
 > [!TIP]
 > If you don't need a specific feature, you can safely omit its corresponding dependency and hide its tab in the settings.
@@ -80,6 +81,15 @@ Before installing, ensure you have `git` and `base-devel` installed.
 yay -S better-control-git
 ```
 > This will directly install dependencies and the app. No further steps required.
+
+If you dont have an AUR helper like yay above , follow the steps below
+
+```
+git clone https://aur.archlinux.org/better-control-git.git
+cd better-control-git
+makepkg -si
+```
+
 </details>
 
 <details>
@@ -152,8 +162,17 @@ This project is licensed under the GNU General Public License v3.0. See the [LIC
 <summary><b>🏗️ Arch-based Distributions</b></summary>
 
 ```bash
-yay -Rns better-control-git
+sudo pacman -Rns better-control-git
 ```
+
+
+> The above lines will also remove the dependencies if another app is not using them , if you dont want to remove the dependencies, follow the steps below
+
+
+```
+sudo pacman -R better-control-git
+```
+
 </details>
 
 <details>
