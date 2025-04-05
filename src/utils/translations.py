@@ -57,6 +57,18 @@ class English:
 
         # for tabs
         self.msg_tab_autostart = "Autostart"
+        self.msg_tab_usbguard = "USBGuard"
+        self.usbguard_title = "USB Device Control"
+        self.refresh = "Refresh"
+        self.allow = "Allow"
+        self.block = "Block"
+        self.policy = "View Policy"
+        self.usbguard_error = "Error accessing USBGuard"
+        self.usbguard_not_installed = "USBGuard not installed"
+        self.usbguard_not_running = "USBGuard service not running"
+        self.no_devices = "No USB devices connected"
+        self.operation_failed = "Operation failed"
+        self.policy_error = "Failed to load policy"
         self.msg_tab_battery = "Battery"
         self.msg_tab_bluetooth = "Bluetooth"
         self.msg_tab_display = "Display"

@@ -1,0 +1,21 @@
+/* Animation classes for widget transitions */
+.animate-show {
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+}
+
+.animate-show:active,
+.animate-show:focus,
+.animate-show:hover {
+    opacity: 1;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 200ms ease-in forwards;
+}

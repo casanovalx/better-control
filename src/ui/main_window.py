@@ -21,6 +21,7 @@ from ui.tabs.power_tab import PowerTab
 from ui.tabs.volume_tab import VolumeTab
 from ui.tabs.wifi_tab import WiFiTab
 from ui.tabs.settings_tab import SettingsTab
+from ui.tabs.usbguard_tab import USBGuardTab
 from utils.settings import load_settings, save_settings
 from utils.logger import LogLevel, Logger
 from ui.css.animations import load_animations_css  # animate_widget_show not used
@@ -200,6 +201,7 @@ class BetterControl(Gtk.Window):
                 "Display": DisplayTab,
                 "Power": PowerTab,
                 "Autostart": AutostartTab,
+                "USBGuard": USBGuardTab,
             }
 
             # Create a lock for thread safety if it doesn't exist yet
@@ -216,6 +218,7 @@ class BetterControl(Gtk.Window):
                 "Display": self.txt.msg_tab_display,
                 "Power": self.txt.msg_tab_power,
                 "Autostart": self.txt.msg_tab_autostart,
+                "USBGuard": self.txt.msg_tab_usbguard,
             }
 
             # Track if thread is still running to avoid segfaults during shutdown
@@ -573,7 +576,7 @@ class BetterControl(Gtk.Window):
         """Apply tab order settings"""
         # Get current tab order from settings or use default
         tab_order = self.settings.get(
-            "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart"]
+            "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"]
         )
 
         # Make sure all tabs are present in the tab_order
@@ -636,6 +639,7 @@ class BetterControl(Gtk.Window):
             "Settings": "preferences-system-symbolic",
             "Power": "system-shutdown-symbolic",
             "Autostart": "system-run-symbolic",
+            "USBGuard": "drive-removable-media-symbolic",
         }
         return icons.get(tab_name, "application-x-executable-symbolic")
 
