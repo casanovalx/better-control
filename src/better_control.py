@@ -81,7 +81,7 @@ if __name__ == "__main__":
     # Check for language args from the command
     if arg_parser.find_arg(("-L", "--lang")):
         lang = arg_parser.option_arg(("-L", "--lang"))
-        available_languages = ["en", "es", "pt", "fr"]
+        available_languages = ["en", "es", "pt", "fr", "id"]
         if lang not in available_languages:
             # Print error message to console
             print(f"\033[1;31mError: Invalid language code '{lang}'\033[0m")
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     else:
         # Get language from settings, fallback to "default" if invalid
         lang = settings.get("language", "default")
-        if lang not in ["en", "es", "pt", "fr", "default"]:
+        if lang not in ["en", "es", "pt", "fr", "id", "default"]:
             lang = "en"
             settings["language"] = lang
             save_settings(settings, logging)
