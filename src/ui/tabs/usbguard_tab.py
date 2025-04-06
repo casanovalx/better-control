@@ -431,10 +431,10 @@ Type: {product_type}
                 timeout=5
             ).decode('utf-8').strip()
 
-            # 👇 Insert this block to show instructions if no rules exist
+            # Insert this block to show instructions if no rules exist
             if not policy:
                 policy = (
-                    "⚠️ No USBGuard policy rules found.\n\n"
+                    "⚠️⚠️ No USBGuard policy rules found ⚠️⚠️.\n\n"
                     "please run this to generate policy rules\n\n"
                     "sudo usbguard generate-policy > rules.conf\n"
                     "sudo cp rules.conf /etc/usbguard/rules.conf\n"
