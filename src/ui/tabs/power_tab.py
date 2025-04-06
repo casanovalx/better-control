@@ -968,54 +968,48 @@ class PowerTab(Gtk.Box):
         command = self.custom_commands.get("lock", "loginctl lock-session")
         self.logging.log(LogLevel.Info, f"Lock button clicked, running: {command}")
         self._execute_command(command)
-        # Only close if triggered by keyboard shortcut
-        if widget is None:
-            self._close_application()
+        # Close application after executing command
+        self._close_application()
 
     def on_logout_clicked(self, widget):
         """Handle logout button click"""
         command = self.custom_commands.get("logout", "loginctl terminate-user $USER")
         self.logging.log(LogLevel.Info, f"Logout button clicked, running: {command}")
         self._execute_command(command)
-        # Only close if triggered by keyboard shortcut
-        if widget is None:
-            self._close_application()
+        # Close application after executing command
+        self._close_application()
 
     def on_suspend_clicked(self, widget):
         """Handle suspend button click"""
         command = self.custom_commands.get("suspend", "systemctl suspend")
         self.logging.log(LogLevel.Info, f"Suspend button clicked, running: {command}")
         self._execute_command(command)
-        # Only close if triggered by keyboard shortcut
-        if widget is None:
-            self._close_application()
+        # Close application after executing command
+        self._close_application()
 
     def on_hibernate_clicked(self, widget):
         """Handle hibernate button click"""
         command = self.custom_commands.get("hibernate", "systemctl hibernate")
         self.logging.log(LogLevel.Info, f"Hibernate button clicked, running: {command}")
         self._execute_command(command)
-        # Only close if triggered by keyboard shortcut
-        if widget is None:
-            self._close_application()
+        # Close application after executing command
+        self._close_application()
 
     def on_reboot_clicked(self, widget):
         """Handle reboot button click"""
         command = self.custom_commands.get("reboot", "systemctl reboot")
         self.logging.log(LogLevel.Info, f"Reboot button clicked, running: {command}")
         self._execute_command(command)
-        # Only close if triggered by keyboard shortcut
-        if widget is None:
-            self._close_application()
+        # Close application after executing command
+        self._close_application()
 
     def on_shutdown_clicked(self, widget):
         """Handle shutdown button click"""
         command = self.custom_commands.get("shutdown", "systemctl poweroff")
         self.logging.log(LogLevel.Info, f"Shutdown button clicked, running: {command}")
         self._execute_command(command)
-        # Only close if triggered by keyboard shortcut
-        if widget is None:
-            self._close_application()
+        # Close application after executing command
+        self._close_application()
 
     def _hex_to_rgba(self, hex_color):
         """Convert hex color to RGBA color"""
