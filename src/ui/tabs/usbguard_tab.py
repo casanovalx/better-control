@@ -4,7 +4,7 @@ import gi
 import logging
 import subprocess
 import threading
-from gi.repository import Gtk, GLib # type: ignore
+from gi.repository import Gtk, GLib  # type: ignore
 from utils.translations import get_translations
 
 class USBGuardTab(Gtk.Box):
@@ -12,13 +12,17 @@ class USBGuardTab(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.logging = logging
         self.txt = txt
+        self.previous_devices = None  # Initialize as None to skip first refresh
         self.set_margin_start(10)
         self.set_margin_end(10)
         self.set_margin_top(10)
         self.set_margin_bottom(10)
         
-        # Header with icon and title in one line
-        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        # Main header container
+        header_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        
+        # Top row: Icon, title and refresh button
+        top_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         
         usb_icon = Gtk.Image.new_from_icon_name("drive-removable-media-symbolic", Gtk.IconSize.DIALOG)
         ctx = usb_icon.get_style_context()
@@ -30,20 +34,61 @@ class USBGuardTab(Gtk.Box):
         def on_leave(widget, event):
             ctx.remove_class("usb-icon-animate")
         
-        # Wrap in event box for hover detection
         icon_event_box = Gtk.EventBox()
         icon_event_box.add(usb_icon)
         icon_event_box.connect("enter-notify-event", on_enter)
         icon_event_box.connect("leave-notify-event", on_leave)
         
-        header_box.pack_start(icon_event_box, False, False, 0)
+        top_row.pack_start(icon_event_box, False, False, 0)
 
         usb_label = Gtk.Label()
         usb_label.set_markup(f"<span weight='bold' size='large'>USBGuard</span>")
         usb_label.set_halign(Gtk.Align.START)
-        header_box.pack_start(usb_label, False, False, 0)
+        top_row.pack_start(usb_label, False, False, 0)
         
+        # Status indicator
+        self.status_indicator = Gtk.Label()
+        self.status_indicator.set_margin_start(10)
+        top_row.pack_start(self.status_indicator, False, False, 0)
+        
+        # Spacer
+        top_row.pack_start(Gtk.Box(), True, True, 0)
+        
+        # Refresh button
+        self.refresh_button = Gtk.Button.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        self.refresh_button.set_tooltip_text(get_translations().refresh)
+        self.refresh_button.connect("clicked", self.refresh_devices)
+        top_row.pack_end(self.refresh_button, False, False, 0)
+        
+        header_box.pack_start(top_row, False, False, 0)
+        
+        # Bottom row: Status label and toggle switch with spacing
+        bottom_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        bottom_row.set_margin_top(14)  
+        bottom_row.set_margin_start(3)  
+        bottom_row.set_margin_end(3)  
+        
+        # Status label aligned left
+        status_label = Gtk.Label()
+        status_label.set_markup("<b>USBGuard Status</b>")
+        status_label.set_halign(Gtk.Align.START)
+        status_label.set_margin_start(10)  # Additional left margin
+        bottom_row.pack_start(status_label, False, False, 0)
+        
+        # Spacer to push switch to right
+        bottom_row.pack_start(Gtk.Box(), True, True, 0)
+        
+        # Power switch
+        self.power_switch = Gtk.Switch()
+        self.power_switch.set_margin_end(10)  # Additional right margin
+        self.power_switch.connect("notify::active", self.on_power_switched)
+        bottom_row.pack_end(self.power_switch, False, False, 0)
+        
+        header_box.pack_start(bottom_row, False, False, 0)
         self.pack_start(header_box, False, False, 0)
+        
+        # Initial service status check
+        self.check_service_status()
         
         # Status label
         self.status_label = Gtk.Label()
@@ -59,10 +104,6 @@ class USBGuardTab(Gtk.Box):
         
         # Control buttons
         button_box = Gtk.Box(spacing=10)
-        self.refresh_button = Gtk.Button(label=get_translations().refresh)
-        self.refresh_button.connect("clicked", self.refresh_devices)
-        button_box.pack_start(self.refresh_button, False, False, 0)
-        
         self.policy_button = Gtk.Button(label=get_translations().policy)
         self.policy_button.connect("clicked", self.show_policy_dialog)
         button_box.pack_start(self.policy_button, False, False, 0)
@@ -83,17 +124,44 @@ class USBGuardTab(Gtk.Box):
     
     def refresh_devices(self, widget):
         try:
-            # Check if USBGuard is running
-            output = subprocess.check_output(["systemctl", "is-active", "usbguard"],
-                                  stderr=subprocess.PIPE).decode('utf-8')
+            # First check if USBGuard is installed
+            try:
+                subprocess.run(["which", "usbguard"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            except subprocess.CalledProcessError:
+                self.status_label.set_markup(
+                    "<span foreground='red'>"
+                    "USBGuard is not installed. Please install it first."
+                    "</span>"
+                )
+                return
+                
+            # Then check service status
+            self.check_service_status()
             
+            if not self.power_switch.get_active():
+                self.status_label.set_markup(
+                    "<span foreground='orange'>"
+                    "USBGuard service is not running. Enable it to manage devices."
+                    "</span>"
+                )
+                return
+                
             # Get device list with better error handling
             result = subprocess.run(["usbguard", "list-devices"],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE,
                                  check=True)
-            self.update_device_list(result.stdout.decode('utf-8'))
+            current_devices = result.stdout.decode('utf-8')
+            self.check_device_changes(current_devices)
+            self.update_device_list(current_devices)
             self.status_label.set_text("")
+            
+            # Show loading spinner on refresh button
+            if widget:
+                spinner = Gtk.Spinner()
+                spinner.start()
+                widget.set_image(spinner)
+                GLib.timeout_add(1000, self.reset_refresh_button, widget)
         except subprocess.CalledProcessError as e:
             error_msg = e.stderr.decode('utf-8') if e.stderr else "Unknown error"
             
@@ -214,33 +282,73 @@ Type: {product_type}
                 if hasattr(self.logging, 'log_error'):
                     self.logging.log_error(f"Failed to parse device info: {e}")
             
+            # Create device row with compact layout
             row = Gtk.ListBoxRow()
+            row.set_margin_start(5)
+            row.set_margin_end(5)
+            row.set_margin_top(2)
+            row.set_margin_bottom(2)
+            
+            # Main container box
             box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
             box.set_margin_start(10)
             box.set_margin_end(10)
             box.set_margin_top(5)
             box.set_margin_bottom(5)
             
-            # Device info with proper wrapping
-            info_label = Gtk.Label()
-            info_label.set_markup(display_text.strip())
-            info_label.set_halign(Gtk.Align.START)
-            info_label.set_hexpand(True)
-            info_label.set_use_markup(True)
-            info_label.set_line_wrap(True)
-            info_label.set_max_width_chars(60)  # Limit line length
-            box.pack_start(info_label, True, True, 0)
+            # Device icon based on type
+            icon_name = {
+                "Keyboard": "input-keyboard-symbolic",
+                "Mouse": "input-mouse-symbolic",
+                "Storage": "drive-harddisk-symbolic",
+                "Audio": "audio-headphones-symbolic",
+                "Network": "network-wired-symbolic",
+                "Printer": "printer-symbolic",
+                "Camera": "camera-web-symbolic"
+            }.get(product_type, "drive-removable-media-symbolic")
             
-            # Action buttons
+            icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.DIALOG)
+            icon.set_margin_end(10)
+            box.pack_start(icon, False, False, 0)
+            
+            # Device info in vertical box
+            info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            
+            # Device name and status
+            name_label = Gtk.Label()
+            name_label.set_markup(f"<b>{vendor_name} {product_type}</b>")
+            name_label.set_halign(Gtk.Align.START)
+            name_label.set_xalign(0)
+            info_box.pack_start(name_label, False, False, 0)
+            
+            # Status indicator
+            status_label = Gtk.Label()
+            status_label.set_markup({
+                "allow": f"<span foreground='green'>✓ {get_translations().allowed}</span>",
+                "block": f"<span foreground='red'>✗ {get_translations().blocked}</span>",
+                "reject": f"<span foreground='orange'>⚠ {get_translations().rejected}</span>"
+            }.get(status.lower(), status))
+            status_label.set_halign(Gtk.Align.START)
+            status_label.set_xalign(0)
+            info_box.pack_start(status_label, False, False, 0)
+            
+            box.pack_start(info_box, True, True, 0)
+            
+            # Action buttons with icons
+            btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+            
             if status == "block":
-                allow_btn = Gtk.Button(label=get_translations().allow)
+                allow_btn = Gtk.Button.new_from_icon_name("emblem-ok-symbolic", Gtk.IconSize.BUTTON)
+                allow_btn.set_tooltip_text(get_translations().allow)
                 allow_btn.connect("clicked", self.on_allow_device, device_id)
-                box.pack_start(allow_btn, False, False, 0)
+                btn_box.pack_start(allow_btn, False, False, 0)
             else:
-                block_btn = Gtk.Button(label=get_translations().block)
+                block_btn = Gtk.Button.new_from_icon_name("action-unavailable-symbolic", Gtk.IconSize.BUTTON)
+                block_btn.set_tooltip_text(get_translations().block)
                 block_btn.connect("clicked", self.on_block_device, device_id)
-                box.pack_start(block_btn, False, False, 0)
+                btn_box.pack_start(block_btn, False, False, 0)
             
+            box.pack_end(btn_box, False, False, 0)
             row.add(box)
             self.device_list.add(row)
         
@@ -248,8 +356,27 @@ Type: {product_type}
     
     def on_allow_device(self, widget, device_id):
         try:
+            # Temporarily disable notifications
+            prev_devices = self.previous_devices
+            self.previous_devices = None
+            
             subprocess.run(["usbguard", "allow-device", device_id], check=True)
-            self.refresh_devices(None)
+            
+            # Show immediate notification
+            dialog = Gtk.MessageDialog(
+                transient_for=self.get_toplevel(),
+                flags=0,
+                message_type=Gtk.MessageType.INFO,
+                buttons=Gtk.ButtonsType.OK,
+                text=self.txt.permission_allowed
+            )
+            dialog.set_icon_name("drive-removable-media-symbolic")
+            dialog.run()
+            dialog.destroy()
+            
+            # Restore device tracking
+            self.previous_devices = prev_devices
+            
         except subprocess.CalledProcessError as e:
             if hasattr(self.logging, 'log_error'):
                 self.logging.log_error(f"Failed to allow device: {e}")
@@ -259,43 +386,140 @@ Type: {product_type}
     
     def on_block_device(self, widget, device_id):
         try:
+            # Temporarily disable notifications
+            prev_devices = self.previous_devices
+            self.previous_devices = None
+            
             subprocess.run(["usbguard", "block-device", device_id], check=True)
-            self.refresh_devices(None)
+            
+            # Show immediate notification
+            dialog = Gtk.MessageDialog(
+                transient_for=self.get_toplevel(),
+                flags=0,
+                message_type=Gtk.MessageType.INFO,
+                buttons=Gtk.ButtonsType.OK,
+                text=self.txt.permission_blocked
+            )
+            dialog.set_icon_name("drive-removable-media-symbolic")
+            dialog.run()
+            dialog.destroy()
+            
+            # Restore device tracking
+            self.previous_devices = prev_devices
+            
         except subprocess.CalledProcessError as e:
             if hasattr(self.logging, 'log_error'):
                 self.logging.log_error(f"Failed to block device: {e}")
             else:
                 print(f"Failed to block device: {e}")
             self.show_error(get_translations().operation_failed)
-    
+        
+
     def show_policy_dialog(self, widget):
+        # Store current selection
+        current_selection = self.device_list.get_selected_row()
+        
         dialog = Gtk.Dialog(title="USBGuard Policy", 
-                          parent=self.get_toplevel(),
-                          flags=Gtk.DialogFlags.MODAL)
+                        parent=self.get_toplevel(),
+                        flags=Gtk.DialogFlags.MODAL)
         dialog.add_button("Close", Gtk.ResponseType.CLOSE)
         
         try:
-            policy = subprocess.check_output(["usbguard", "list-rules"]).decode('utf-8')
+            # Get policy with timeout
+            policy = subprocess.check_output(
+                ["usbguard", "list-rules"],
+                timeout=5
+            ).decode('utf-8').strip()
+
+            # 👇 Insert this block to show instructions if no rules exist
+            if not policy:
+                policy = (
+                    "⚠️ No USBGuard policy rules found.\n\n"
+                    "please run this to generate policy rules\n\n"
+                    "sudo usbguard generate-policy > rules.conf\n"
+                    "sudo cp rules.conf /etc/usbguard/rules.conf\n"
+                    "sudo systemctl restart usbguard"
+
+                )
+
+            # Create text view with monospace font
             textview = Gtk.TextView()
             textview.set_editable(False)
             textview.set_cursor_visible(False)
+            textview.set_monospace(True)
             textview.get_buffer().set_text(policy)
-            
+
+            # Configure scrolling
             scrolled = Gtk.ScrolledWindow()
             scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
             scrolled.add(textview)
-            
-            dialog.get_content_area().pack_start(scrolled, True, True, 0)
+
+            # Add to dialog
+            content = dialog.get_content_area()
+            content.pack_start(scrolled, True, True, 0)
+            content.set_margin_start(10)
+            content.set_margin_end(10)
+            content.set_margin_top(10)
+            content.set_margin_bottom(10)
+
             dialog.set_default_size(600, 400)
             dialog.show_all()
+
+            # Run dialog and restore selection
             dialog.run()
             dialog.destroy()
+
+            if current_selection:
+                self.device_list.select_row(current_selection)
+
+        except subprocess.TimeoutExpired:
+            self.show_error("Policy retrieval timed out")
         except subprocess.CalledProcessError as e:
+            error_msg = e.stderr.decode('utf-8') if e.stderr else str(e)
+            self.show_error(f"Failed to get policy:\n{error_msg}")
             if hasattr(self.logging, 'log_error'):
-                self.logging.log_error(f"Failed to get policy: {e}")
-            else:
-                print(f"Failed to get policy: {e}")
-            self.show_error(get_translations().policy_error)
+                self.logging.log_error(f"Policy error: {error_msg}")
+
+
+            # Create text view with monospace font
+            textview = Gtk.TextView()
+            textview.set_editable(False)
+            textview.set_cursor_visible(False)
+            textview.set_monospace(True)
+            textview.get_buffer().set_text(policy)
+
+            # Configure scrolling
+            scrolled = Gtk.ScrolledWindow()
+            scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+            scrolled.add(textview)
+
+            # Add to dialog
+            content = dialog.get_content_area()
+            content.pack_start(scrolled, True, True, 0)
+            content.set_margin_start(10)
+            content.set_margin_end(10)
+            content.set_margin_top(10)
+            content.set_margin_bottom(10)
+
+            dialog.set_default_size(600, 400)
+            dialog.show_all()
+
+            # Run dialog and restore selection
+            dialog.run()
+            dialog.destroy()
+
+            if current_selection:
+                self.device_list.select_row(current_selection)
+
+        except subprocess.TimeoutExpired:
+            self.show_error("Policy retrieval timed out")
+        except subprocess.CalledProcessError as e:
+            error_msg = e.stderr.decode('utf-8') if e.stderr else str(e)
+            self.show_error(f"Failed to get policy:\n{error_msg}")
+            if hasattr(self.logging, 'log_error'):
+                self.logging.log_error(f"Policy error: {error_msg}")
+
+
     
     def show_error(self, message):
         for child in self.device_list.get_children():
@@ -321,5 +545,94 @@ Type: {product_type}
         self.device_list.show_all()
 
         
+    def check_device_changes(self, current_devices):
+        """Check for device changes and trigger notifications"""
+        current_set = set(device.strip() for device in current_devices.splitlines() if device.strip())
+        
+        # Skip first refresh (initial device list)
+        if self.previous_devices is None:
+            self.previous_devices = current_set
+            return
+            
+        # New devices
+        for device in current_set - self.previous_devices:
+            try:
+                device_name = device.split()[2]
+                dialog = Gtk.MessageDialog(
+                    transient_for=self.get_toplevel(),
+                    flags=0,
+                    message_type=Gtk.MessageType.INFO,
+                    buttons=Gtk.ButtonsType.OK,
+                    text=self.txt.usb_connected.format(device=device_name)
+                )
+                dialog.set_icon_name("drive-removable-media-symbolic")
+                dialog.run()
+                dialog.destroy()
+            except IndexError:
+                continue
+        
+        # Removed devices
+        for device in self.previous_devices - current_set:
+            try:
+                device_name = device.split()[2]
+                dialog = Gtk.MessageDialog(
+                    transient_for=self.get_toplevel(),
+                    flags=0,
+                    message_type=Gtk.MessageType.INFO,
+                    buttons=Gtk.ButtonsType.OK,
+                    text=self.txt.usb_disconnected.format(device=device_name)
+                )
+                dialog.set_icon_name("drive-removable-media-symbolic")
+                dialog.run()
+                dialog.destroy()
+            except IndexError:
+                continue
+        
+        self.previous_devices = current_set
+
+    def check_service_status(self):
+        """Check and update USBGuard service status"""
+        try:
+            output = subprocess.check_output(["systemctl", "is-active", "usbguard"]).decode('utf-8').strip()
+            is_active = output == "active"
+
+            # Temporarily block signal so we don’t trigger on_power_switched
+            self.power_switch.handler_block_by_func(self.on_power_switched)
+            self.power_switch.set_active(is_active)
+            self.power_switch.handler_unblock_by_func(self.on_power_switched)
+
+            self.status_indicator.set_markup(
+                f"<span foreground='{'green' if is_active else 'red'}'>"
+                f"{'● Active' if is_active else '○ Inactive'}"
+                f"</span>"
+            )
+        except subprocess.CalledProcessError:
+            self.power_switch.handler_block_by_func(self.on_power_switched)
+            self.power_switch.set_active(False)
+            self.power_switch.handler_unblock_by_func(self.on_power_switched)
+
+            self.status_indicator.set_markup("<span foreground='red'>○ Service Error</span>")
+
+    def on_power_switched(self, switch, gparam):
+        """Handle USBGuard service power switch changes"""
+        try:
+            if switch.get_active():
+                subprocess.run(["pkexec", "systemctl", "start", "usbguard"], check=True)
+            else:
+                subprocess.run(["pkexec", "systemctl", "stop", "usbguard"], check=True)
+            GLib.timeout_add(500, self.check_service_status)
+        except subprocess.CalledProcessError as e:
+            self.logging.log_error(f"Failed to change USBGuard service state: {e}")
+            self.check_service_status()
+
+
+    def reset_refresh_button(self, button):
+        """Reset refresh button after operation"""
+        button.set_image(Gtk.Image.new_from_icon_name(
+            "view-refresh-symbolic", 
+            Gtk.IconSize.BUTTON
+        ))
+        return False  # Remove timeout
+
     def on_destroy(self, widget):
         self.refresh_thread_running = False
