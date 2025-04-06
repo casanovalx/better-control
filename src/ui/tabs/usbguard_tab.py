@@ -242,33 +242,29 @@ class USBGuardTab(Gtk.Box):
             status = parts[1]
             device_info = " ".join(parts[2:])
             
-            # Parse device info for better display
+            # Parse device info for displa
             try:
-                # Extract vendor and product IDs if available
-                vendor_id = "Unknown"
-                product_id = "Unknown"
-                if "idVendor=" in device_info and "idProduct=" in device_info:
-                    vendor_id = device_info.split("idVendor=")[1].split()[0]
-                    product_id = device_info.split("idProduct=")[1].split()[0]
-                    
-                # Get human-readable names (default to raw IDs if not available)
-                vendor_name = self.VENDOR_MAP.get(vendor_id.lower(), vendor_id)
-                product_type = self.PRODUCT_TYPE_MAP.get(product_id[:6].lower(), "USB Device") if product_id != "Unknown" else "USB Device"
+                device_name = "USB Device"
                 
-                # Get human-readable status and some visul enhancements
+                # Extract exact name from usbguard output (name "Device Name")
+                name_start = device_info.find('name "')
+                if name_start != -1:
+                    name_end = device_info.find('"', name_start + 6)
+                    if name_end != -1:
+                        device_name = device_info[name_start+6:name_end]
+                
+                # Get human-readable status
                 status_text = {
                     "allow": "✅ Allowed",
                     "block": "❌ Blocked",
                     "reject": "🚫 Rejected"
                 }.get(status.lower(), f"({status})")
                 
-                # Create formatted display text
+                # Create formatted display text with device name as primary identfier
                 display_text = f"""
-<b>{product_type}</b>
+<b>{device_name}</b>
 ID: {device_id}
 Status: {status_text}
-Manufacturer: {vendor_name}
-Type: {product_type}
 """
                 if "serial=" in device_info:
                     serial = device_info.split("serial=")[1].split()[0]
@@ -296,16 +292,22 @@ Type: {product_type}
             box.set_margin_top(5)
             box.set_margin_bottom(5)
             
-            # Device icon based on type
-            icon_name = {
-                "Keyboard": "input-keyboard-symbolic",
-                "Mouse": "input-mouse-symbolic",
-                "Storage": "drive-harddisk-symbolic",
-                "Audio": "audio-headphones-symbolic",
-                "Network": "network-wired-symbolic",
-                "Printer": "printer-symbolic",
-                "Camera": "camera-web-symbolic"
-            }.get(product_type, "drive-removable-media-symbolic")
+            # Simple icon selection based on device name
+            icon_name = "drive-removable-media-symbolic"
+            if "keyboard" in device_name.lower():
+                icon_name = "input-keyboard-symbolic"
+            elif "mouse" in device_name.lower():
+                icon_name = "input-mouse-symbolic"
+            elif "storage" in device_name.lower() or "disk" in device_name.lower():
+                icon_name = "drive-harddisk-symbolic"
+            elif "audio" in device_name.lower() or "headphone" in device_name.lower():
+                icon_name = "audio-headphones-symbolic"
+            elif "network" in device_name.lower():
+                icon_name = "network-wired-symbolic"
+            elif "printer" in device_name.lower():
+                icon_name = "printer-symbolic"
+            elif "camera" in device_name.lower():
+                icon_name = "camera-web-symbolic"
             
             icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.DIALOG)
             icon.set_margin_end(10)
@@ -316,7 +318,7 @@ Type: {product_type}
             
             # Device name and status
             name_label = Gtk.Label()
-            name_label.set_markup(f"<b>{vendor_name} {product_type}</b>")
+            name_label.set_markup(f"<b>{device_name}</b>")
             name_label.set_halign(Gtk.Align.START)
             name_label.set_xalign(0)
             info_box.pack_start(name_label, False, False, 0)
