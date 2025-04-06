@@ -188,7 +188,7 @@ class BetterControl(Gtk.Window):
         try:
             # Get visibility setting
             visibility = self.settings.get("visibility", {})
-            
+
             # Create all tabs
             tab_classes = {
                 "Volume": VolumeTab,
@@ -267,7 +267,7 @@ class BetterControl(Gtk.Window):
                             if not hasattr(self, 'tabs_thread_running') or not self.tabs_thread_running:
                                 self.logging.log(LogLevel.Info, "Tab creation thread stopped")
                                 return
-                        # Skip non-visible tab creation 
+                        # Skip non-visible tab creation
                         if not visibility.get(tab_name, True):
                             self.logging.log(LogLevel.Info, f"Skipping non visible tab :{tab_name}")
                             continue
@@ -868,6 +868,20 @@ class BetterControl(Gtk.Window):
         """Prevent tab selection globally"""
         keyval = event.keyval
         state = event.state
+
+        # In minimal mode, we want to let the active tab handle key events first
+        if self.minimal_mode:
+            # Get the current page
+            current_page = self.notebook.get_current_page()
+            if current_page >= 0:
+                # Get the widget at the current page
+                child = self.notebook.get_nth_page(current_page)
+                if child and hasattr(child, 'on_key_press'):
+                    # Let the tab handle the key press first
+                    self.logging.log(LogLevel.Debug, f"Forwarding key press to tab in minimal mode")
+                    # If the tab handles it, don't process further
+                    if child.on_key_press(widget, event):
+                        return True
 
         if keyval in (65289, 65056):  # Tab and Shift+Tab
             return True  # Stop propagation

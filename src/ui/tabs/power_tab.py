@@ -14,10 +14,14 @@ class PowerTab(Gtk.Box):
     """Power management tab with suspend, shutdown and reboot options"""
 
     def __init__(self, logging: Logger, txt: Translation):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10) 
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.txt = txt
 
         self.logging = logging
+
+        # Initialize visibility flag
+        self.is_visible = False
+        self.minimal_mode = False
 
         # Set default button visibility
         self.config_file = os.path.expanduser("~/.config/better-control/power_settings.json")
@@ -56,19 +60,19 @@ class PowerTab(Gtk.Box):
         )
         ctx = power_icon.get_style_context()
         ctx.add_class("power-icon")
-        
+
         def on_enter(widget, event):
             ctx.add_class("power-icon-animate")
-        
+
         def on_leave(widget, event):
             ctx.remove_class("power-icon-animate")
-        
+
         # Wrap in event box for hover detection
         icon_event_box = Gtk.EventBox()
         icon_event_box.add(power_icon)
         icon_event_box.connect("enter-notify-event", on_enter)
         icon_event_box.connect("leave-notify-event", on_leave)
-        
+
         title_box.pack_start(icon_event_box, False, False, 0)
 
         # Add title with better styling
@@ -185,25 +189,41 @@ class PowerTab(Gtk.Box):
         # We need to get the toplevel window to attach the event
         GLib.timeout_add(200, self._setup_key_handler)
 
+
+
     def _setup_key_handler(self):
         """Set up keyboard handler with a small delay to ensure window is ready"""
         # Get the toplevel window
         toplevel = self.get_toplevel()
         if toplevel and isinstance(toplevel, Gtk.Window):
             self.logging.log(LogLevel.Debug, "Setting up key handler on window")
-            toplevel.connect("key-press-event", self.on_key_press)
-            self.grab_focus()  # Try to grab focus again
+
+            # Connect to key-press-event at window level
+            handler_id = toplevel.connect("key-press-event", self.on_key_press)
+            self.logging.log(LogLevel.Info, f"Connected key handler with ID: {handler_id}")
+
+            # Try to grab focus
+            self.grab_focus()
+
+            # Check if we're in minimal mode
+            if hasattr(toplevel, 'arg_parser') and hasattr(toplevel.arg_parser, 'find_arg'):
+                self.minimal_mode = toplevel.arg_parser.find_arg(("-m", "--minimal"))
+                if self.minimal_mode:
+                    self.is_visible = True
+                    self.logging.log(LogLevel.Info, "Power tab in minimal mode, keybindings always active")
         return False  # Don't call again
 
     def on_mapped(self, widget):
         """Called when the widget becomes visible"""
         self.is_visible = True
-        self.logging.log(LogLevel.Info, "Power tab became visible, deactivaing it's keybinding")
+        self.logging.log(LogLevel.Info, "Power tab became visible, activating its keybindings")
 
     def on_unmapped(self, widget):
         """Called when the widget is hidden"""
-        self.is_visible = False
-        self.logging.log(LogLevel.Info, "Power tab became visible, activaing it's keybinding")
+        # Don't change visibility in minimal mode
+        if not self.minimal_mode:
+            self.is_visible = False
+            self.logging.log(LogLevel.Info, "Power tab became hidden, deactivating its keybindings")
 
     def _update_power_options_shortcuts(self):
         """Update power options with custom shortcuts"""
@@ -215,14 +235,17 @@ class PowerTab(Gtk.Box):
 
     def on_key_press(self, widget, event):
         """Handle key press events to trigger power actions"""
-        # Only handle keypress when tab is visible
-        if not self.is_visible:
+        # In minimal mode, we always want to handle key presses
+        # Only handle keypress when tab is visible or in minimal mode
+        if not self.is_visible and not self.minimal_mode:
             return False
+
+        self.logging.log(LogLevel.Debug, f"Processing key press in power tab (visible: {self.is_visible}, minimal: {self.minimal_mode})")
 
         keyval = event.keyval
         keychar = chr(keyval).lower()
 
-        self.logging.log(LogLevel.Debug, f"Key pressed: {keychar}")
+        self.logging.log(LogLevel.Info, f"Key pressed: {keychar}")
 
         for option in self.power_options:
             option_id = option["id"]
@@ -232,7 +255,7 @@ class PowerTab(Gtk.Box):
             # Get the shortcut directly from custom_shortcuts or default
             shortcut = self.custom_shortcuts.get(option_id, option["default_shortcut"]).lower()
 
-            self.logging.log(LogLevel.Debug, f"Checking shortcut for {option_id}: {shortcut} against {keychar}")
+            self.logging.log(LogLevel.Info, f"Checking shortcut for {option_id}: {shortcut} against {keychar}")
 
             if keychar == shortcut:
                 self.logging.log(LogLevel.Info, f"Shortcut triggered for {option['label']}")
