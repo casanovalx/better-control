@@ -54,6 +54,12 @@ class English:
     def __init__(self):
         # app description
         self.msg_desc = "A sleek GTK-themed control panel for Linux."
+        
+        # USB notifications
+        self.usb_connected = "USB device connected: {device}"
+        self.usb_disconnected = "USB device disconnected: {device}" 
+        self.permission_allowed = "USB permission granted"
+        self.permission_blocked = "USB permission blocked"
         self.msg_app_url = "https://github.com/quantumvoid0/better-control"
         self.msg_usage = "Usage"
 
@@ -94,6 +100,9 @@ class English:
         self.refresh = "Refresh"
         self.allow = "Allow"
         self.block = "Block"
+        self.allowed = "Allowed"
+        self.blocked = "Blocked"
+        self.rejected = "Rejected"
         self.policy = "View Policy"
         self.usbguard_error = "Error accessing USBGuard"
         self.usbguard_not_installed = "USBGuard not installed"
