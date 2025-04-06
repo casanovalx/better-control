@@ -4,7 +4,7 @@ import gi
 import logging
 import subprocess
 import threading
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib # type: ignore
 from utils.translations import get_translations
 
 class USBGuardTab(Gtk.Box):

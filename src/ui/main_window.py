@@ -192,6 +192,9 @@ class BetterControl(Gtk.Window):
             Gdk.threads_enter()
 
         try:
+            # Get visibility setting
+            visibility = self.settings.get("visibility", {})
+            
             # Create all tabs
             tab_classes = {
                 "Volume": VolumeTab,
@@ -270,6 +273,10 @@ class BetterControl(Gtk.Window):
                             if not hasattr(self, 'tabs_thread_running') or not self.tabs_thread_running:
                                 self.logging.log(LogLevel.Info, "Tab creation thread stopped")
                                 return
+                        # Skip non-visible tab creation 
+                        if not visibility.get(tab_name, True):
+                            self.logging.log(LogLevel.Info, f"Skipping non visible tab :{tab_name}")
+                            continue
 
                         # Create the tab
                         self.logging.log(LogLevel.Debug, f"Starting to create {tab_name} tab")

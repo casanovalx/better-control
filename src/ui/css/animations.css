@@ -36,3 +36,12 @@ notebook tab:checked {
 notebook > stack {
     padding: 12px;
 }
+
+/* Rotate the stupid gear */
+.rotate-gear{
+    transition: all 200ms ease;
+    -gtk-icon-transform: rotate(0deg);
+}
+.rotate-gear-active{
+    -gtk-icon-transform: rotate(25deg);
+}
