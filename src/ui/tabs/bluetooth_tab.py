@@ -14,7 +14,7 @@ from tools.bluetooth import (
     get_devices,
     start_discovery,
     stop_discovery,
-    connect_device,
+    connect_device, 
     disconnect_device,
     connect_device_async,
     disconnect_device_async,
@@ -49,11 +49,26 @@ class BluetoothTab(Gtk.Box):
         # Create title box with icon and label
         title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
 
-        # Add bluetooth icon
+        # Add bluetooth icon with hover animations
         bluetooth_icon = Gtk.Image.new_from_icon_name(
             "bluetooth-symbolic", Gtk.IconSize.DIALOG
         )
-        title_box.pack_start(bluetooth_icon, False, False, 0)
+        ctx = bluetooth_icon.get_style_context()
+        ctx.add_class("bluetooth-icon")
+        
+        def on_enter(widget, event):
+            ctx.add_class("bluetooth-icon-animate")
+        
+        def on_leave(widget, event):
+            ctx.remove_class("bluetooth-icon-animate")
+        
+        # Wrap in event box for hover detection
+        icon_event_box = Gtk.EventBox()
+        icon_event_box.add(bluetooth_icon)
+        icon_event_box.connect("enter-notify-event", on_enter)
+        icon_event_box.connect("leave-notify-event", on_leave)
+        
+        title_box.pack_start(icon_event_box, False, False, 0)
 
         # Add title
         bluetooth_label = Gtk.Label()

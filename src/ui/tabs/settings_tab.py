@@ -65,7 +65,22 @@ class SettingsTab(Gtk.Box):
         settings_icon = Gtk.Image.new_from_icon_name(
             "preferences-system-symbolic", Gtk.IconSize.DIALOG
         )
-        header_box.pack_start(settings_icon, False, False, 0)
+        ctx = settings_icon.get_style_context()
+        ctx.add_class("settings-icon")
+        
+        def on_enter(widget, event):
+            ctx.add_class("settings-icon-animate")
+        
+        def on_leave(widget, event):
+            ctx.remove_class("settings-icon-animate")
+        
+        # Wrap in event box for hover detection
+        icon_event_box = Gtk.EventBox()
+        icon_event_box.add(settings_icon)
+        icon_event_box.connect("enter-notify-event", on_enter)
+        icon_event_box.connect("leave-notify-event", on_leave)
+        
+        header_box.pack_start(icon_event_box, False, False, 0)
 
         settings_label = Gtk.Label(label=self.txt.settings_title)
         settings_label.set_markup(f"<span size='x-large' weight='bold'>{self.txt.settings_title}</span>")

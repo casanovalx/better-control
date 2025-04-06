@@ -14,7 +14,7 @@ class PowerTab(Gtk.Box):
     """Power management tab with suspend, shutdown and reboot options"""
 
     def __init__(self, logging: Logger, txt: Translation):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10) 
         self.txt = txt
 
         self.logging = logging
@@ -50,11 +50,26 @@ class PowerTab(Gtk.Box):
         # Create title box with icon and label
         title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
 
-        # Add power icon with larger size
+        # Add power icon with hover animations
         power_icon = Gtk.Image.new_from_icon_name(
             "system-shutdown-symbolic", Gtk.IconSize.DIALOG
         )
-        title_box.pack_start(power_icon, False, False, 0)
+        ctx = power_icon.get_style_context()
+        ctx.add_class("power-icon")
+        
+        def on_enter(widget, event):
+            ctx.add_class("power-icon-animate")
+        
+        def on_leave(widget, event):
+            ctx.remove_class("power-icon-animate")
+        
+        # Wrap in event box for hover detection
+        icon_event_box = Gtk.EventBox()
+        icon_event_box.add(power_icon)
+        icon_event_box.connect("enter-notify-event", on_enter)
+        icon_event_box.connect("leave-notify-event", on_leave)
+        
+        title_box.pack_start(icon_event_box, False, False, 0)
 
         # Add title with better styling
         title_label = Gtk.Label()

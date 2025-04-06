@@ -49,11 +49,26 @@ class AutostartTab(Gtk.Box):
         # Create title box with icon and label
         title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
 
-        # Add display icon with larger size
+        # Add display icon with hover animations
         display_icon = Gtk.Image.new_from_icon_name(
             "system-run-symbolic", Gtk.IconSize.DIALOG
         )
-        title_box.pack_start(display_icon, False, False, 0)
+        ctx = display_icon.get_style_context()
+        ctx.add_class("autostart-icon")
+        
+        def on_enter(widget, event):
+            ctx.add_class("autostart-icon-animate")
+        
+        def on_leave(widget, event):
+            ctx.remove_class("autostart-icon-animate")
+        
+        # Wrap in event box for hover detection
+        icon_event_box = Gtk.EventBox()
+        icon_event_box.add(display_icon)
+        icon_event_box.connect("enter-notify-event", on_enter)
+        icon_event_box.connect("leave-notify-event", on_leave)
+        
+        title_box.pack_start(icon_event_box, False, False, 0)
 
         # Add title with better styling
         display_label = Gtk.Label()

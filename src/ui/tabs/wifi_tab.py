@@ -62,9 +62,24 @@ class WiFiTab(Gtk.Box):
         # Create title box with icon and label
         title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
 
-        # Add wifi icon
+        # Add wifi icon with hover animations
         wifi_icon = Gtk.Image.new_from_icon_name("network-wireless-symbolic", Gtk.IconSize.DIALOG)
-        title_box.pack_start(wifi_icon, False, False, 0)
+        ctx = wifi_icon.get_style_context()
+        ctx.add_class("wifi-icon")
+        
+        def on_enter(widget, event):
+            ctx.add_class("wifi-icon-animate")
+        
+        def on_leave(widget, event):
+            ctx.remove_class("wifi-icon-animate")
+        
+        # Wrap in event box for hover detection
+        icon_event_box = Gtk.EventBox()
+        icon_event_box.add(wifi_icon)
+        icon_event_box.connect("enter-notify-event", on_enter)
+        icon_event_box.connect("leave-notify-event", on_leave)
+        
+        title_box.pack_start(icon_event_box, False, False, 0)
 
         # Add title
         wifi_label = Gtk.Label()

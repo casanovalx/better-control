@@ -21,7 +21,22 @@ class USBGuardTab(Gtk.Box):
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         
         usb_icon = Gtk.Image.new_from_icon_name("drive-removable-media-symbolic", Gtk.IconSize.DIALOG)
-        header_box.pack_start(usb_icon, False, False, 0)
+        ctx = usb_icon.get_style_context()
+        ctx.add_class("usb-icon")
+        
+        def on_enter(widget, event):
+            ctx.add_class("usb-icon-animate")
+        
+        def on_leave(widget, event):
+            ctx.remove_class("usb-icon-animate")
+        
+        # Wrap in event box for hover detection
+        icon_event_box = Gtk.EventBox()
+        icon_event_box.add(usb_icon)
+        icon_event_box.connect("enter-notify-event", on_enter)
+        icon_event_box.connect("leave-notify-event", on_leave)
+        
+        header_box.pack_start(icon_event_box, False, False, 0)
 
         usb_label = Gtk.Label()
         usb_label.set_markup(f"<span weight='bold' size='large'>USBGuard</span>")

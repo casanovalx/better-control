@@ -38,11 +38,26 @@ class DisplayTab(Gtk.Box):
         # Create title box with icon and label
         title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
 
-        # Add display icon
+        # Add display icon with hover animations
         display_icon = Gtk.Image.new_from_icon_name(
             "video-display-symbolic", Gtk.IconSize.DIALOG
         )
-        title_box.pack_start(display_icon, False, False, 0)
+        ctx = display_icon.get_style_context()
+        ctx.add_class("display-icon")
+        
+        def on_enter(widget, event):
+            ctx.add_class("display-icon-animate")
+        
+        def on_leave(widget, event):
+            ctx.remove_class("display-icon-animate")
+        
+        # Wrap in event box for hover detection
+        icon_event_box = Gtk.EventBox()
+        icon_event_box.add(display_icon)
+        icon_event_box.connect("enter-notify-event", on_enter)
+        icon_event_box.connect("leave-notify-event", on_leave)
+        
+        title_box.pack_start(icon_event_box, False, False, 0)
 
         # Add title
         display_label = Gtk.Label()

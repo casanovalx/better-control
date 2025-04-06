@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 
 import logging
-# import timeit  # Not used
 import traceback
 import gi  # type: ignore
 import threading
 import sys
 
 from utils.arg_parser import ArgParse
-from utils.warning_suppressor import suppress_specific_warnings
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, Gdk  # type: ignore
@@ -187,10 +185,6 @@ class BetterControl(Gtk.Window):
         import time
         time.sleep(0.2)  # 200ms delay - increased for better stability
 
-        # Use context manager to suppress specific deprecation warnings
-        with suppress_specific_warnings(DeprecationWarning, "Gdk.threads_enter is deprecated"):
-            Gdk.threads_enter()
-
         try:
             # Get visibility setting
             visibility = self.settings.get("visibility", {})
@@ -305,9 +299,7 @@ class BetterControl(Gtk.Window):
                 self.tabs_thread_running = False
 
         finally:
-            # Always leave GDK threading context
-            with suppress_specific_warnings(DeprecationWarning, "Gdk.threads_leave is deprecated"):
-                Gdk.threads_leave()
+            pass
 
     def _add_tab_to_ui(self, tab_name, tab):
         """Add a tab to the UI (called from main thread)"""
@@ -348,10 +340,10 @@ class BetterControl(Gtk.Window):
             # Apply consistent padding to tab conten
             content = self.notebook.get_nth_page(page_num)
             if content:
-                content.set_margin_start(12)
-                content.set_margin_end(12)
-                content.set_margin_top(6)
-                content.set_margin_bottom(6)
+                content.set_margin_start(10)
+                content.set_margin_end(10)
+                content.set_margin_top(0)
+                content.set_margin_bottom(0)
 
         self.logging.log(LogLevel.Info, f"Created {tab_name} tab")
         return False  # Required for GLib.idle_add

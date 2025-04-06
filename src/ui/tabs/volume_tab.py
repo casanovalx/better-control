@@ -87,8 +87,12 @@ class VolumeTab(Gtk.Box):
         # Add volume icon
         volume_icon = Gtk.Image.new_from_icon_name(
             "audio-volume-high-symbolic", Gtk.IconSize.DIALOG
+        
         )
-        title_box.pack_start(volume_icon, False, False, 0)
+
+        self.animate_icon(volume_icon)
+
+        title_box.pack_start(self.icon_event_box, False, False, 0)
 
         # Add title
         volume_label = Gtk.Label()
@@ -243,6 +247,32 @@ class VolumeTab(Gtk.Box):
         tab = self.notebook.get_nth_page(output_tab_index)
         if tab:
             tab.set_tooltip_text(self.txt.volume_tab_tooltip)
+
+    def animate_icon(self, volume_icon):
+        """Setup volume icon hover animations"""
+        self.volume_icon = volume_icon
+        
+        # Wrap icon in event box for hover detection
+        self.icon_event_box = Gtk.EventBox()
+        self.icon_event_box.add(volume_icon)
+        
+        # Add CSS classes for hover effects
+        ctx = volume_icon.get_style_context()
+        ctx.add_class("volume-icon")
+        
+        def on_enter(widget, event):
+            ctx.add_class("volume-icon-animate")
+        
+        def on_leave(widget, event):
+            ctx.remove_class("volume-icon-animate")
+        
+        self.icon_event_box.connect("enter-notify-event", on_enter)
+        self.icon_event_box.connect("leave-notify-event", on_leave)
+        
+        # Set initial state
+        volume_icon.set_from_icon_name("audio-volume-high-symbolic", Gtk.IconSize.DIALOG)
+
+
             
     def create_input_tab(self):
         """Create microphone/input device tab"""

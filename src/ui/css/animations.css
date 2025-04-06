@@ -22,14 +22,14 @@
 
 /* Tab container styling */
 notebook tab {
-    margin: 6px;
-    padding: 6px 12px;
+    margin: 4px;
+    padding: 4px 12px;
 }
 
 notebook tab:active,
 notebook tab:checked {
-    margin: 6px;
-    padding: 6px 12px;
+    margin: 4px;
+    padding: 4px 12px;
 }
 
 /* Content area padding */
@@ -37,11 +37,122 @@ notebook > stack {
     padding: 12px;
 }
 
-/* Rotate the stupid gear */
-.rotate-gear{
+/* Rotate the gear icon */
+.rotate-gear {
     transition: all 200ms ease;
     -gtk-icon-transform: rotate(0deg);
 }
+
 .rotate-gear-active{
-    -gtk-icon-transform: rotate(25deg);
+    -gtk-icon-transform: rotate(360deg);
+    transition: all 600ms ease;
+}
+
+@keyframes pulse {
+    0% {
+     -gtk-icon-transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+     -gtk-icon-transform: scale(1.05);
+      opacity: 0.8;
+    }
+    100% {
+     -gtk-icon-transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+
+.volume-icon-animate {
+    animation: pulse 600ms ease-in-out;
+}
+
+/* General tab icon animations */
+.tab-icon {
+    transition: all 200ms ease-in;
+    opacity: 1;
+}
+
+.tab-icon:hover {
+    opacity: 0.8;
+}
+
+.tab-icon:active {
+    opacity: 1;
+}
+
+.tab-icon-animate {
+    animation: pulse 600ms ease-in-out;
+}
+
+/* WiFi specific icon animations */
+.wifi-icon {
+    transition: all 200ms ease-in;
+}
+
+
+.wifi-icon-animate {
+    animation: pulse 600ms ease-in-out;
+}
+
+/* Specific icon animations */
+.bluetooth-icon {
+    transition: all 200ms ease-in;
+}
+
+.bluetooth-icon-animate {
+    animation: pulse 600ms ease-in-out;
+}
+
+.battery-icon {
+    transition: all 200ms ease-in;
+}
+
+.battery-icon-animate {
+    animation: pulse 600ms ease-in-out;
+}
+
+.display-icon {
+    transition: all 200ms ease-in;
+}
+
+.display-icon-animate {
+    animation: pulse 600ms ease-in-out;
+}
+
+.power-icon {
+    transition: all 200ms ease-in;
+    -gtk-icon-transform: rotate(0deg);
+}
+
+.power-icon-animate {
+    animation: pulse 600ms ease-in-out;
+    -gtk-icon-transform: rotate(360deg);
+}
+
+.settings-icon {
+    transition: all 200ms ease-in;
+    -gtk-icon-transform: rotate(0deg);
+}
+
+.settings-icon-animate {
+    animation: pulse 600ms ease-in-out;
+    -gtk-icon-transform: rotate(360deg);
+}
+
+.usb-icon {
+    transition: all 200ms ease-in;
+}
+
+.usb-icon-animate {
+    animation: pulse 600ms ease-in-out;
+}
+
+.autostart-icon {
+    transition: all 200ms ease-in;
+}
+
+.autostart-icon-animate {
+    animation: pulse 600ms ease-in-out;
 }
