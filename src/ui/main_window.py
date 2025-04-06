@@ -249,15 +249,27 @@ class BetterControl(Gtk.Window):
                 # Only create the selected tab
                 if tab_to_load in tab_classes:
                     try:
-                        self.logging.log(LogLevel.Info, f"Creating only {tab_to_load} tab for minimal mode")
-                        tab = tab_classes[tab_to_load](self.logging, self.txt)
-                        GLib.idle_add(self._add_tab_to_ui, tab_to_load, tab)
+                        self.logging.log(LogLevel.Debug, f"Starting to create {tab_to_load} tab")
+                        tab_instance = tab_classes[tab_to_load](self.logging, self.txt)
+                        
+                        # Store tab instance and add to notebook
+                        with self._tab_creation_lock:
+                            if self.tabs_thread_running:
+                                # Add to tabs dictionary
+                                self.tabs[tab_to_load] = tab_instance
+                                
+                                # Special handling for power tab to ensure keybinds work
+                                if tab_to_load == "Power":
+                                    tab_instance.minimal_mode = True
+                                    tab_instance.is_visible = True
+                                    
+                                # Add to UI on the main thread
+                                GLib.idle_add(self._add_tab_to_ui, tab_to_load, tab_instance)
+                        
+                        self.logging.log(LogLevel.Debug, f"Successfully created {tab_to_load} tab instance")
                     except Exception as e:
-                        error_msg = f"Failed creating {tab_to_load} tab: {e}"
-                        self.logging.log(LogLevel.Error, error_msg)
-                        import traceback
-                        traceback.print_exc()
-                        print(f"FATAL ERROR: {error_msg}", file=sys.stderr)
+                        self.logging.log(LogLevel.Error, f"Error creating {tab_to_load} tab: {e}")
+                        self.logging.log(LogLevel.Error, f"Stack trace: {traceback.format_exc()}")
             else:
                 # Normal mode: Create all tabs one by one
                 for tab_name, tab_class in tab_classes.items():
@@ -303,7 +315,15 @@ class BetterControl(Gtk.Window):
 
     def _add_tab_to_ui(self, tab_name, tab):
         """Add a tab to the UI (called from main thread)"""
+        # Store the tab
         self.tabs[tab_name] = tab
+
+        # Special handling for the Power tab to ensure keybinds work
+        if tab_name == "Power":
+            # Ensure keybinds will work by connecting directly to the window
+            self.connect("key-press-event", tab.on_key_press)
+            # Make sure the is_visible flag is set correctly based on current view
+            tab.is_visible = self.minimal_mode
 
         # Make sure tab is visible
         tab.show_all()
@@ -336,8 +356,8 @@ class BetterControl(Gtk.Window):
                 self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
             )
             self.tab_pages[tab_name] = page_num
-
-            # Apply consistent padding to tab conten
+            
+            # Apply consistent padding to tab content
             content = self.notebook.get_nth_page(page_num)
             if content:
                 content.set_margin_start(10)
@@ -869,6 +889,13 @@ class BetterControl(Gtk.Window):
         keyval = event.keyval
         state = event.state
 
+        # Check if Power tab exists and handle its keys globally
+        if "Power" in self.tabs:
+            power_tab = self.tabs["Power"]
+            # Always let Power tab handle keys first, regardless of which tab is active
+            if power_tab.on_key_press(widget, event):
+                return True
+
         # In minimal mode, we want to let the active tab handle key events first
         if self.minimal_mode:
             # Get the current page
@@ -876,7 +903,7 @@ class BetterControl(Gtk.Window):
             if current_page >= 0:
                 # Get the widget at the current page
                 child = self.notebook.get_nth_page(current_page)
-                if child and hasattr(child, 'on_key_press'):
+                if child and hasattr(child, 'on_key_press') and child != self.tabs.get("Power"):
                     # Let the tab handle the key press first
                     self.logging.log(LogLevel.Debug, f"Forwarding key press to tab in minimal mode")
                     # If the tab handles it, don't process further
