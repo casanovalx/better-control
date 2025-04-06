@@ -23,15 +23,17 @@ echo "Done"
 
 # Add user to groups
 echo -n "Adding user to usbguard and plugdev groups... "
-usermod -aG usbguard,plugdev $(logname)
+usermod -aG usbguard $(logname)
 echo "Done"
 
 # Create udev rule
+# Read more: https://wiki.archlinux.org/title/Udev#Allowing_regular_users_to_use_devices
 echo -n "Creating udev rules... "
-echo 'SUBSYSTEM=="usb", MODE="0664", GROUP="plugdev"' > /etc/udev/rules.d/99-usbguard.rules
+echo 'SUBSYSTEM=="usb", MODE="0660", TAG+="uaccess"' > /etc/udev/rules.d/99-usbguard.rules
 echo "Done"
 
 # Configure IPC permissions
+# Read more: https://wiki.archlinux.org/title/USBGuard#Configuration
 echo -n "Updating USBGuard configuration... "
 sed -i '/^IPCAllowedUsers=/ s/$/ '$(logname)'/' /etc/usbguard/usbguard-daemon.conf
 sed -i '/^IPCAllowedGroups=/ s/$/ usbguard/' /etc/usbguard/usbguard-daemon.conf
