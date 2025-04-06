@@ -22,7 +22,7 @@ groupadd usbguard 2>/dev/null || true
 echo "Done"
 
 # Add user to groups
-echo -n "Adding user to usbguard and plugdev groups... "
+echo -n "Adding user to the usbguard group... "
 usermod -aG usbguard $(logname)
 echo "Done"
 
