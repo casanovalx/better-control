@@ -244,16 +244,18 @@ class USBGuardTab(Gtk.Box):
             
             # Parse device info for displa
             try:
-                device_name = "USB Device"
+                device_name = "Device name cannot be retrieved"
                 
-                # Extract exact name from usbguard output (name "Device Name")
+                
                 name_start = device_info.find('name "')
                 if name_start != -1:
                     name_end = device_info.find('"', name_start + 6)
                     if name_end != -1:
-                        device_name = device_info[name_start+6:name_end]
+                        device_name = device_info[name_start+6:name_end].strip()
+                        if not device_name:  # If name is empty
+                            device_name = "Device name cannot be retrieved"
                 
-                # Get human-readable status
+                # get gud looking stuff
                 status_text = {
                     "allow": "✅ Allowed",
                     "block": "❌ Blocked",
