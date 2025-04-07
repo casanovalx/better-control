@@ -379,8 +379,8 @@ Status: {status_text}
             subprocess.run([
                 "notify-send",
                 "-i", "emblem-ok-symbolic",
-                f"USB Device Allowed: {device_name}",
-                f"Device ID: {device_id}\nNow allowed to connect"
+                f"Better Control",
+                f"{device_name} has been allowed."
             ])
             
         
@@ -414,8 +414,8 @@ Status: {status_text}
             subprocess.run([
                 "notify-send",
                 "-i", "action-unavailable-symbolic",
-                f"USB Device Blocked: {device_name}",
-                f"Device ID: {device_id}\nNo longer allowed to connect"
+                f"Better Control",
+                f"{device_name} has been blocked."
             ])
             
             self.refresh_devices(None)
@@ -612,7 +612,7 @@ Status: {status_text}
                 subprocess.run([
                     "notify-send",
                     "-i", "drive-removable-media-symbolic",
-                    "USB Device Connected",
+                    "Better Control",
                     self.txt.usb_connected.format(device=device_name)
                 ])
         
@@ -624,7 +624,7 @@ Status: {status_text}
                 subprocess.run([
                     "notify-send",
                     "-i", "drive-removable-media-symbolic",
-                    "USB Device Disconnected",
+                    "Better Control",
                     self.txt.usb_disconnected.format(device=device_name)
                 ])
         

@@ -56,8 +56,8 @@ class English:
         self.msg_desc = "A sleek GTK-themed control panel for Linux."
         
         # USB notifications
-        self.usb_connected = "USB device connected: {device}"
-        self.usb_disconnected = "USB device disconnected: {device}" 
+        self.usb_connected = "{device} connected."
+        self.usb_disconnected = "{device} disconnected." 
         self.permission_allowed = "USB permission granted"
         self.permission_blocked = "USB permission blocked"
         self.msg_app_url = "https://github.com/quantumvoid0/better-control"
