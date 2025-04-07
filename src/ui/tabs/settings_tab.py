@@ -33,16 +33,26 @@ class SettingsTab(Gtk.Box):
         # Load settings
         self.settings = load_settings(logging)
 
-        # No scroll window - pack content directly to ensure all is visible
+        # Wrap content in a scrolled window to avoid forcing minimum size
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scrolled_window.set_hexpand(True)
+        scrolled_window.set_vexpand(True)
+        scrolled_window.set_margin_top(0)
+        scrolled_window.set_margin_bottom(0)
+        scrolled_window.set_margin_start(0)
+        scrolled_window.set_margin_end(0)
+
         self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         self.content_box.set_margin_top(10)
         self.content_box.set_margin_bottom(10)
         self.content_box.set_margin_start(10)
         self.content_box.set_margin_end(10)
-        # Ensure content can expand properly
         self.content_box.set_hexpand(True)
         self.content_box.set_vexpand(True)
-        self.pack_start(self.content_box, True, True, 0)
+
+        scrolled_window.add(self.content_box)
+        self.pack_start(scrolled_window, True, True, 0)
 
         self.populate_settings()
 

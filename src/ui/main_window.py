@@ -717,7 +717,8 @@ class BetterControl(Gtk.Window):
                 flags=Gtk.DialogFlags.MODAL,
                 buttons=(self.txt.close, Gtk.ResponseType.CLOSE),
             )
-            dialog.set_default_size(500, 400)
+            dialog.set_default_size(600, 540)
+            dialog.set_size_request(600, 540)
             dialog.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
             # Create a fresh instance of the settings tab to use in the dialog
             settings_tab = SettingsTab(self.logging, self.txt)
