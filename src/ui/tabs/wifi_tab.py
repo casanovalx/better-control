@@ -22,7 +22,8 @@ from tools.wifi import (
     forget_network,
     get_network_speed,
     get_connection_info,
-    generate_wifi_qrcode
+    generate_wifi_qrcode,
+    wifi_supported
 )
 
 class WiFiTab(Gtk.Box):
@@ -44,12 +45,7 @@ class WiFiTab(Gtk.Box):
         # Track tab visibility status
         self.tab_visible = False
 
-        # Check if WiFi is supported
-        result = subprocess.run(["nmcli", "-t", "-f", "DEVICE,TYPE", "device"], capture_output=True, text=True)
-        wifi_interfaces = [line for line in result.stdout.split('\n') if "wifi" in line]
-        self.wifi_supported = bool(wifi_interfaces)
-
-        if not self.wifi_supported:
+        if not wifi_supported:
             self.logging.log(LogLevel.Warn, "WiFi is not supported on this machine")
 
         # Create header box with title and refresh button
@@ -96,7 +92,7 @@ class WiFiTab(Gtk.Box):
         refresh_button.connect("clicked", self.on_refresh_clicked)
 
         # Disable refresh button if WiFi is not supported
-        if not self.wifi_supported:
+        if not wifi_supported:
             refresh_button.set_sensitive(False)
 
         header_box.pack_end(refresh_button, False, False, 0)
@@ -123,7 +119,7 @@ class WiFiTab(Gtk.Box):
         power_label.set_halign(Gtk.Align.START)
         self.power_switch = Gtk.Switch()
 
-        if self.wifi_supported:
+        if wifi_supported:
             self.power_switch.set_active(get_wifi_status(self.logging))
             self.power_switch.connect("notify::active", self.on_power_switched)
         else:

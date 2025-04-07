@@ -400,6 +400,9 @@ class BluetoothManager:
         # Start the disconnection process in a separate real thread
         thread = threading.Thread(target=run_disconnect, daemon=True)
         thread.start()
+        
+    def bluetooth_supported(self) -> bool:
+        return bool(self.adapter_path)
 
 
 # Create a global instance of the BluetoothManager
