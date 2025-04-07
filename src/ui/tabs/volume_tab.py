@@ -4,7 +4,6 @@ import gi  # type: ignore
 import subprocess
 import threading
 import time
-import sys
 
 from utils.logger import LogLevel, Logger
 from utils.translations import English, Spanish
@@ -52,16 +51,16 @@ class VolumeTab(Gtk.Box):
         self.set_margin_bottom(15)
         self.set_hexpand(True)
         self.set_vexpand(True)
-        
+
         # Critical - ensure this widget is fully visible in the parent application's notebook
         self.set_visible(True)
         self.set_no_show_all(False)
-        
+
         # Create lock for thread safety
         self._lock = threading.RLock()
-        
+
         self.is_visible = False  # Track tab visibility
-        
+
         # Initialize flags and references to prevent segfaults
         self._volume_change_timeout_id = None
         self._mic_volume_change_timeout_id = None
@@ -87,7 +86,7 @@ class VolumeTab(Gtk.Box):
         # Add volume icon
         volume_icon = Gtk.Image.new_from_icon_name(
             "audio-volume-high-symbolic", Gtk.IconSize.DIALOG
-        
+
         )
 
         self.animate_icon(volume_icon)
@@ -110,13 +109,13 @@ class VolumeTab(Gtk.Box):
         self.notebook = Gtk.Notebook()
         self.notebook.set_vexpand(True)
         self.notebook.set_visible(True)  # Ensure notebook is visible
-        
+
         # Create tabs for different categories
         self.create_output_tab()
-        self.create_input_tab()  
+        self.create_input_tab()
         self.create_apps_output_tab()
         self.create_apps_input_tab()
-        
+
         self.pack_start(self.notebook, True, True, 0)
 
         # Initialize pulse audio monitoring variables
@@ -125,7 +124,7 @@ class VolumeTab(Gtk.Box):
         # Initialize UI state
         self.update_device_lists()
         self.update_mute_buttons()
-        
+
         # Start with initial data refresh
         self.update_volumes()
 
@@ -149,23 +148,23 @@ class VolumeTab(Gtk.Box):
         output_tab.set_margin_top(12)
         output_tab.set_margin_bottom(12)
         output_tab.set_visible(True)  # Ensure tab content is visible
-        
+
         # Output device selection
         device_frame = Gtk.Frame()
         device_frame.set_shadow_type(Gtk.ShadowType.NONE)
         device_frame.set_visible(True)
-        
+
         device_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         device_box.set_margin_start(12)
         device_box.set_margin_end(12)
         device_box.set_margin_top(12)
         device_box.set_margin_bottom(12)
-        
+
         output_label = Gtk.Label()
         output_label.set_markup(f"<b>{self.txt.volume_output_device}</b>")
         output_label.set_halign(Gtk.Align.START)
         device_box.pack_start(output_label, False, True, 0)
-        
+
         combo_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         device_label = Gtk.Label(label=f"{self.txt.volume_device}:")
         self.output_combo = Gtk.ComboBoxText()
@@ -173,10 +172,10 @@ class VolumeTab(Gtk.Box):
         combo_box.pack_start(device_label, False, True, 0)
         combo_box.pack_start(self.output_combo, True, True, 0)
         device_box.pack_start(combo_box, False, True, 0)
-        
+
         device_frame.add(device_box)
         output_tab.pack_start(device_frame, False, False, 0)
-        
+
         # Volume control
         volume_frame = Gtk.Frame()
         volume_frame.set_shadow_type(Gtk.ShadowType.IN)
@@ -218,7 +217,7 @@ class VolumeTab(Gtk.Box):
         quick_label.set_markup(f"<small>{self.txt.volume_quick_presets}</small>")
         quick_label.set_halign(Gtk.Align.START)
         volume_box.pack_start(quick_label, False, True, 0)
-        
+
         quick_volume_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         volumes = [0, 25, 50, 75, 100]
         for vol in volumes:
@@ -231,7 +230,7 @@ class VolumeTab(Gtk.Box):
 
         volume_frame.add(volume_box)
         output_tab.pack_start(volume_frame, False, True, 0)
-        
+
         # Create tab label with icon and text
         tab_label = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         output_icon = Gtk.Image.new_from_icon_name("audio-speakers-symbolic", Gtk.IconSize.MENU)
@@ -239,10 +238,10 @@ class VolumeTab(Gtk.Box):
         tab_label.pack_start(output_icon, False, False, 0)
         tab_label.pack_start(output_text, False, False, 0)
         tab_label.show_all()
-        
+
         # Add the output tab to the notebook with combined label
         output_tab_index = self.notebook.append_page(output_tab, tab_label)
-        
+
         # Set tooltip on the tab widget itself
         tab = self.notebook.get_nth_page(output_tab_index)
         if tab:
@@ -251,29 +250,29 @@ class VolumeTab(Gtk.Box):
     def animate_icon(self, volume_icon):
         """Setup volume icon hover animations"""
         self.volume_icon = volume_icon
-        
+
         # Wrap icon in event box for hover detection
         self.icon_event_box = Gtk.EventBox()
         self.icon_event_box.add(volume_icon)
-        
+
         # Add CSS classes for hover effects
         ctx = volume_icon.get_style_context()
         ctx.add_class("volume-icon")
-        
+
         def on_enter(widget, event):
             ctx.add_class("volume-icon-animate")
-        
+
         def on_leave(widget, event):
             ctx.remove_class("volume-icon-animate")
-        
+
         self.icon_event_box.connect("enter-notify-event", on_enter)
         self.icon_event_box.connect("leave-notify-event", on_leave)
-        
+
         # Set initial state
         volume_icon.set_from_icon_name("audio-volume-high-symbolic", Gtk.IconSize.DIALOG)
 
 
-            
+
     def create_input_tab(self):
         """Create microphone/input device tab"""
         input_tab = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
@@ -281,22 +280,22 @@ class VolumeTab(Gtk.Box):
         input_tab.set_margin_end(12)
         input_tab.set_margin_top(12)
         input_tab.set_margin_bottom(12)
-        
+
         # Input device selection
         device_frame = Gtk.Frame()
         device_frame.set_shadow_type(Gtk.ShadowType.NONE)
-        
+
         device_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         device_box.set_margin_start(12)
         device_box.set_margin_end(12)
         device_box.set_margin_top(12)
         device_box.set_margin_bottom(12)
-        
+
         input_label = Gtk.Label()
         input_label.set_markup(f"<b>{self.txt.microphone_tab_input_device}</b>")
         input_label.set_halign(Gtk.Align.START)
         device_box.pack_start(input_label, False, True, 0)
-        
+
         combo_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         device_label = Gtk.Label(label=f"{self.txt.volume_device}:")
         self.input_combo = Gtk.ComboBoxText()
@@ -304,10 +303,10 @@ class VolumeTab(Gtk.Box):
         combo_box.pack_start(device_label, False, True, 0)
         combo_box.pack_start(self.input_combo, True, True, 0)
         device_box.pack_start(combo_box, False, True, 0)
-        
+
         device_frame.add(device_box)
         input_tab.pack_start(device_frame, False, False, 0)
-        
+
         # Microphone control
         mic_frame = Gtk.Frame()
         mic_frame.set_shadow_type(Gtk.ShadowType.IN)
@@ -347,7 +346,7 @@ class VolumeTab(Gtk.Box):
         quick_label.set_markup(f"<small>{self.txt.volume_quick_presets}</small>")
         quick_label.set_halign(Gtk.Align.START)
         mic_box.pack_start(quick_label, False, True, 0)
-        
+
         quick_mic_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         volumes = [0, 25, 50, 75, 100]
         for vol in volumes:
@@ -360,7 +359,7 @@ class VolumeTab(Gtk.Box):
 
         mic_frame.add(mic_box)
         input_tab.pack_start(mic_frame, False, True, 0)
-        
+
         # Create tab label with icon and text
         tab_label = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         input_icon = Gtk.Image.new_from_icon_name("audio-input-microphone-symbolic", Gtk.IconSize.MENU)
@@ -368,15 +367,15 @@ class VolumeTab(Gtk.Box):
         tab_label.pack_start(input_icon, False, False, 0)
         tab_label.pack_start(input_text, False, False, 0)
         tab_label.show_all()
-        
+
         # Add the input tab to the notebook with combined label
         input_tab_index = self.notebook.append_page(input_tab, tab_label)
-        
+
         # Set tooltip on the tab widget itself
         tab = self.notebook.get_nth_page(input_tab_index)
         if tab:
             tab.set_tooltip_text(self.txt.microphone_tab_tooltip)
-    
+
     def create_apps_output_tab(self):
         """Create application output volume tab"""
         apps_tab = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -384,29 +383,29 @@ class VolumeTab(Gtk.Box):
         apps_tab.set_margin_end(12)
         apps_tab.set_margin_top(12)
         apps_tab.set_margin_bottom(12)
-        
+
         # Title
         title_label = Gtk.Label()
         title_label.set_markup(f"<b>{self.txt.app_output_volume}</b>")
         title_label.set_halign(Gtk.Align.START)
         apps_tab.pack_start(title_label, False, False, 0)
-        
+
         # Scrollable window for app list
         scroll_window = Gtk.ScrolledWindow()
         scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scroll_window.set_vexpand(True)
         scroll_window.set_margin_top(6)
-        
+
         # Container for app controls
         self.app_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.app_box.set_margin_start(6)
         self.app_box.set_margin_end(6)
         self.app_box.set_margin_top(6)
         self.app_box.set_margin_bottom(6)
-        
+
         scroll_window.add(self.app_box)
         apps_tab.pack_start(scroll_window, True, True, 0)
-        
+
         # Create tab label with icon and text
         tab_label = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         apps_icon = Gtk.Image.new_from_icon_name("multimedia-volume-control-symbolic", Gtk.IconSize.MENU)
@@ -414,15 +413,15 @@ class VolumeTab(Gtk.Box):
         tab_label.pack_start(apps_icon, False, False, 0)
         tab_label.pack_start(apps_text, False, False, 0)
         tab_label.show_all()
-        
+
         # Add the apps tab to the notebook with combined label
         apps_tab_index = self.notebook.append_page(apps_tab, tab_label)
-        
+
         # Set tooltip on the tab widget itself
         tab = self.notebook.get_nth_page(apps_tab_index)
         if tab:
             tab.set_tooltip_text(self.txt.app_output_tab_tooltip)
-    
+
     def create_apps_input_tab(self):
         """Create application input (microphone) volume tab"""
         mic_apps_tab = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -430,29 +429,29 @@ class VolumeTab(Gtk.Box):
         mic_apps_tab.set_margin_end(12)
         mic_apps_tab.set_margin_top(12)
         mic_apps_tab.set_margin_bottom(12)
-        
+
         # Title
         title_label = Gtk.Label()
         title_label.set_markup(f"<b>{self.txt.app_input_volume}</b>")
         title_label.set_halign(Gtk.Align.START)
         mic_apps_tab.pack_start(title_label, False, False, 0)
-        
+
         # Scrollable window for app list
         scroll_window = Gtk.ScrolledWindow()
         scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scroll_window.set_vexpand(True)
         scroll_window.set_margin_top(6)
-        
+
         # Container for app controls
         self.mic_app_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.mic_app_box.set_margin_start(6)
         self.mic_app_box.set_margin_end(6)
         self.mic_app_box.set_margin_top(6)
         self.mic_app_box.set_margin_bottom(6)
-        
+
         scroll_window.add(self.mic_app_box)
         mic_apps_tab.pack_start(scroll_window, True, True, 0)
-        
+
         # Create tab label with icon and text
         tab_label = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         mic_apps_icon = Gtk.Image.new_from_icon_name("microphone-sensitivity-medium-symbolic", Gtk.IconSize.MENU)
@@ -460,10 +459,10 @@ class VolumeTab(Gtk.Box):
         tab_label.pack_start(mic_apps_icon, False, False, 0)
         tab_label.pack_start(mic_apps_text, False, False, 0)
         tab_label.show_all()
-        
+
         # Add the mic apps tab to the notebook with combined label
         mic_apps_tab_index = self.notebook.append_page(mic_apps_tab, tab_label)
-        
+
         # Set tooltip on the tab widget itself
         tab = self.notebook.get_nth_page(mic_apps_tab_index)
         if tab:
@@ -472,11 +471,11 @@ class VolumeTab(Gtk.Box):
     def on_tab_shown(self, widget):
         """Called when the tab becomes visible"""
         self.is_visible = True
-        
+
         # Make sure the tab and all its contents are visible
         self.set_visible(True)
         self.show_all()
-        
+
         self.update_volumes()
 
         # Only start monitoring if not already active
@@ -509,7 +508,7 @@ class VolumeTab(Gtk.Box):
         """Stop monitoring pulse events"""
         # Set flag to indicate we should stop
         self.should_monitor = False
-        
+
         # Use lock to safely access thread data
         with self._lock:
             # Make sure thread terminates properly
@@ -524,12 +523,12 @@ class VolumeTab(Gtk.Box):
                         except Exception as e:
                             self.logging.log(LogLevel.Error, f"Error joining pulse thread: {e}")
                         return False  # Don't repeat
-                        
+
                     # Schedule joining the thread
                     GLib.timeout_add(100, join_thread_safe)
                 except Exception as e:
                     self.logging.log(LogLevel.Error, f"Error stopping pulse thread: {e}")
-                    
+
             # Clear the reference regardless
             self.pulse_thread = None
 
@@ -538,13 +537,13 @@ class VolumeTab(Gtk.Box):
         counter = 0
         last_error_time = 0
         error_count = 0
-        
+
         while self.should_monitor:
             try:
                 # Check if we're being destroyed or monitoring should stop
                 if not self.should_monitor or hasattr(self, '_is_being_destroyed') and self._is_being_destroyed:
                     break
-                    
+
                 # Use locks to prevent race conditions with the main thread
                 with self._lock:
                     # Every 10th iteration (roughly 1 second), do a deeper refresh
@@ -552,16 +551,16 @@ class VolumeTab(Gtk.Box):
                         if self.is_visible:
                             # Use GLib.idle_add to ensure UI updates happen on the main thread
                             GLib.idle_add(self.refresh_audio_state, counter)
-                
+
                 # Sleep a bit to prevent high CPU usage
                 # Use smaller sleep increments and check should_monitor regularly
                 for _ in range(5):
                     if not self.should_monitor or hasattr(self, '_is_being_destroyed') and self._is_being_destroyed:
                         break
                     time.sleep(0.02)  # 20ms * 5 = 100ms
-                
+
                 counter += 1
-                
+
             except RuntimeError as e:
                 # Handle RuntimeError separately (often due to thread issues)
                 self.logging.log(LogLevel.Error, f"Runtime error in pulse monitoring thread: {e}")
@@ -570,23 +569,23 @@ class VolumeTab(Gtk.Box):
                     self.logging.log(LogLevel.Error, "Critical error in pulse thread - exiting")
                     break
                 time.sleep(0.5)  # Sleep to prevent tight loop
-                
+
             except Exception as e:
                 current_time = time.time()
                 # Limit error logging to prevent log spam
                 if current_time - last_error_time > 5:  # Reset error count after 5 seconds
                     error_count = 0
                     last_error_time = current_time
-                    
+
                 error_count += 1
                 if error_count <= 3:  # Log only first 3 errors in a 5 second window
                     self.logging.log(LogLevel.Error, f"Error in pulse monitoring thread: {e}")
-                    
+
                 # Sleep after error to prevent tight loop
                 time.sleep(0.5)
-                
+
         self.logging.log(LogLevel.Debug, "Pulse audio monitoring thread exited")
-        
+
         # Clear thread reference when it exits
         with self._lock:
             if hasattr(self, 'pulse_thread') and self.pulse_thread is not None:
@@ -597,38 +596,38 @@ class VolumeTab(Gtk.Box):
         try:
             # Get current notebook page to optimize updates
             current_page = self.notebook.get_current_page()
-            
+
             # Always update volume and mute states unless user is actively adjusting them
             updating_volume = hasattr(self, "_volume_change_timeout_id") and self._volume_change_timeout_id
             updating_mic = hasattr(self, "_mic_volume_change_timeout_id") and self._mic_volume_change_timeout_id
-            
+
             # Update main volume if not being adjusted by user and on output tab
             if not updating_volume and (current_page == 0 or counter % 4 == 0):
                 self.volume_scale.set_value(get_volume(self.logging))
                 self.update_mute_button()
-                
+
             # Update mic volume if not being adjusted by user and on input tab
             if not updating_mic and (current_page == 1 or counter % 4 == 0):
                 self.mic_scale.set_value(get_mic_volume(self.logging))
                 self.update_mic_mute_button()
-            
+
             # Distribute heavier operations across different refresh cycles
             # Always update device lists on a 6-cycle interval (3 seconds)
             if counter % 6 == 0:
                 self.update_device_lists()
-                
+
             # Update application lists based on current tab
             if current_page == 2 or (counter % 4 == 0 and current_page != 3):
                 self.update_application_list()
-                
+
             if current_page == 3 or (counter % 4 == 2 and current_page != 2):
                 self.update_mic_application_list()
-                
+
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Error refreshing audio state: {e}")
-            
+
         return False  # Don't repeat via GLib (we're manually scheduling)
-        
+
     def update_device_lists(self):
         """Update output and input device lists and sync dropdown with the actual default sink."""
         try:
@@ -730,7 +729,7 @@ class VolumeTab(Gtk.Box):
         scale.set_size_request(150, -1)  # Set minimum width
         scale.set_hexpand(True)  # Allow slider to expand horizontally
         return scale
-        
+
     def update_application_list(self):
         """Update application volume controls"""
         # Remove existing controls
@@ -757,7 +756,7 @@ class VolumeTab(Gtk.Box):
                 card = Gtk.Frame()
                 card.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
                 card.set_margin_bottom(8)
-                
+
                 # Main container within card
                 app_grid = Gtk.Grid()
                 app_grid.set_margin_start(10)
@@ -766,7 +765,7 @@ class VolumeTab(Gtk.Box):
                 app_grid.set_margin_bottom(8)
                 app_grid.set_column_spacing(12)
                 app_grid.set_row_spacing(4)
-                
+
                 # App icon - try multiple sources with fallbacks
                 icon = None
 
@@ -837,7 +836,7 @@ class VolumeTab(Gtk.Box):
 
                 # Volume slider and mute button in same row
                 controls_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-                
+
                 # Volume slider - use the helper method
                 scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
                 self._configure_slider(scale)
@@ -857,14 +856,14 @@ class VolumeTab(Gtk.Box):
                 app_mute_button.set_image(mute_icon)
                 app_mute_button.connect("clicked", self.on_app_mute_clicked, app["id"])
                 controls_box.pack_start(app_mute_button, False, False, 0)
-                
+
                 app_grid.attach(controls_box, 1, 1, 1, 1)
-                
+
                 # Output device selector in a third row
                 device_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
                 device_label = Gtk.Label(label=f"{self.txt.volume_output}:")
                 device_label.set_halign(Gtk.Align.START)
-                
+
                 output_combo = Gtk.ComboBoxText()
                 output_combo.set_tooltip_text(self.txt.volume_output_combo_tooltip)
                 output_combo.set_hexpand(True)
@@ -892,12 +891,12 @@ class VolumeTab(Gtk.Box):
 
                 # Connect the changed signal
                 output_combo.connect("changed", self.on_app_output_changed, app["id"])
-                
+
                 device_box.pack_start(device_label, False, False, 0)
                 device_box.pack_start(output_combo, True, True, 0)
-                
+
                 app_grid.attach(device_box, 0, 2, 2, 1)
-                
+
                 card.add(app_grid)
                 self.app_box.pack_start(card, False, True, 0)
 
@@ -925,16 +924,16 @@ class VolumeTab(Gtk.Box):
     def on_volume_changed(self, scale):
         """Handle volume scale changes"""
         value = int(scale.get_value())
-        
+
         # Use debounce mechanism to avoid excessive updates
         if hasattr(self, "_volume_change_timeout_id") and self._volume_change_timeout_id:
             GLib.source_remove(self._volume_change_timeout_id)
-            
+
         # Set a small timeout to aggregate rapid changes
         # Store the current value for the delayed handler
         self._pending_volume = value
         self._volume_change_timeout_id = GLib.timeout_add(50, self._apply_volume_change)
-            
+
     def _apply_volume_change(self):
         """Apply the volume change after debouncing"""
         if hasattr(self, "_pending_volume"):
@@ -944,7 +943,7 @@ class VolumeTab(Gtk.Box):
             # Force update of mute button to ensure it's in sync when unmuting via volume change
             if value > 0 and get_mute_state(self.logging):
                 GLib.idle_add(self.update_mute_button)
-            
+
         # Reset the timeout ID
         self._volume_change_timeout_id = None
         return False  # Don't repeat
@@ -962,23 +961,23 @@ class VolumeTab(Gtk.Box):
     def on_mic_volume_changed(self, scale):
         """Handle microphone volume scale changes"""
         value = int(scale.get_value())
-        
+
         # Use debounce mechanism to avoid excessive updates
         if hasattr(self, "_mic_volume_change_timeout_id") and self._mic_volume_change_timeout_id:
             GLib.source_remove(self._mic_volume_change_timeout_id)
-            
+
         # Set a small timeout to aggregate rapid changes
         # Store the current value for the delayed handler
         self._pending_mic_volume = value
         self._mic_volume_change_timeout_id = GLib.timeout_add(50, self._apply_mic_volume_change)
-            
+
     def _apply_mic_volume_change(self):
         """Apply the microphone volume change after debouncing"""
         if hasattr(self, "_pending_mic_volume"):
             value = self._pending_mic_volume
             # Update the volume with the aggregated value
             set_mic_volume(value, self.logging)
-            
+
         # Reset the timeout ID
         self._mic_volume_change_timeout_id = None
         return False  # Don't repeat
@@ -1008,35 +1007,35 @@ class VolumeTab(Gtk.Box):
     def on_app_volume_changed(self, scale, app_id):
         """Handle application volume changes"""
         value = int(scale.get_value())
-        
+
         # Use per-app debouncing mechanism with a dictionary
         # Create the tracking dictionary if it doesn't exist
         if not hasattr(self, "_app_volume_timeouts"):
             self._app_volume_timeouts = {}
             self._pending_app_volumes = {}
-            
+
         # Cancel previous timeout if exists
         if app_id in self._app_volume_timeouts and self._app_volume_timeouts[app_id]:
             GLib.source_remove(self._app_volume_timeouts[app_id])
-            
+
         # Store the pending value and create a new timeout
         self._pending_app_volumes[app_id] = value
         self._app_volume_timeouts[app_id] = GLib.timeout_add(
-            50, 
+            50,
             lambda: self._apply_app_volume_change(app_id)
         )
-            
+
     def _apply_app_volume_change(self, app_id):
         """Apply the application volume change after debouncing"""
         if hasattr(self, "_pending_app_volumes") and app_id in self._pending_app_volumes:
             value = self._pending_app_volumes[app_id]
             # Apply the volume change
             set_application_volume(app_id, value, self.logging)
-            
+
         # Reset the timeout ID
         if hasattr(self, "_app_volume_timeouts"):
             self._app_volume_timeouts[app_id] = None
-            
+
         return False  # Don't repeat
 
     def on_app_output_changed(self, combo, app_id):
@@ -1080,35 +1079,35 @@ class VolumeTab(Gtk.Box):
     def on_app_mic_volume_changed(self, scale, app_id):
         """Handle application microphone volume changes"""
         value = int(scale.get_value())
-        
+
         # Use per-app debouncing mechanism with a dictionary
         # Create the tracking dictionary if it doesn't exist
         if not hasattr(self, "_app_mic_volume_timeouts"):
             self._app_mic_volume_timeouts = {}
             self._pending_app_mic_volumes = {}
-            
+
         # Cancel previous timeout if exists
         if app_id in self._app_mic_volume_timeouts and self._app_mic_volume_timeouts[app_id]:
             GLib.source_remove(self._app_mic_volume_timeouts[app_id])
-            
+
         # Store the pending value and create a new timeout
         self._pending_app_mic_volumes[app_id] = value
         self._app_mic_volume_timeouts[app_id] = GLib.timeout_add(
-            50, 
+            50,
             lambda: self._apply_app_mic_volume_change(app_id)
         )
-            
+
     def _apply_app_mic_volume_change(self, app_id):
         """Apply the application microphone volume change after debouncing"""
         if hasattr(self, "_pending_app_mic_volumes") and app_id in self._pending_app_mic_volumes:
             value = self._pending_app_mic_volumes[app_id]
             # Apply the volume change
             set_application_mic_volume(app_id, value, self.logging)
-            
+
         # Reset the timeout ID
         if hasattr(self, "_app_mic_volume_timeouts"):
             self._app_mic_volume_timeouts[app_id] = None
-            
+
         return False  # Don't repeat
 
     def on_app_mic_mute_clicked(self, button, app_id):
@@ -1157,7 +1156,7 @@ class VolumeTab(Gtk.Box):
                 card = Gtk.Frame()
                 card.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
                 card.set_margin_bottom(8)
-                
+
                 # Main container within card
                 app_grid = Gtk.Grid()
                 app_grid.set_margin_start(10)
@@ -1166,7 +1165,7 @@ class VolumeTab(Gtk.Box):
                 app_grid.set_margin_bottom(8)
                 app_grid.set_column_spacing(12)
                 app_grid.set_row_spacing(4)
-                
+
                 # App icon
                 icon = None
 
@@ -1202,7 +1201,7 @@ class VolumeTab(Gtk.Box):
 
                 # Volume controls in second row
                 controls_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-                
+
                 # Volume slider
                 volume = get_application_mic_volume(app["id"], self.logging)
                 scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
@@ -1223,9 +1222,9 @@ class VolumeTab(Gtk.Box):
                 app_mic_mute_button.set_image(mute_icon)
                 app_mic_mute_button.connect("clicked", self.on_app_mic_mute_clicked, app["id"])
                 controls_box.pack_start(app_mic_mute_button, False, False, 0)
-                
+
                 app_grid.attach(controls_box, 1, 1, 1, 1)
-                
+
                 card.add(app_grid)
                 self.mic_app_box.pack_start(card, False, True, 0)
 
@@ -1247,7 +1246,7 @@ class VolumeTab(Gtk.Box):
         self.stop_pulse_monitoring()
         # Clean up any other resources
         self.logging.log(LogLevel.Debug, "Volume tab resources cleaned up")
-        
+
     def on_destroy(self, widget):
         """Clean up resources when tab is destroyed"""
         self.stop_pulse_monitoring()
@@ -1258,14 +1257,14 @@ class VolumeTab(Gtk.Box):
         if hasattr(self, "_mic_volume_change_timeout_id") and self._mic_volume_change_timeout_id:
             GLib.source_remove(self._mic_volume_change_timeout_id)
             self._mic_volume_change_timeout_id = None
-            
+
         # Clean up application volume timeouts
         if hasattr(self, "_app_volume_timeouts"):
             for app_id, timeout_id in self._app_volume_timeouts.items():
                 if timeout_id:
                     GLib.source_remove(timeout_id)
             self._app_volume_timeouts = {}
-            
+
         # Clean up application mic volume timeouts
         if hasattr(self, "_app_mic_volume_timeouts"):
             for app_id, timeout_id in self._app_mic_volume_timeouts.items():
@@ -1277,10 +1276,10 @@ class VolumeTab(Gtk.Box):
         """Ensure tab and all its contents are shown correctly"""
         # Make sure the notebook and all its tabs are shown
         self.notebook.show_all()
-        
+
         # Make sure all children are visible
         for child in self.get_children():
             child.show_all()
-            
+
         # Make sure we are visible
         super().show_all()
