@@ -63,7 +63,7 @@ Before installing, ensure you have `git` and `base-devel` installed.
 
 ### Usage
 
-`control` or `better-control` command will run the gui application.
+`control` or `better-control` command will run the gui application. use `control --help` to see more specific launch commands
 
 ### Keybindings
 
