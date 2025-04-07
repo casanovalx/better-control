@@ -99,6 +99,11 @@ def get_sources(logging: Logger) -> List[Dict[str, str]]:
 
 
 def get_applications(logging: Logger) -> List[Dict[str, str]]:
+    """Get list of audio applications.
+
+    Returns:
+        List[Dict[str, str]]: List of application dictionaries
+    """
     output = subprocess.getoutput("pactl list sink-inputs")
     apps = []
     current_app = {}
@@ -107,38 +112,35 @@ def get_applications(logging: Logger) -> List[Dict[str, str]]:
         line = line.strip()
         logging.log(LogLevel.Debug, f"Parsing Line: {line}")
 
+        # Handle new application entry
         if line.startswith("Sink Input #"):
-            if current_app:  # Finalize previous app before moving to a new one
-                logging.log(LogLevel.Debug, f"Finalizing previous app: {current_app}")
+            # Process previous app before starting a new one
+            _finalize_app(current_app, apps, logging)
 
-                if "name" in current_app and "volume" in current_app:
-                    apps.append(current_app)
-                else:
-                    logging.log(
-                        LogLevel.Warn,
-                        f"Skipping app due to missing name or volume: {current_app}",
-                    )
-
-            current_app = {"id": line.split("#")[1].strip()}  # New app entry
+            # Start new app entry
+            current_app = {"id": line.split("#")[1].strip()}
             logging.log(
-                LogLevel.Debug, f"New app detected with ID: {current_app["id"]}"
+                LogLevel.Debug, f"New app detected with ID: {current_app['id']}"
             )
 
+        # Handle application name
         elif "application.name" in line:
             current_app["name"] = line.split("=", 1)[1].strip().strip('"')
             logging.log(
-                LogLevel.Debug, f"Detected & Stored App Name: {current_app["name"]}"
+                LogLevel.Debug, f"Detected & Stored App Name: {current_app['name']}"
             )
 
+        # Handle media name as fallback
         elif "media.name" in line and "name" not in current_app:
             current_app["name"] = line.split("=", 1)[1].strip().strip('"')
-            logging.log(LogLevel.Debug, f"Using Media Name: {current_app["name"]}")
+            logging.log(LogLevel.Debug, f"Using Media Name: {current_app['name']}")
 
+        # Handle binary information
         elif "application.process.binary" in line:
             current_app["binary"] = line.split("=", 1)[1].strip().strip('"')
             logging.log(
                 LogLevel.Debug,
-                f"Detected & Stored Process Binary: {current_app["binary"]}",
+                f"Detected & Stored Process Binary: {current_app['binary']}",
             )
 
             # Try to determine an appropriate icon name based on the binary
@@ -146,42 +148,64 @@ def get_applications(logging: Logger) -> List[Dict[str, str]]:
             if binary_name:
                 current_app["icon"] = binary_name
 
+        # Handle icon name
         elif "application.icon_name" in line:
             current_app["icon"] = line.split("=", 1)[1].strip().strip('"')
             logging.log(
-                LogLevel.Debug, f"Detected & Stored App Icon: {current_app["icon"]}"
+                LogLevel.Debug, f"Detected & Stored App Icon: {current_app['icon']}"
             )
 
+        # Handle volume info
         elif "Volume:" in line:
             logging.log(LogLevel.Debug, f"Found Volume Line: {line}")
             match = re.search(r"(\d+)%", line)
             if match:
                 current_app["volume"] = int(match.group(1))  # type: ignore
                 logging.log(
-                    LogLevel.Debug, f"Detected & Stored Volume: {current_app["volume"]}"
+                    LogLevel.Debug, f"Detected & Stored Volume: {current_app['volume']}"
                 )
             else:
                 logging.log(LogLevel.Debug, f"Failed to parse volume from: {line}")
 
+        # Handle sink info
         elif "Sink:" in line:
             sink_id = line.split(":")[1].strip()
             current_app["sink"] = sink_id
             logging.log(
-                LogLevel.Debug, f"Detected & Stored Sink ID: {current_app["sink"]}"
+                LogLevel.Debug, f"Detected & Stored Sink ID: {current_app['sink']}"
             )
 
-    # Final app processing
-    if current_app:
-        logging.log(LogLevel.Debug, "Finalizing last app: {current_app}")
-        if "name" in current_app and "volume" in current_app:
-            apps.append(current_app)
-        else:
-            logging.log(
-                LogLevel.Debug,
-                "Skipping last app due to missing name or volume: {current_app}",
-            )
+    # Process the final app entry
+    _finalize_app(current_app, apps, logging)
 
     # Post-process applications to ensure they have icon information
+    _ensure_app_icons(apps)
+
+    logging.log(
+        LogLevel.Debug,
+        f"Parsed Applications: {apps}",
+    )
+    return apps
+
+
+def _finalize_app(current_app: Dict[str, str], apps: List[Dict[str, str]], logging: Logger) -> None:
+    """Helper to finalize and add an app to the list if valid."""
+    if not current_app:
+        return
+
+    logging.log(LogLevel.Debug, f"Finalizing app: {current_app}")
+
+    if "name" in current_app and "volume" in current_app:
+        apps.append(current_app)
+    else:
+        logging.log(
+            LogLevel.Warn,
+            f"Skipping app due to missing name or volume: {current_app}",
+        )
+
+
+def _ensure_app_icons(apps: List[Dict[str, str]]) -> None:
+    """Ensure all apps have an icon property."""
     for app in apps:
         if "icon" not in app and "binary" in app:
             app["icon"] = app["binary"].lower()
@@ -189,12 +213,6 @@ def get_applications(logging: Logger) -> List[Dict[str, str]]:
         if "icon" not in app and "name" in app:
             # Create icon name from app name (lowercase, remove spaces)
             app["icon"] = app["name"].lower().replace(" ", "-")
-
-    logging.log(
-        LogLevel.Debug,
-        f"Parsed Applications: {apps}",
-    )
-    return apps
 
 
 def get_sink_name_by_id(sink_id: str, logging: Logger) -> str:
@@ -207,7 +225,7 @@ def get_sink_name_by_id(sink_id: str, logging: Logger) -> str:
         str: The sink name
     """
     try:
-        output = subprocess.getoutput(f"pactl list sinks short")
+        output = subprocess.getoutput("pactl list sinks short")
         for line in output.split("\n"):
             parts = line.split()
             if parts and parts[0] == sink_id:
@@ -397,149 +415,172 @@ def get_source_outputs(logging: Logger) -> List[Dict[str, str]]:
     """
     try:
         output = subprocess.getoutput("pactl list source-outputs")
-        outputs = []
-        current_output = {}
-
-        # Track seen applications and instance counters
-        seen_apps = {}
-
-        # Only log details if log level is Debug or lower
-        # Handle both int and enum values for comparison
-
-        for line in output.split("\n"):
-            line = line.strip()
-            logging.log(LogLevel.Debug, f"Parsing source output line: {line}")
-
-            if line.startswith("Source Output #"):
-                if current_output:
-                    logging.log(
-                        LogLevel.Debug, f"Finalizing source output: {current_output}"
-                    )
-                    if "id" in current_output and "name" in current_output:
-                        # Add current output to the list
-                        outputs.append(current_output)
-                    else:
-                        logging.log(
-                            LogLevel.Debug,
-                            f"Skipping source output due to missing id or name: {current_output}",
-                        )
-
-                current_output = {"id": line.split("#")[1].strip()}
-                logging.log(
-                    LogLevel.Debug,
-                    f"New source output detected with ID: {current_output["id"]}",
-                )
-
-            elif "application.name" in line:
-                app_name = line.split("=", 1)[1].strip().strip('"')
-
-                # Track instances of the same application
-                if app_name in seen_apps:
-                    seen_apps[app_name] += 1
-                    # For additional instances, append instance number
-                    current_output["name"] = f"{app_name} ({seen_apps[app_name]})"
-                    logging.log(
-                        LogLevel.Debug,
-                        f"Multiple instances detected, renamed to: {current_output['name']}",
-                    )
-                else:
-                    seen_apps[app_name] = 1
-                    current_output["name"] = app_name
-
-                    logging.log(
-                        LogLevel.Debug,
-                        f"Detected & Stored Source Output Name: {current_output['name']}",
-                    )
-                    # Store original name for icon lookup
-                    current_output["original_name"] = app_name
-
-            elif "media.name" in line and "name" not in current_output:
-                media_name = line.split("=", 1)[1].strip().strip('"')
-
-                # Track instances of the same application
-                if media_name in seen_apps:
-                    seen_apps[media_name] += 1
-                    # For additional instances, append instance number
-                    current_output["name"] = f"{media_name} ({seen_apps[media_name]})"
-                    logging.log(
-                        LogLevel.Debug,
-                        f"Multiple instances detected, renamed to: {current_output['name']}",
-                    )
-                else:
-                    seen_apps[media_name] = 1
-                    current_output["name"] = media_name
-
-                    logging.log(
-                        LogLevel.Debug,
-                        f"Using Media Name for Source Output: {current_output['name']}",
-                    )
-                    # Store original name for icon lookup
-                    current_output["original_name"] = media_name
-
-            elif "application.process.binary" in line:
-                current_output["binary"] = line.split("=", 1)[1].strip().strip('"')
-                logging.log(
-                    LogLevel.Debug,
-                    f"Detected & Stored Source Output Process Binary: {current_output["binary"]}",
-                )
-
-                # Try to determine an appropriate icon name based on the binary
-                binary_name = current_output["binary"].lower()
-                if binary_name:
-                    current_output["icon"] = binary_name
-
-            elif "application.icon_name" in line:
-                current_output["icon"] = line.split("=", 1)[1].strip().strip('"')
-                logging.log(
-                    LogLevel.Debug,
-                    f"Detected & Stored Source Output Icon: {current_output["icon"]}",
-                )
-
-            elif "Mute:" in line:
-                current_output["muted"] = "yes" in line.lower() # type: ignore
-                logging.log(
-                    LogLevel.Debug,
-                    f"Detected & Stored Source Output Mute State: {current_output["muted"]}",
-                )
-
-            elif "Source:" in line:
-                source_id = line.split(":")[1].strip()
-                current_output["source"] = source_id
-                logging.log(
-                    LogLevel.Debug,
-                    f"Detected & Stored Source ID: {current_output["source"]}",
-                )
-
-        # Final source output processing
-        if current_output:
-            logging.log(
-                LogLevel.Debug, f"Finalizing last source output: {current_output}"
-            )
-            if "id" in current_output and "name" in current_output:
-                outputs.append(current_output)
-            else:
-                logging.log(
-                    LogLevel.Debug,
-                    f"Skipping last source output due to missing id or name: {current_output}",
-                )
-
-        # Post-process to ensure they have icon information
-        for output in outputs:
-            if "icon" not in output and "binary" in output:
-                output["icon"] = output["binary"].lower()
-
-            if "icon" not in output and "original_name" in output:
-                # Create icon name from original app name (lowercase, remove spaces)
-                output["icon"] = output["original_name"].lower().replace(" ", "-")
-            elif "icon" not in output and "name" in output:
-                # Fall back to modified name if original name not available
-                output["icon"] = output["name"].lower().replace(" ", "-").split(" (")[0]
-
-        logging.log(LogLevel.Debug, f"Parsed Source Outputs: {outputs}")
-        return outputs
+        return _parse_source_outputs(output, logging)
     except Exception as e:
         logging.log(LogLevel.Error, f"Failed getting source outputs: {e}")
         return []
+
+
+def _parse_source_outputs(output: str, logging: Logger) -> List[Dict[str, str]]:
+    """Parse source outputs from pactl output
+
+    Args:
+        output (str): Output from pactl command
+        logging (Logger): Logger instance
+
+    Returns:
+        List[Dict[str, str]]: List of source output dictionaries
+    """
+    outputs = []
+    current_output = {}
+    # Track seen applications and instance counters
+    seen_apps = {}
+
+    for line in output.split("\n"):
+        line = line.strip()
+        logging.log(LogLevel.Debug, f"Parsing source output line: {line}")
+
+        if line.startswith("Source Output #"):
+            _process_current_output(current_output, outputs, logging)
+            current_output = {"id": line.split("#")[1].strip()}
+            logging.log(
+                LogLevel.Debug,
+                f"New source output detected with ID: {current_output['id']}",
+            )
+
+        elif "application.name" in line:
+            _process_app_name(current_output, line, seen_apps, logging)
+
+        elif "media.name" in line and "name" not in current_output:
+            _process_media_name(current_output, line, seen_apps, logging)
+
+        elif "application.process.binary" in line:
+            _process_binary(current_output, line, logging)
+
+        elif "application.icon_name" in line:
+            current_output["icon"] = line.split("=", 1)[1].strip().strip('"')
+            logging.log(
+                LogLevel.Debug,
+                f"Detected & Stored Source Output Icon: {current_output['icon']}",
+            )
+
+        elif "Mute:" in line:
+            current_output["muted"] = "yes" in line.lower()  # type: ignore
+            logging.log(
+                LogLevel.Debug,
+                f"Detected & Stored Source Output Mute State: {current_output['muted']}",
+            )
+
+        elif "Source:" in line:
+            source_id = line.split(":")[1].strip()
+            current_output["source"] = source_id
+            logging.log(
+                LogLevel.Debug,
+                f"Detected & Stored Source ID: {current_output['source']}",
+            )
+
+    # Process final output
+    _process_current_output(current_output, outputs, logging)
+
+    # Ensure all outputs have icon information
+    _ensure_output_icons(outputs)
+
+    logging.log(LogLevel.Debug, f"Parsed Source Outputs: {outputs}")
+    return outputs
+
+
+def _process_current_output(current_output: Dict, outputs: List[Dict], logging: Logger) -> None:
+    """Process current output and add to outputs list if valid"""
+    if not current_output:
+        return
+
+    logging.log(LogLevel.Debug, f"Finalizing source output: {current_output}")
+    if "id" in current_output and "name" in current_output:
+        # Add current output to the list
+        outputs.append(current_output)
+    else:
+        logging.log(
+            LogLevel.Debug,
+            f"Skipping source output due to missing id or name: {current_output}",
+        )
+
+
+def _process_app_name(current_output: Dict, line: str, seen_apps: Dict, logging: Logger) -> None:
+    """Process application name from pactl output line"""
+    app_name = line.split("=", 1)[1].strip().strip('"')
+
+    # Track instances of the same application
+    if app_name in seen_apps:
+        seen_apps[app_name] += 1
+        # For additional instances, append instance number
+        current_output["name"] = f"{app_name} ({seen_apps[app_name]})"
+        logging.log(
+            LogLevel.Debug,
+            f"Multiple instances detected, renamed to: {current_output['name']}",
+        )
+    else:
+        seen_apps[app_name] = 1
+        current_output["name"] = app_name
+        logging.log(
+            LogLevel.Debug,
+            f"Detected & Stored Source Output Name: {current_output['name']}",
+        )
+
+    # Store original name for icon lookup
+    current_output["original_name"] = app_name
+
+
+def _process_media_name(current_output: Dict, line: str, seen_apps: Dict, logging: Logger) -> None:
+    """Process media name from pactl output line"""
+    media_name = line.split("=", 1)[1].strip().strip('"')
+
+    # Track instances of the same application
+    if media_name in seen_apps:
+        seen_apps[media_name] += 1
+        # For additional instances, append instance number
+        current_output["name"] = f"{media_name} ({seen_apps[media_name]})"
+        logging.log(
+            LogLevel.Debug,
+            f"Multiple instances detected, renamed to: {current_output['name']}",
+        )
+    else:
+        seen_apps[media_name] = 1
+        current_output["name"] = media_name
+        logging.log(
+            LogLevel.Debug,
+            f"Using Media Name for Source Output: {current_output['name']}",
+        )
+
+    # Store original name for icon lookup
+    current_output["original_name"] = media_name
+
+
+def _process_binary(current_output: Dict, line: str, logging: Logger) -> None:
+    """Process binary information from pactl output line"""
+    current_output["binary"] = line.split("=", 1)[1].strip().strip('"')
+    logging.log(
+        LogLevel.Debug,
+        f"Detected & Stored Source Output Process Binary: {current_output['binary']}",
+    )
+
+    # Try to determine an appropriate icon name based on the binary
+    binary_name = current_output["binary"].lower()
+    if binary_name:
+        current_output["icon"] = binary_name
+
+
+def _ensure_output_icons(outputs: List[Dict]) -> None:
+    """Ensure all outputs have icon information"""
+    for output in outputs:
+        if "icon" not in output and "binary" in output:
+            output["icon"] = output["binary"].lower()
+
+        if "icon" not in output and "original_name" in output:
+            # Create icon name from original app name (lowercase, remove spaces)
+            output["icon"] = output["original_name"].lower().replace(" ", "-")
+        elif "icon" not in output and "name" in output:
+            # Fall back to modified name if original name not available
+            output["icon"] = output["name"].lower().replace(" ", "-").split(" (")[0]
 
 
 def get_application_mic_mute_state(app_id: str, logging: Logger) -> bool:
