@@ -233,30 +233,23 @@ class PowerTab(Gtk.Box):
 
     def on_key_press(self, widget, event):
         """Handle key press events to trigger power actions"""
-        # Check visibility without affecting keybind functionality
-        # We log the visibility but we'll check for keybinds regardless
-        is_visible = self.is_visible or self.get_mapped()
-
-        self.logging.log(LogLevel.Debug, f"Processing key press in power tab (visible: {is_visible}, minimal: {self.minimal_mode})")
+        # Skip processing if not visible and not minimal mode
+        if not self.minimal_mode and not self.is_visible:
+            return False
 
         keyval = event.keyval
         keychar = chr(keyval).lower()
 
-        # Process keypresses for power actions
         for option in self.power_options:
             option_id = option["id"]
             if not self.active_buttons.get(option_id, True):
                 continue
 
-            # Get the shortcut directly from custom_shortcuts or default
             shortcut = self.custom_shortcuts.get(option_id, option["default_shortcut"]).lower()
-
-            self.logging.log(LogLevel.Debug, f"Checking shortcut for {option_id}: {shortcut} against {keychar}")
 
             if keychar == shortcut:
                 self.logging.log(LogLevel.Info, f"Shortcut triggered for {option['label']}")
                 option["callback"](None)
-                # Close application after executing command via keyboard shortcut
                 self._close_application()
                 return True
 
