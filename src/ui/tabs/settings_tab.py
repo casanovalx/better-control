@@ -170,8 +170,13 @@ class SettingsTab(Gtk.Box):
 
         self.update_ui_order()
 
-        tab_label = Gtk.Label(label="Tab Settings")
-        self.notebook.append_page(tab_box, tab_label)
+        tab_icon = Gtk.Image.new_from_icon_name("preferences-system-symbolic", Gtk.IconSize.MENU)
+        tab_text = Gtk.Label(label="Tab Settings")
+        tab_label_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        tab_label_box.pack_start(tab_icon, False, False, 0)
+        tab_label_box.pack_start(tab_text, False, False, 0)
+        tab_label_box.show_all()
+        self.notebook.append_page(tab_box, tab_label_box)
 
     def create_language_tab(self):
         lang_box_outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -204,8 +209,13 @@ class SettingsTab(Gtk.Box):
 
         lang_box_outer.pack_start(lang_box, False, False, 0)
 
-        lang_tab_label = Gtk.Label(label="Language")
-        self.notebook.append_page(lang_box_outer, lang_tab_label)
+        lang_icon = Gtk.Image.new_from_icon_name("preferences-desktop-locale-symbolic", Gtk.IconSize.MENU)
+        lang_text = Gtk.Label(label="Language")
+        lang_label_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        lang_label_box.pack_start(lang_icon, False, False, 0)
+        lang_label_box.pack_start(lang_text, False, False, 0)
+        lang_label_box.show_all()
+        self.notebook.append_page(lang_box_outer, lang_label_box)
 
     def update_ui_order(self):
         tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"])
