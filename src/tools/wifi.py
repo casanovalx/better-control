@@ -419,3 +419,11 @@ def generate_wifi_qrcode(ssid: str, password: str, security: str, logging:Logger
         # Fix: create an error.png path using correct Path object usage
         error_path = temp_dir / "error.png"
         return str(error_path)
+
+def wifi_supported() -> bool:
+    try:
+        result = subprocess.run(["nmcli", "-t", "-f", "DEVICE,TYPE", "device"], capture_output=True, text=True)
+        wifi_interfaces = [line for line in result.stdout.split('\n') if "wifi" in line]
+        return bool(wifi_interfaces)
+    except Exception:
+        return False

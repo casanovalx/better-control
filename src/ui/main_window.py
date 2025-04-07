@@ -6,6 +6,7 @@ import gi  # type: ignore
 import threading
 import sys
 
+from tools.bluetooth import BluetoothManager
 from utils.arg_parser import ArgParse
 
 gi.require_version("Gtk", "3.0")
@@ -24,6 +25,7 @@ from utils.settings import load_settings, save_settings
 from utils.logger import LogLevel, Logger
 from ui.css.animations import load_animations_css  # animate_widget_show not used
 from utils.translations import Translation, get_translations
+from tools.globals import check_hardware_suppoert
 
 
 class BetterControl(Gtk.Window):
@@ -201,6 +203,7 @@ class BetterControl(Gtk.Window):
                 "USBGuard": USBGuardTab,
             }
 
+            check_hardware_suppoert(self, visibility, self.logging)
             # Create a lock for thread safety if it doesn't exist yet
             if not hasattr(self, '_tab_creation_lock'):
                 self._tab_creation_lock = threading.RLock()
