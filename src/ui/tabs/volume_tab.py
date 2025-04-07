@@ -271,8 +271,6 @@ class VolumeTab(Gtk.Box):
         # Set initial state
         volume_icon.set_from_icon_name("audio-volume-high-symbolic", Gtk.IconSize.DIALOG)
 
-
-
     def create_input_tab(self):
         """Create microphone/input device tab"""
         input_tab = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
@@ -736,8 +734,8 @@ class VolumeTab(Gtk.Box):
         for child in self.app_box.get_children():
             self.app_box.remove(child)
 
-        # Add controls for each application
         apps = get_applications(self.logging)
+
         if not apps:
             # Show "No applications playing audio" message
             no_apps_label = Gtk.Label()
@@ -746,161 +744,159 @@ class VolumeTab(Gtk.Box):
             no_apps_label.set_margin_top(5)
             no_apps_label.set_margin_bottom(5)
             self.app_box.pack_start(no_apps_label, False, True, 0)
-        else:
-            # Get available sinks for output selection
-            sinks = get_sinks(self.logging)
-            sink_options = [(sink["name"], sink["description"]) for sink in sinks]
+            self.app_box.show_all()
+            return
 
-            for app in apps:
-                # Create a card-like container for each app
-                card = Gtk.Frame()
-                card.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
-                card.set_margin_bottom(8)
+        # Get sinks once and prepare sink options
+        sinks = get_sinks(self.logging)
+        sink_options = [(s["name"], s["description"]) for s in sinks] if sinks else []
 
-                # Main container within card
-                app_grid = Gtk.Grid()
-                app_grid.set_margin_start(10)
-                app_grid.set_margin_end(10)
-                app_grid.set_margin_top(8)
-                app_grid.set_margin_bottom(8)
-                app_grid.set_column_spacing(12)
-                app_grid.set_row_spacing(4)
-
-                # App icon - try multiple sources with fallbacks
-                icon = None
-
-                # Try icon from app info first
-                if "icon" in app:
-                    icon_name = app["icon"]
-                    if self.is_visible:
-                        self.logging.log(LogLevel.Debug, f"Trying app icon: {icon_name}")
-                    if self.icon_exists(icon_name):
-                        icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.LARGE_TOOLBAR)
-
-                # If icon is not valid or not found, try binary name as icon
-                if not icon and "binary" in app:
-                    binary_name = app["binary"].lower()
-                    if self.is_visible:
-                        self.logging.log(LogLevel.Debug, f"Trying binary icon: {binary_name}")
-                    if self.icon_exists(binary_name):
-                        icon = Gtk.Image.new_from_icon_name(binary_name, Gtk.IconSize.LARGE_TOOLBAR)
-
-                # If still not valid, try app name as icon (normalized)
-                if not icon:
-                    app_icon_name = app["name"].lower().replace(" ", "-")
-                    if self.is_visible:
-                        self.logging.log(LogLevel.Debug, f"Trying normalized name icon: {app_icon_name}")
-                    if self.icon_exists(app_icon_name):
-                        icon = Gtk.Image.new_from_icon_name(app_icon_name, Gtk.IconSize.LARGE_TOOLBAR)
-
-                # Try some common app-specific mappings
-                if not icon:
-                    app_name = app["name"].lower()
-                    # Map of known application names to their icon names
-                    app_icon_map = {
-                        "firefox": "firefox",
-                        "chrome": "google-chrome",
-                        "chromium": "chromium",
-                        "spotify": "spotify",
-                        "mpv": "mpv",
-                        "vlc": "vlc",
-                        "telegram": "telegram",
-                        "discord": "discord",
-                        "steam": "steam",
-                        "brave": "brave",
-                        "audacious": "audacious",
-                        "clementine": "clementine",
-                        "deadbeef": "deadbeef",
-                        "rhythmbox": "rhythmbox",
-                    }
-
-                    # Check for partial matches in app name
-                    for key, icon_name in app_icon_map.items():
-                        if key in app_name and self.icon_exists(icon_name):
-                            icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.LARGE_TOOLBAR)
-                            break
-
-                # Last resort: fallback to generic audio icon
-                if not icon:
-                    icon = Gtk.Image.new_from_icon_name("audio-x-generic-symbolic", Gtk.IconSize.LARGE_TOOLBAR)
-
-                # Position icon at top
-                app_grid.attach(icon, 0, 0, 1, 2)
-
-                # App name with bold styling
-                name_label = Gtk.Label()
-                name_label.set_markup(f"<b>{app['name']}</b>")
-                name_label.set_halign(Gtk.Align.START)
-                name_label.set_hexpand(True)
-                app_grid.attach(name_label, 1, 0, 1, 1)
-
-                # Volume slider and mute button in same row
-                controls_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-
-                # Volume slider - use the helper method
-                scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
-                self._configure_slider(scale)
-                scale.set_value(app["volume"])
-                scale.connect("value-changed", self.on_app_volume_changed, app["id"])
-                controls_box.pack_start(scale, True, True, 0)
-
-                # App mute button - positioned right after the slider
-                app_muted = get_application_mute_state(app["id"], self.logging)
-                app_mute_button = Gtk.Button()
-                if app_muted:
-                    mute_icon = Gtk.Image.new_from_icon_name("audio-volume-muted-symbolic", Gtk.IconSize.BUTTON)
-                    app_mute_button.set_tooltip_text(self.txt.app_output_unmute)
-                else:
-                    mute_icon = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic", Gtk.IconSize.BUTTON)
-                    app_mute_button.set_tooltip_text(self.txt.app_output_mute)
-                app_mute_button.set_image(mute_icon)
-                app_mute_button.connect("clicked", self.on_app_mute_clicked, app["id"])
-                controls_box.pack_start(app_mute_button, False, False, 0)
-
-                app_grid.attach(controls_box, 1, 1, 1, 1)
-
-                # Output device selector in a third row
-                device_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-                device_label = Gtk.Label(label=f"{self.txt.volume_output}:")
-                device_label.set_halign(Gtk.Align.START)
-
-                output_combo = Gtk.ComboBoxText()
-                output_combo.set_tooltip_text(self.txt.volume_output_combo_tooltip)
-                output_combo.set_hexpand(True)
-
-                # Populate the output device dropdown
-                for sink_name, sink_desc in sink_options:
-                    output_combo.append(sink_name, sink_desc)
-
-                # Get the current sink name for this application
-                current_sink_name = ""
-                if "sink" in app:
-                    current_sink_name = get_sink_name_by_id(app["sink"], self.logging)
-
-                # Set the active sink in the dropdown
-                if current_sink_name:
-                    # Find the index of the current sink in the options
-                    for i, (sink_name, _) in enumerate(sink_options):
-                        if sink_name == current_sink_name:
-                            output_combo.set_active(i)
-                            break
-                    else:
-                        output_combo.set_active(0)
-                else:
-                    output_combo.set_active(0)
-
-                # Connect the changed signal
-                output_combo.connect("changed", self.on_app_output_changed, app["id"])
-
-                device_box.pack_start(device_label, False, False, 0)
-                device_box.pack_start(output_combo, True, True, 0)
-
-                app_grid.attach(device_box, 0, 2, 2, 1)
-
-                card.add(app_grid)
-                self.app_box.pack_start(card, False, True, 0)
+        for app in apps:
+            card = self._create_app_output_card(app, sink_options)
+            self.app_box.pack_start(card, False, True, 0)
 
         self.app_box.show_all()
+
+    def _create_app_output_card(self, app, sink_options):
+        """Create a UI card widget for a single application's output"""
+        card = Gtk.Frame()
+        card.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
+        card.set_margin_bottom(8)
+
+        app_grid = Gtk.Grid()
+        app_grid.set_margin_start(10)
+        app_grid.set_margin_end(10)
+        app_grid.set_margin_top(8)
+        app_grid.set_margin_bottom(8)
+        app_grid.set_column_spacing(12)
+        app_grid.set_row_spacing(4)
+
+        # Icon
+        icon = self._resolve_app_icon(app)
+        app_grid.attach(icon, 0, 0, 1, 2)
+
+        # Name
+        name_label = Gtk.Label()
+        name_label.set_markup(f"<b>{app['name']}</b>")
+        name_label.set_halign(Gtk.Align.START)
+        name_label.set_hexpand(True)
+        app_grid.attach(name_label, 1, 0, 1, 1)
+
+        # Controls box
+        controls_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+
+        scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
+        self._configure_slider(scale)
+        scale.set_value(app["volume"])
+        scale.connect("value-changed", self.on_app_volume_changed, app["id"])
+        controls_box.pack_start(scale, True, True, 0)
+
+        app_muted = get_application_mute_state(app["id"], self.logging)
+        app_mute_button = Gtk.Button()
+        if app_muted:
+            mute_icon = Gtk.Image.new_from_icon_name("audio-volume-muted-symbolic", Gtk.IconSize.BUTTON)
+            app_mute_button.set_tooltip_text(self.txt.app_output_unmute)
+        else:
+            mute_icon = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic", Gtk.IconSize.BUTTON)
+            app_mute_button.set_tooltip_text(self.txt.app_output_mute)
+        app_mute_button.set_image(mute_icon)
+        app_mute_button.connect("clicked", self.on_app_mute_clicked, app["id"])
+        controls_box.pack_start(app_mute_button, False, False, 0)
+
+        app_grid.attach(controls_box, 1, 1, 1, 1)
+
+        # Device selector box
+        device_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        device_label = Gtk.Label(label=f"{self.txt.volume_output}:")
+        device_label.set_halign(Gtk.Align.START)
+
+        output_combo = Gtk.ComboBoxText()
+        output_combo.set_tooltip_text(self.txt.volume_output_combo_tooltip)
+        output_combo.set_hexpand(True)
+        for sink_name, sink_desc in sink_options:
+            output_combo.append(sink_name, sink_desc)
+
+        current_sink_name = ""
+        if "sink" in app:
+            current_sink_name = get_sink_name_by_id(app["sink"], self.logging)
+
+        # Set active sink
+        active_found = False
+        for idx, (sink_name, _) in enumerate(sink_options):
+            if sink_name == current_sink_name:
+                output_combo.set_active(idx)
+                active_found = True
+                break
+        if not active_found and sink_options:
+            output_combo.set_active(0)
+
+        output_combo.connect("changed", self.on_app_output_changed, app["id"])
+
+        device_box.pack_start(device_label, False, False, 0)
+        device_box.pack_start(output_combo, True, True, 0)
+
+        app_grid.attach(device_box, 0, 2, 2, 1)
+
+        card.add(app_grid)
+        return card
+
+    def _resolve_app_icon(self, app):
+        """Resolve best available icon for app"""
+        icon = None
+
+        # App's own icon field
+        if "icon" in app:
+            icon_name = app["icon"]
+            if self.is_visible:
+                self.logging.log(LogLevel.Debug, f"Trying app icon: {icon_name}")
+            if icon_name and self.icon_exists(icon_name):
+                icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.LARGE_TOOLBAR)
+
+        # Binary name as icon
+        if not icon and "binary" in app:
+            binary_name = app["binary"].lower()
+            if self.is_visible:
+                self.logging.log(LogLevel.Debug, f"Trying binary icon: {binary_name}")
+            if binary_name and self.icon_exists(binary_name):
+                icon = Gtk.Image.new_from_icon_name(binary_name, Gtk.IconSize.LARGE_TOOLBAR)
+
+        # Normalized app name as icon
+        if not icon:
+            app_icon_name = app.get("name", "").lower().replace(" ", "-")
+            if self.is_visible:
+                self.logging.log(LogLevel.Debug, f"Trying normalized name icon: {app_icon_name}")
+            if app_icon_name and self.icon_exists(app_icon_name):
+                icon = Gtk.Image.new_from_icon_name(app_icon_name, Gtk.IconSize.LARGE_TOOLBAR)
+
+        # Known mappings
+        if not icon:
+            app_name = app.get("name", "").lower()
+            icon_map = {
+                "firefox": "firefox",
+                "chrome": "google-chrome",
+                "chromium": "chromium",
+                "spotify": "spotify",
+                "mpv": "mpv",
+                "vlc": "vlc",
+                "telegram": "telegram",
+                "discord": "discord",
+                "steam": "steam",
+                "brave": "brave",
+                "audacious": "audacious",
+                "clementine": "clementine",
+                "deadbeef": "deadbeef",
+                "rhythmbox": "rhythmbox",
+            }
+            for key, candidate_icon in icon_map.items():
+                if key in app_name and self.icon_exists(candidate_icon):
+                    icon = Gtk.Image.new_from_icon_name(candidate_icon, Gtk.IconSize.LARGE_TOOLBAR)
+                    break
+
+        # Fallback
+        if not icon:
+            icon = Gtk.Image.new_from_icon_name("audio-x-generic-symbolic", Gtk.IconSize.LARGE_TOOLBAR)
+
+        return icon
 
     def update_volumes(self):
         """Update volume displays"""
