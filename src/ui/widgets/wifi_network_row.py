@@ -16,105 +16,23 @@ class WiFiNetworkRow(Gtk.ListBoxRow):
         self.set_margin_start(10)
         self.set_margin_end(10)
 
-        # Parse network information
         parts = network_info.split()
         self.is_connected = "*" in parts[0]
 
-        # More reliable SSID extraction
-        if len(parts) > 1:
-            # Find SSID - sometimes it's after the * mark in different positions
-            # For connected networks, using a more reliable method to extract SSID
-            if self.is_connected:
-                # Try to get the proper SSID from nmcli connection show --active
-                try:
-                    active_connections = subprocess.getoutput(
-                        "nmcli -t -f NAME,DEVICE connection show --active"
-                    ).split("\n")
-                    for conn in active_connections:
-                        if ":" in conn and "wifi" in subprocess.getoutput(
-                            f"nmcli -t -f TYPE connection show '{conn.split(':')[0]}'"
-                        ):
-                            self.ssid = conn.split(":")[0]
-                            break
-                    else:
-                        # Fallback to position-based extraction
-                        self.ssid = parts[1]
-                except Exception as e:
-                    logging.log(
-                        LogLevel.Error, f"Error getting active connection name: {e}"
-                    )
-                    self.ssid = parts[1]
-            else:
-                # For non-connected networks, use the second column
-                self.ssid = parts[1]
-        else:
-            self.ssid = "Unknown"
+        self.ssid = self._extract_ssid(parts, logging)
+        self.security = self._extract_security(network_info)
+        signal_value = self._extract_signal(parts, logging)
+        self.signal_strength = f"{signal_value}%" if signal_value > 0 else "0%"
 
-        # Determine security type more precisely
-        if "WPA2" in network_info:
-            self.security = "WPA2"
-        elif "WPA3" in network_info:
-            self.security = "WPA3"
-        elif "WPA" in network_info:
-            self.security = "WPA"
-        elif "WEP" in network_info:
-            self.security = "WEP"
-        else:
-            self.security = "Open"
+        icon_name = self._determine_signal_icon(signal_value)
+        security_icon = self._determine_security_icon()
 
-        # Improved signal strength extraction
-        signal_value = 0
-        try:
-            # Now that we use a consistent format with -f, SIGNAL should be in column 7 (index 6)
-            if len(parts) > 6 and parts[6].isdigit():
-                signal_value = int(parts[6])
-                self.signal_strength = f"{signal_value}%"
-            else:
-                # Fallback: scan through values for something that looks like signal strength
-                for i, p in enumerate(parts):
-                    # Look for a number between 0-100 that's likely the signal strength
-                    if p.isdigit() and 0 <= int(p) <= 100:
-                        # Skip if this is likely to be the channel number (typically at index 4)
-                        if i != 4:  # Skip CHAN column
-                            signal_value = int(p)
-                            self.signal_strength = f"{signal_value}%"
-                            break
-                else:
-                    # No valid signal found
-                    self.signal_strength = "0%"
-                    signal_value = 0
-        except (IndexError, ValueError) as e:
-            logging.log(LogLevel.Error, f"Error parsing signal strength from {parts}: {e}")
-            self.signal_strength = "0%"
-            signal_value = 0
-
-        # Determine signal icon based on signal strength percentage
-        if signal_value >= 80:
-            icon_name = "network-wireless-signal-excellent-symbolic"
-        elif signal_value >= 60:
-            icon_name = "network-wireless-signal-good-symbolic"
-        elif signal_value >= 40:
-            icon_name = "network-wireless-signal-ok-symbolic"
-        elif signal_value > 0:
-            icon_name = "network-wireless-signal-weak-symbolic"
-        else:
-            icon_name = "network-wireless-signal-none-symbolic"
-
-        # Determine security icon
-        if self.security != "Open":
-            security_icon = "network-wireless-encrypted-symbolic"
-        else:
-            security_icon = "network-wireless-symbolic"
-
-        # Main container for the row
         container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.add(container)
 
-        # Network icon
         wifi_icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.LARGE_TOOLBAR)
         container.pack_start(wifi_icon, False, False, 0)
 
-        # Left side with SSID and security
         left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
 
         ssid_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
@@ -147,7 +65,6 @@ class WiFiNetworkRow(Gtk.ListBoxRow):
 
         container.pack_start(left_box, True, True, 0)
 
-        # Right side with signal strength
         signal_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
         signal_box.set_halign(Gtk.Align.END)
 
@@ -156,8 +73,75 @@ class WiFiNetworkRow(Gtk.ListBoxRow):
 
         container.pack_end(signal_box, False, False, 0)
 
-        # Store original network info for connection handling
         self.original_network_info = network_info
+
+    def _extract_ssid(self, parts, logging):
+        if len(parts) <= 1:
+            return "Unknown"
+
+        if self.is_connected:
+            try:
+                active_connections = subprocess.getoutput(
+                    "nmcli -t -f NAME,DEVICE connection show --active"
+                ).split("\n")
+                for conn in active_connections:
+                    if ":" in conn:
+                        name = conn.split(":")[0]
+                        conn_type = subprocess.getoutput(
+                            f"nmcli -t -f TYPE connection show '{name}'"
+                        )
+                        if "wifi" in conn_type:
+                            return name
+                return parts[1]
+            except Exception as e:
+                logging.log(
+                    LogLevel.Error, f"Error getting active connection name: {e}"
+                )
+                return parts[1]
+        else:
+            return parts[1]
+
+    def _extract_security(self, network_info):
+        if "WPA2" in network_info:
+            return "WPA2"
+        elif "WPA3" in network_info:
+            return "WPA3"
+        elif "WPA" in network_info:
+            return "WPA"
+        elif "WEP" in network_info:
+            return "WEP"
+        else:
+            return "Open"
+
+    def _extract_signal(self, parts, logging):
+        signal_value = 0
+        try:
+            if len(parts) > 6 and parts[6].isdigit():
+                signal_value = int(parts[6])
+            else:
+                for i, p in enumerate(parts):
+                    if p.isdigit() and 0 <= int(p) <= 100 and i != 4:
+                        signal_value = int(p)
+                        break
+        except (IndexError, ValueError) as e:
+            logging.log(LogLevel.Error, f"Error parsing signal strength from {parts}: {e}")
+            signal_value = 0
+        return signal_value
+
+    def _determine_signal_icon(self, signal_value):
+        if signal_value >= 80:
+            return "network-wireless-signal-excellent-symbolic"
+        elif signal_value >= 60:
+            return "network-wireless-signal-good-symbolic"
+        elif signal_value >= 40:
+            return "network-wireless-signal-ok-symbolic"
+        elif signal_value > 0:
+            return "network-wireless-signal-weak-symbolic"
+        else:
+            return "network-wireless-signal-none-symbolic"
+
+    def _determine_security_icon(self):
+        return "network-wireless-encrypted-symbolic" if self.security != "Open" else "network-wireless-symbolic"
 
     def get_ssid(self):
         return self.ssid
