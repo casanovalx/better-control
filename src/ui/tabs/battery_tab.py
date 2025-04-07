@@ -88,10 +88,10 @@ class BatteryTab(Gtk.Box):
         selected_mode = widget.get_active_text()
         if selected_mode in self.power_modes:
             mode_value = self.power_modes[selected_mode]
-            
+
             # Disable dropdown while processing
             self.power_mode_dropdown.set_sensitive(False)
-            
+
             # Create and start thread for async operation
             def run_power_change():
                 try:
@@ -103,7 +103,7 @@ class BatteryTab(Gtk.Box):
                     # Use GLib.idle_add to update UI from the main thread
                     def update_ui():
                         self.power_mode_dropdown.set_sensitive(True)
-                        
+
                         if result.returncode != 0:
                             error_message = "powerprofilesctl is missing. Please check our GitHub page to see all dependencies and install them."
                             self.logging.log(LogLevel.Error, error_message)
@@ -117,20 +117,20 @@ class BatteryTab(Gtk.Box):
                             # Refresh the UI to update button styles
                             self.refresh_battery_info()
                         return False
-                    
+
                     GLib.idle_add(update_ui)
-                    
+
                 except Exception as e:
-                    def handle_error():
+                    def handle_error(e=e):  # Capture the exception in the closure
                         self.power_mode_dropdown.set_sensitive(True)
                         error_message = f"Failed to set power mode: {e}"
                         self.logging.log(LogLevel.Error, error_message)
                         if self.parent:
                             self.parent.show_error_dialog(error_message)
                         return False
-                    
+
                     GLib.idle_add(handle_error)
-            
+
             # Start the thread
             thread = threading.Thread(target=run_power_change, daemon=True)
             thread.start()
@@ -195,97 +195,74 @@ class BatteryTab(Gtk.Box):
                 info[display_key] = value
 
         return info
-        
+
     def create_battery_card(self, battery_info, device_path):
         """Create a modern card-style widget for battery information."""
+        # Extract basic info first to reduce complexity
+        charge_percentage = self._get_charge_percentage(battery_info)
+        state_text = battery_info.get("State", "Unknown")
+        icon_name = self._get_battery_icon(charge_percentage, state_text)
+        title = self._get_battery_title(battery_info, device_path)
+
         # Main card container
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         card.set_margin_top(10)
         card.set_margin_bottom(10)
         card.set_margin_start(10)
         card.set_margin_end(10)
-        
-        # Get basic battery info
-        charge_percentage = 0
-        if "Charge" in battery_info:
-            try:
-                charge_text = battery_info["Charge"]
-                charge_percentage = int(charge_text.split("%")[0])
-            except (ValueError, IndexError):
-                charge_percentage = 0
-        
-        state_text = battery_info.get("State", "Unknown")
-        
-        # Battery icon based on charge level
-        icon_name = "battery-empty-symbolic"
-        if charge_percentage > 10:
-            icon_name = "battery-low-symbolic"
-        if charge_percentage > 30:
-            icon_name = "battery-good-symbolic" 
-        if charge_percentage > 60:
-            icon_name = "battery-full-symbolic"
-            
-        # If charging, use charging icon
-        if "charging" in state_text.lower():
-            icon_name = "battery-good-charging-symbolic"
-        
-        # Battery title
-        title = f"Battery {os.path.basename(device_path)}"
-        if "Model" in battery_info:
-            title = f"{battery_info['Model']}"
-            
+
         # Create header for expander
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        
+
         # Battery icon in header
         battery_icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.BUTTON)
         header_box.pack_start(battery_icon, False, False, 0)
-        
+
         # Battery name & percentage
         header_label = Gtk.Label(xalign=0)
         header_label.set_markup(f"<b>{title}</b> - {charge_percentage}%")
         header_box.pack_start(header_label, True, True, 5)
-        
+
         # Create the expander widget
         expander = Gtk.Expander()
         expander.set_label_widget(header_box)
-        
+
         # Set expander state based on previous state
         device_id = os.path.basename(device_path)
         expander.set_expanded(self.expanded_batteries.get(device_id, False))
-        
+
         expander.set_margin_top(10)
         expander.set_margin_bottom(5)
         expander.set_margin_start(15)
         expander.set_margin_end(15)
-        
+
         # Container for expanded content
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         content_box.set_margin_top(10)
         content_box.set_margin_bottom(10)
         content_box.set_margin_start(15)
         content_box.set_margin_end(15)
-        
+
         # Manufacturer info
         manufacturer = battery_info.get("Manufacturer", "Unknown")
         manufacturer_label = Gtk.Label(xalign=0)
         manufacturer_label.set_markup(f"<span size='small'>Manufacturer: {manufacturer}</span>")
         content_box.pack_start(manufacturer_label, False, False, 0)
-        
+
         # Battery detailed status
         status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
         status_box.set_margin_top(10)
-        
+
         # Detailed percentage
         charge_label = Gtk.Label()
         charge_label.set_markup(f"<span size='x-large'><b>{charge_percentage}%</b></span>")
         status_box.pack_start(charge_label, False, False, 0)
-        
+
         # State label
         state_label = Gtk.Label()
         state_label.set_markup(f"<span size='large'>{state_text.capitalize()}</span>")
         status_box.pack_start(state_label, False, False, 15)
-        
+
         # Time estimates
         if "Time to Empty" in battery_info and "discharging" in state_text.lower():
             time_label = Gtk.Label(xalign=0)
@@ -295,9 +272,9 @@ class BatteryTab(Gtk.Box):
             time_label = Gtk.Label(xalign=0)
             time_label.set_markup(f"<span weight='bold'>Full in:</span> {battery_info['Time to Full']}")
             status_box.pack_end(time_label, False, False, 0)
-            
+
         content_box.pack_start(status_box, False, False, 0)
-        
+
         # Battery level bar
         level_bar = Gtk.LevelBar()
         level_bar.set_min_value(0.0)
@@ -305,12 +282,12 @@ class BatteryTab(Gtk.Box):
         level_bar.set_value(charge_percentage)
         level_bar.set_size_request(-1, 15)
         level_bar.set_hexpand(True)
-        
+
         # Set custom level bar colors
         level_bar.add_offset_value("low", 20.0)
         level_bar.add_offset_value("high", 50.0)
         level_bar.add_offset_value("full", 90.0)
-        
+
         # Style the level bar based on state
         level_bar_context = level_bar.get_style_context()
         if "charging" in state_text.lower():
@@ -319,53 +296,84 @@ class BatteryTab(Gtk.Box):
             level_bar_context.add_class("full")
         elif charge_percentage <= 20:
             level_bar_context.add_class("critical")
-            
+
         content_box.pack_start(level_bar, False, False, 10)
-        
+
         # Add separator before detailed tabs
         separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
         separator.set_margin_top(5)
         separator.set_margin_bottom(15)
         content_box.pack_start(separator, False, False, 0)
-        
+
         # Notebook with tabs
         notebook = Gtk.Notebook()
-        
+
         # Create tabs for different categories
         self.add_info_tab(notebook, self.txt.battery_overview, battery_info, [
-            "Charge", "State", "Capacity", "Technology", 
+            "Charge", "State", "Capacity", "Technology",
             "Energy Rate", "Voltage"
         ])
-        
+
         self.add_info_tab(notebook, self.txt.battery_details, battery_info, [
-            "Energy", "Energy Empty", "Energy Full", 
+            "Energy", "Energy Empty", "Energy Full",
             "Energy Full Design", "Warning Level"
         ])
-        
+
         content_box.pack_start(notebook, True, True, 0)
-        
+
         # Add content to expander
         expander.add(content_box)
-        
+
         # Log expand/collapse events
         def on_expander_toggled(widget, param):
             is_expanded = widget.get_expanded()
             # Store expanded state for this device
             device_id = os.path.basename(device_path)
             self.expanded_batteries[device_id] = is_expanded
-            
+
             if is_expanded:
                 self.logging.log(LogLevel.Info, f"Expanded details for {title}")
             else:
                 self.logging.log(LogLevel.Info, f"Collapsed details for {title}")
-                
+
         expander.connect("notify::expanded", on_expander_toggled)
-        
+
         # Add the expander to the card
         card.pack_start(expander, True, True, 0)
-        
+
         return card
-        
+
+    def _get_charge_percentage(self, battery_info):
+        """Extract charge percentage from battery info."""
+        if "Charge" in battery_info:
+            try:
+                charge_text = battery_info["Charge"]
+                return int(charge_text.split("%")[0])
+            except (ValueError, IndexError):
+                pass
+        return 0
+
+    def _get_battery_icon(self, charge_percentage, state_text):
+        """Get appropriate battery icon based on charge and state."""
+        icon_name = "battery-empty-symbolic"
+        if charge_percentage > 10:
+            icon_name = "battery-low-symbolic"
+        if charge_percentage > 30:
+            icon_name = "battery-good-symbolic"
+        if charge_percentage > 60:
+            icon_name = "battery-full-symbolic"
+
+        if "charging" in state_text.lower():
+            icon_name = "battery-good-charging-symbolic"
+
+        return icon_name
+
+    def _get_battery_title(self, battery_info, device_path):
+        """Generate title for battery card."""
+        if "Model" in battery_info:
+            return battery_info["Model"]
+        return f"Battery {os.path.basename(device_path)}"
+
     def add_info_tab(self, notebook, title, battery_info, fields):
         """Add a tab with styled grid of battery information."""
         grid = Gtk.Grid()
@@ -375,20 +383,20 @@ class BatteryTab(Gtk.Box):
         grid.set_margin_bottom(15)
         grid.set_margin_start(15)
         grid.set_margin_end(15)
-        
+
         row = 0
         for key in fields:
             if key in battery_info:
                 key_label = Gtk.Label(xalign=0)
                 key_label.set_markup(f"<b>{key}:</b>")
                 grid.attach(key_label, 0, row, 1, 1)
-                
+
                 value_label = Gtk.Label(xalign=0)
                 value_label.set_text(battery_info[key])
                 value_label.set_hexpand(True)
                 grid.attach(value_label, 1, row, 1, 1)
                 row += 1
-        
+
         # If there are no fields with data, show a message
         if row == 0:
             no_data_label = Gtk.Label()
@@ -396,11 +404,11 @@ class BatteryTab(Gtk.Box):
             no_data_label.set_margin_top(20)
             no_data_label.set_margin_bottom(20)
             grid.attach(no_data_label, 0, 0, 2, 1)
-        
+
         # Add tab
         tab_label = Gtk.Label(title)
         notebook.append_page(grid, tab_label)
-        
+
     def refresh_battery_info(self, button=None):
         """Refresh battery information using UPower with improved visual representation."""
         if button:
@@ -415,51 +423,51 @@ class BatteryTab(Gtk.Box):
         mode_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         mode_container.set_margin_top(10)
         mode_container.set_margin_bottom(15)
-        
+
         # Power mode selector with streamlined buttons
         mode_selector = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         mode_selector.set_homogeneous(True)  # Make all buttons equal width
-        
+
         mode_icons = {
             self.txt.battery_power_saving: "power-profile-power-saver-symbolic",
             self.txt.battery_balanced: "power-profile-balanced-symbolic",
             self.txt.battery_performance: "power-profile-performance-symbolic"
         }
-        
+
         # Get current active mode
         active_mode = self.power_mode_dropdown.get_active_text()
-        
+
         for mode, profile in self.power_modes.items():
             mode_button = Gtk.Button()
-            
+
             # Button content
             button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
             button_box.set_margin_top(8)
             button_box.set_margin_bottom(8)
-            
+
             # Icon
             icon = Gtk.Image.new_from_icon_name(mode_icons.get(mode, "dialog-question-symbolic"), Gtk.IconSize.BUTTON)
             button_box.pack_start(icon, False, False, 0)
-            
+
             # Label - only show text when there's enough space
             label = Gtk.Label(mode)
             button_box.pack_start(label, True, False, 0)
-            
+
             mode_button.add(button_box)
             mode_button.connect("clicked", self.on_power_mode_button_clicked, mode)
-            
+
             # First remove all style classes related to selection
             context = mode_button.get_style_context()
             context.remove_class("suggested-action")
-                
+
             # Style active button
             if mode == active_mode:
                 context.add_class("suggested-action")
-                
+
             mode_selector.pack_start(mode_button, True, True, 0)
-            
+
         mode_container.pack_start(mode_selector, False, False, 0)
-        
+
         # Add power mode to content
         self.content_box.pack_start(mode_container, False, False, 0)
 
@@ -476,32 +484,32 @@ class BatteryTab(Gtk.Box):
             no_battery_box.set_halign(Gtk.Align.CENTER)
             no_battery_box.set_valign(Gtk.Align.CENTER)
             no_battery_box.set_margin_top(50)
-            
+
             # Icon
             no_battery_icon = Gtk.Image.new_from_icon_name(
                 "battery-missing-symbolic", Gtk.IconSize.DIALOG
             )
             no_battery_box.pack_start(no_battery_icon, False, False, 0)
-            
+
             # Message
             no_battery_label = Gtk.Label()
-            no_battery_label.set_markup(f"<span size='large'>{self.battery_no_batteries}</span>")
+            no_battery_label.set_markup(f"<span size='large'>{self.txt.battery_no_batteries}</span>")
             no_battery_box.pack_start(no_battery_label, False, False, 10)
-            
+
             self.content_box.pack_start(no_battery_box, True, True, 0)
         else:
             # Create a container for battery cards
             batteries_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
             batteries_container.set_halign(Gtk.Align.FILL)
             batteries_container.set_hexpand(True)
-            
+
             # Title for batteries section
             batteries_title = Gtk.Label(xalign=0)
             batteries_title.set_markup(f"<span weight='bold' size='large'>{self.txt.battery_batteries}</span>")
             batteries_title.set_margin_top(5)
             batteries_title.set_margin_bottom(5)
             batteries_container.pack_start(batteries_title, False, False, 0)
-            
+
             # Process each battery
             for device_path in battery_devices:
                 try:
@@ -514,7 +522,7 @@ class BatteryTab(Gtk.Box):
                     )
                     if result.returncode == 0:
                         battery_info = self.parse_upower_output(result.stdout)
-                        
+
                         # Create a styled card for this battery
                         battery_card = self.create_battery_card(battery_info, device_path)
                         batteries_container.pack_start(battery_card, False, False, 0)
@@ -522,24 +530,24 @@ class BatteryTab(Gtk.Box):
                     self.logging.log(
                         LogLevel.Error, f"Error processing battery {device_path}: {e}"
                     )
-            
+
             # Add battery container to the main content
             self.content_box.pack_start(batteries_container, False, False, 0)
 
         # Show all widgets
         self.content_box.show_all()
-        
+
         # Update refresh time
         self.last_refresh_time = datetime.now()
-        
+
         return True
-    
+
     def on_power_mode_button_clicked(self, button, mode):
         """Handle click on power mode button."""
         # Disable all mode buttons while processing
         for child in button.get_parent().get_children():
             child.set_sensitive(False)
-            
+
         # Find index of the selected mode
         if mode in self.power_modes:
             index = list(self.power_modes.keys()).index(mode)
@@ -569,19 +577,19 @@ class BatteryTab(Gtk.Box):
         )
         ctx = battery_icon.get_style_context()
         ctx.add_class("battery-icon")
-        
+
         def on_enter(widget, event):
             ctx.add_class("battery-icon-animate")
-        
+
         def on_leave(widget, event):
             ctx.remove_class("battery-icon-animate")
-        
+
         # Wrap in event box for hover detection
         icon_event_box = Gtk.EventBox()
         icon_event_box.add(battery_icon)
         icon_event_box.connect("enter-notify-event", on_enter)
         icon_event_box.connect("leave-notify-event", on_leave)
-        
+
         title_box.pack_start(icon_event_box, False, False, 0)
 
         # Add title
