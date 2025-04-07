@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 **Describe the bug**
-A clear and concise description of what the bug is. If its a feature request only , please see [discussions](https://github.com/quantumvoid0/better-control/discussions)
+A clear and concise description of what the bug is.
 
 **To Reproduce**
 Steps to reproduce the behavior:
