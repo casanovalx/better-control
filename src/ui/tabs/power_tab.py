@@ -467,7 +467,13 @@ class PowerTab(Gtk.Box):
 
                     tab.pack_start(container, False, False, 5)
 
-                return tab, Gtk.Label(label=getattr(self.txt, 'power_menu_visibility', 'Visibility'))
+                vis_icon = Gtk.Image.new_from_icon_name("emblem-ok-symbolic", Gtk.IconSize.MENU)
+                vis_text = Gtk.Label(label=getattr(self.txt, 'power_menu_visibility', 'Visibility'))
+                vis_label_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                vis_label_box.pack_start(vis_icon, False, False, 0)
+                vis_label_box.pack_start(vis_text, False, False, 0)
+                vis_label_box.show_all()
+                return tab, vis_label_box
 
             def build_shortcuts_tab():
                 tab = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -535,7 +541,13 @@ class PowerTab(Gtk.Box):
                 shortcuts_scrolled.add(container)
                 tab.pack_start(shortcuts_scrolled, True, True, 0)
 
-                return tab, Gtk.Label(label=getattr(self.txt, 'power_menu_shortcuts_tab_label', 'Shortcuts'))
+                shortcuts_icon = Gtk.Image.new_from_icon_name("input-keyboard-symbolic", Gtk.IconSize.MENU)
+                shortcuts_text = Gtk.Label(label=getattr(self.txt, 'power_menu_shortcuts_tab_label', 'Shortcuts'))
+                shortcuts_label_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                shortcuts_label_box.pack_start(shortcuts_icon, False, False, 0)
+                shortcuts_label_box.pack_start(shortcuts_text, False, False, 0)
+                shortcuts_label_box.show_all()
+                return tab, shortcuts_label_box
 
             def build_commands_tab():
                 tab = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -607,7 +619,13 @@ class PowerTab(Gtk.Box):
                 scrolled.add(container)
                 tab.pack_start(scrolled, True, True, 0)
 
-                return tab, Gtk.Label(label=getattr(self.txt, 'power_menu_commands', 'Commands'))
+                commands_icon = Gtk.Image.new_from_icon_name("utilities-terminal-symbolic", Gtk.IconSize.MENU)
+                commands_text = Gtk.Label(label=getattr(self.txt, 'power_menu_commands', 'Commands'))
+                commands_label_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                commands_label_box.pack_start(commands_icon, False, False, 0)
+                commands_label_box.pack_start(commands_text, False, False, 0)
+                commands_label_box.show_all()
+                return tab, commands_label_box
 
             def build_colors_tab():
                 tab = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -705,7 +723,13 @@ class PowerTab(Gtk.Box):
                 scrolled.add(container)
                 tab.pack_start(scrolled, True, True, 0)
 
-                return tab, Gtk.Label(label=getattr(self.txt, 'power_menu_colors', 'Colors'))
+                colors_icon = Gtk.Image.new_from_icon_name("applications-graphics-symbolic", Gtk.IconSize.MENU)
+                colors_text = Gtk.Label(label=getattr(self.txt, 'power_menu_colors', 'Colors'))
+                colors_label_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                colors_label_box.pack_start(colors_icon, False, False, 0)
+                colors_label_box.pack_start(colors_text, False, False, 0)
+                colors_label_box.show_all()
+                return tab, colors_label_box
 
             notebook = Gtk.Notebook()
             notebook.set_size_request(400, 300)
