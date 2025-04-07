@@ -13,6 +13,7 @@ class USBGuardTab(Gtk.Box):
         self.logging = logging
         self.txt = txt
         self.previous_devices = None  # Initialize as None to skip first refresh
+        self.manual_operations = set()  # Track devices being manually allowed/blocked
         self.set_margin_start(10)
         self.set_margin_end(10)
         self.set_margin_top(10)
@@ -360,26 +361,31 @@ Status: {status_text}
     
     def on_allow_device(self, widget, device_id):
         try:
-            # Temporarily disable notifications
-            prev_devices = self.previous_devices
-            self.previous_devices = None
+            self.manual_operations.add(device_id)
+            
             
             subprocess.run(["usbguard", "allow-device", device_id], check=True)
             
-            # Show immediate notification
-            dialog = Gtk.MessageDialog(
-                transient_for=self.get_toplevel(),
-                flags=0,
-                message_type=Gtk.MessageType.INFO,
-                buttons=Gtk.ButtonsType.OK,
-                text=self.txt.permission_allowed
-            )
-            dialog.set_icon_name("drive-removable-media-symbolic")
-            dialog.run()
-            dialog.destroy()
+        
+            result = subprocess.run(["usbguard", "list-devices"],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 check=True)
+            devices = result.stdout.decode('utf-8').splitlines()
+            device_info = next((d for d in devices if d.startswith(device_id)), "")
+            device_name = self.get_device_name(device_info)
             
-            # Restore device tracking
-            self.previous_devices = prev_devices
+        
+            subprocess.run([
+                "notify-send",
+                "-i", "emblem-ok-symbolic",
+                f"USB Device Allowed: {device_name}",
+                f"Device ID: {device_id}\nNow allowed to connect"
+            ])
+            
+        
+            self.refresh_devices(None)
+            self.manual_operations.discard(device_id)
             
         except subprocess.CalledProcessError as e:
             if hasattr(self.logging, 'log_error'):
@@ -390,26 +396,30 @@ Status: {status_text}
     
     def on_block_device(self, widget, device_id):
         try:
-            # Temporarily disable notifications
-            prev_devices = self.previous_devices
-            self.previous_devices = None
+        
+            self.manual_operations.add(device_id)
             
+        
             subprocess.run(["usbguard", "block-device", device_id], check=True)
             
-            # Show immediate notification
-            dialog = Gtk.MessageDialog(
-                transient_for=self.get_toplevel(),
-                flags=0,
-                message_type=Gtk.MessageType.INFO,
-                buttons=Gtk.ButtonsType.OK,
-                text=self.txt.permission_blocked
-            )
-            dialog.set_icon_name("drive-removable-media-symbolic")
-            dialog.run()
-            dialog.destroy()
+            # Get device info in same format as connection events
+            result = subprocess.run(["usbguard", "list-devices"],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 check=True)
+            devices = result.stdout.decode('utf-8').splitlines()
+            device_info = next((d for d in devices if d.startswith(device_id)), "")
+            device_name = self.get_device_name(device_info)
             
-            # Restore device tracking
-            self.previous_devices = prev_devices
+            subprocess.run([
+                "notify-send",
+                "-i", "action-unavailable-symbolic",
+                f"USB Device Blocked: {device_name}",
+                f"Device ID: {device_id}\nNo longer allowed to connect"
+            ])
+            
+            self.refresh_devices(None)
+            self.manual_operations.discard(device_id)
             
         except subprocess.CalledProcessError as e:
             if hasattr(self.logging, 'log_error'):
@@ -549,48 +559,74 @@ Status: {status_text}
         self.device_list.show_all()
 
         
+    def get_device_name(self, device_info):
+        """Helper method to extract device name from info string"""
+        if not device_info:
+            return "Unknown Device"
+            
+        # If we got just a device ID, try to get full info
+        if len(device_info.split()) == 1 and ':' in device_info:
+            try:
+                result = subprocess.run(["usbguard", "list-devices", device_info],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE,
+                                     check=True)
+                device_info = result.stdout.decode('utf-8').strip()
+            except subprocess.CalledProcessError:
+                pass
+
+        try:
+            parts = device_info.split()
+            if len(parts) < 3:
+                return "Unknown Device"
+                
+            device_info = " ".join(parts[2:])
+            name_start = device_info.find('name "')
+            if name_start != -1:
+                name_end = device_info.find('"', name_start + 6)
+                if name_end != -1:
+                    device_name = device_info[name_start+6:name_end].strip()
+                    if device_name:  # Only return if name is not empty
+                        return device_name
+            
+            # Fallback to device ID if name can't be determined
+            return parts[0].split(":")[0]
+            
+        except Exception:
+            return "Unknown Device"
+
     def check_device_changes(self, current_devices):
         """Check for device changes and trigger notifications"""
         current_set = set(device.strip() for device in current_devices.splitlines() if device.strip())
         
-        # Skip first refresh (initial device list)
+        # Skip first refresh (initial device list) [gotta keep em notifications clean]
         if self.previous_devices is None:
             self.previous_devices = current_set
             return
             
         # New devices
         for device in current_set - self.previous_devices:
-            try:
-                device_name = device.split()[2]
-                dialog = Gtk.MessageDialog(
-                    transient_for=self.get_toplevel(),
-                    flags=0,
-                    message_type=Gtk.MessageType.INFO,
-                    buttons=Gtk.ButtonsType.OK,
-                    text=self.txt.usb_connected.format(device=device_name)
-                )
-                dialog.set_icon_name("drive-removable-media-symbolic")
-                dialog.run()
-                dialog.destroy()
-            except IndexError:
-                continue
+            device_id = device.split()[0].split(":")[0]
+            if device_id not in self.manual_operations:
+                device_name = self.get_device_name(device)
+                subprocess.run([
+                    "notify-send",
+                    "-i", "drive-removable-media-symbolic",
+                    "USB Device Connected",
+                    self.txt.usb_connected.format(device=device_name)
+                ])
         
         # Removed devices
         for device in self.previous_devices - current_set:
-            try:
-                device_name = device.split()[2]
-                dialog = Gtk.MessageDialog(
-                    transient_for=self.get_toplevel(),
-                    flags=0,
-                    message_type=Gtk.MessageType.INFO,
-                    buttons=Gtk.ButtonsType.OK,
-                    text=self.txt.usb_disconnected.format(device=device_name)
-                )
-                dialog.set_icon_name("drive-removable-media-symbolic")
-                dialog.run()
-                dialog.destroy()
-            except IndexError:
-                continue
+            device_id = device.split()[0].split(":")[0]
+            if device_id not in self.manual_operations:
+                device_name = self.get_device_name(device)
+                subprocess.run([
+                    "notify-send",
+                    "-i", "drive-removable-media-symbolic",
+                    "USB Device Disconnected",
+                    self.txt.usb_disconnected.format(device=device_name)
+                ])
         
         self.previous_devices = current_set
 
@@ -636,7 +672,7 @@ Status: {status_text}
             "view-refresh-symbolic", 
             Gtk.IconSize.BUTTON
         ))
-        return False  # Remove timeout
+        return False  
 
     def on_destroy(self, widget):
         self.refresh_thread_running = False
