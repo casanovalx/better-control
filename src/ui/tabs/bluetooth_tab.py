@@ -14,8 +14,6 @@ from tools.bluetooth import (
     get_devices,
     start_discovery,
     stop_discovery,
-    connect_device, 
-    disconnect_device,
     connect_device_async,
     disconnect_device_async,
 )
@@ -55,19 +53,19 @@ class BluetoothTab(Gtk.Box):
         )
         ctx = bluetooth_icon.get_style_context()
         ctx.add_class("bluetooth-icon")
-        
+
         def on_enter(widget, event):
             ctx.add_class("bluetooth-icon-animate")
-        
+
         def on_leave(widget, event):
             ctx.remove_class("bluetooth-icon-animate")
-        
+
         # Wrap in event box for hover detection
         icon_event_box = Gtk.EventBox()
         icon_event_box.add(bluetooth_icon)
         icon_event_box.connect("enter-notify-event", on_enter)
         icon_event_box.connect("leave-notify-event", on_leave)
-        
+
         title_box.pack_start(icon_event_box, False, False, 0)
 
         # Add title
@@ -180,25 +178,25 @@ class BluetoothTab(Gtk.Box):
             # Skip update if tab is being destroyed
             if hasattr(self, 'is_being_destroyed') and self.is_being_destroyed:
                 return False
-                
+
             self.update_device_list()
             return True  # Keep the timer active
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Error in periodic update: {e}")
             return True  # Keep trying
-            
+
     def __del__(self):
         """Clean up resources when tab is destroyed"""
         try:
             self.cleanup_resources()
-        except Exception as e:
+        except Exception:
             pass  # Can't log during __del__
-            
+
     def on_destroy(self, widget):
         """Clean up resources when tab is destroyed"""
         self.is_being_destroyed = True
         self.cleanup_resources()
-        
+
     def cleanup_resources(self):
         """Clean up all resources used by the tab"""
         # Stop discovery if active
@@ -208,7 +206,7 @@ class BluetoothTab(Gtk.Box):
                 self.is_discovering = False
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Error stopping discovery: {e}")
-                
+
         # Remove timers
         if self.discovery_timeout_id is not None:
             try:
@@ -216,14 +214,14 @@ class BluetoothTab(Gtk.Box):
                 self.discovery_timeout_id = None
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Error removing discovery timeout: {e}")
-                
+
         if self.discovery_check_id is not None:
             try:
                 GLib.source_remove(self.discovery_check_id)
                 self.discovery_check_id = None
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Error removing discovery check: {e}")
-                
+
         self.logging.log(LogLevel.Debug, "Bluetooth tab resources cleaned up")
 
     def on_power_switched(self, switch, gparam):
@@ -355,16 +353,16 @@ class BluetoothTab(Gtk.Box):
         if not hasattr(self, '_processing_buttons'):
             self._processing_buttons = {}
         self._processing_buttons[device_path] = button
-        
+
         # Disable the button and show a spinner to indicate connection in progress
         button.set_sensitive(False)
         button.set_label(self.txt.connecting)
-        
+
         # Create a spinner and add it to the button
         spinner = Gtk.Spinner()
         spinner.start()
         button.set_image(spinner)
-        
+
         # Connect asynchronously
         def on_connect_complete(success):
             # Use GLib.idle_add to ensure we're on the main thread
@@ -372,7 +370,7 @@ class BluetoothTab(Gtk.Box):
                 # Check if the button still exists and is valid
                 if device_path not in self._processing_buttons:
                     return False
-                
+
                 stored_button = self._processing_buttons[device_path]
                 # Make sure the button is still a valid GTK widget
                 if not isinstance(stored_button, Gtk.Button) or not stored_button.get_parent():
@@ -380,15 +378,15 @@ class BluetoothTab(Gtk.Box):
                     del self._processing_buttons[device_path]
                     self.update_device_list()
                     return False
-                
+
                 # Button is still valid, update it
                 stored_button.set_label(self.txt.connect)
                 stored_button.set_image(None)
                 stored_button.set_sensitive(True)
-                
+
                 # Clean up our reference
                 del self._processing_buttons[device_path]
-                
+
                 if success:
                     # Just update the list
                     self.update_device_list()
@@ -405,9 +403,9 @@ class BluetoothTab(Gtk.Box):
                     dialog.run()
                     dialog.destroy()
                 return False
-            
+
             GLib.idle_add(update_ui)
-        
+
         # Start the async connection
         connect_device_async(device_path, on_connect_complete, self.logging)
 
@@ -422,16 +420,16 @@ class BluetoothTab(Gtk.Box):
         if not hasattr(self, '_processing_buttons'):
             self._processing_buttons = {}
         self._processing_buttons[device_path] = button
-        
+
         # Disable the button and show a spinner to indicate disconnection in progress
         button.set_sensitive(False)
         button.set_label(self.txt.disconnecting)
-        
+
         # Create a spinner and add it to the button
         spinner = Gtk.Spinner()
         spinner.start()
         button.set_image(spinner)
-        
+
         # Disconnect asynchronously
         def on_disconnect_complete(success):
             # Use GLib.idle_add to ensure we're on the main thread
@@ -439,7 +437,7 @@ class BluetoothTab(Gtk.Box):
                 # Check if the button still exists and is valid
                 if device_path not in self._processing_buttons:
                     return False
-                
+
                 stored_button = self._processing_buttons[device_path]
                 # Make sure the button is still a valid GTK widget
                 if not isinstance(stored_button, Gtk.Button) or not stored_button.get_parent():
@@ -447,15 +445,15 @@ class BluetoothTab(Gtk.Box):
                     del self._processing_buttons[device_path]
                     self.update_device_list()
                     return False
-                
+
                 # Button is still valid, update it
                 stored_button.set_label(self.txt.disconnect)
                 stored_button.set_image(None)
                 stored_button.set_sensitive(True)
-                
+
                 # Clean up our reference
                 del self._processing_buttons[device_path]
-                
+
                 if success:
                     # Just update the list
                     self.update_device_list()
@@ -472,8 +470,8 @@ class BluetoothTab(Gtk.Box):
                     dialog.run()
                     dialog.destroy()
                 return False
-            
+
             GLib.idle_add(update_ui)
-        
+
         # Start the async disconnection
         disconnect_device_async(device_path, on_disconnect_complete, self.logging)
