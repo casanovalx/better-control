@@ -25,17 +25,18 @@ DEFAULT_NOTIFY_SUBJECT='Better Control'
 
 
 class BluetoothManager:
-    def __init__(self, logging: Logger):
-        self.logging = logging
+    def __init__(self, logging_instance: Logger):
+        self.logging = logging_instance
         self.adapter = None
         self.adapter_path = None
-        
+        self.bus = None
+
         try:
             # Initialize DBus with mainloop
             dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
             self.bus = dbus.SystemBus()
             self.mainloop = GLib.MainLoop()
-            
+
             # Find the adapter
             self.adapter_path = self.find_adapter()
             if self.adapter_path:
@@ -91,6 +92,10 @@ class BluetoothManager:
     def find_adapter(self) -> str:
         """Find the first available Bluetooth adapter"""
         try:
+            if self.bus is None:
+                self.logging.log(LogLevel.Error, "D-Bus connection not initialized")
+                return ""
+
             remote_om = dbus.Interface(
                 self.bus.get_object(BLUEZ_SERVICE_NAME, "/"), DBUS_OM_IFACE
             )
@@ -112,7 +117,7 @@ class BluetoothManager:
     def get_bluetooth_status(self) -> bool:
         """Get Bluetooth power status"""
         try:
-            if not self.adapter:
+            if not self.adapter or self.bus is None:
                 return False
             powered = self.adapter.Get(BLUEZ_ADAPTER_INTERFACE, "Powered")
             return bool(powered)
@@ -126,7 +131,7 @@ class BluetoothManager:
     def set_bluetooth_power(self, enabled: bool) -> None:
         """Set Bluetooth power state"""
         try:
-            if not self.adapter:
+            if not self.adapter or self.bus is None:
                 return
             self.adapter.Set(BLUEZ_ADAPTER_INTERFACE, "Powered", dbus.Boolean(enabled))
         except Exception as e:
@@ -135,7 +140,7 @@ class BluetoothManager:
     def get_devices(self) -> List[Dict[str, str]]:
         """Get list of all known Bluetooth devices"""
         try:
-            if not self.adapter:
+            if not self.adapter or self.bus is None:
                 return []
 
             remote_om = dbus.Interface(
@@ -170,7 +175,7 @@ class BluetoothManager:
     def start_discovery(self) -> None:
         """Start scanning for Bluetooth devices"""
         try:
-            if not self.adapter:
+            if not self.adapter or self.bus is None or not self.adapter_path:
                 return
             adapter = dbus.Interface(
                 self.bus.get_object(BLUEZ_SERVICE_NAME, self.adapter_path),
@@ -183,7 +188,7 @@ class BluetoothManager:
     def stop_discovery(self) -> None:
         """Stop scanning for Bluetooth devices"""
         try:
-            if not self.adapter:
+            if not self.adapter or self.bus is None or not self.adapter_path:
                 return
             adapter = dbus.Interface(
                 self.bus.get_object(BLUEZ_SERVICE_NAME, self.adapter_path),
@@ -196,6 +201,10 @@ class BluetoothManager:
     def connect_device(self, device_path: str) -> bool:
         """Connect to a Bluetooth device, set it as the default audio sink, and fetch battery info."""
         try:
+            if self.bus is None:
+                self.logging.log(LogLevel.Error, "D-Bus connection not initialized")
+                return False
+
             device = dbus.Interface(
                 self.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
                 BLUEZ_DEVICE_INTERFACE,
@@ -231,7 +240,7 @@ class BluetoothManager:
 
     def connect_device_async(self, device_path: str, callback: Callable[[bool], None]) -> None:
         """Connect to a Bluetooth device asynchronously
-        
+
         Args:
             device_path: DBus path of the device
             callback: Function to call when connection attempt completes with a boolean success parameter
@@ -240,32 +249,37 @@ class BluetoothManager:
             success = False
             device_name = "Unknown Device"
             try:
+                if self.bus is None:
+                    self.logging.log(LogLevel.Error, "D-Bus connection not initialized")
+                    GLib.idle_add(lambda: callback(False))
+                    return
+
                 # Make a copy of the device_path to avoid any potential threading issues
                 local_path = str(device_path)
-                
+
                 # Get DBus interfaces
                 device = dbus.Interface(
                     self.bus.get_object(BLUEZ_SERVICE_NAME, local_path),
                     BLUEZ_DEVICE_INTERFACE,
                 )
                 properties = dbus.Interface(
-                    self.bus.get_object(BLUEZ_SERVICE_NAME, local_path), 
+                    self.bus.get_object(BLUEZ_SERVICE_NAME, local_path),
                     DBUS_PROP_IFACE
                 )
-                
+
                 # Get device name before connecting
                 try:
                     device_name = str(properties.Get(BLUEZ_DEVICE_INTERFACE, "Alias"))
                 except Exception:
                     device_name = "Bluetooth Device"
-                
+
                 # Connect to the device
                 self.logging.log(LogLevel.Info, f"Connecting to {device_name}...")
                 device.Connect()
-                
+
                 # Wait to ensure connection is established
                 time.sleep(1)
-                
+
                 # Verify connection status
                 try:
                     is_connected = bool(properties.Get(BLUEZ_DEVICE_INTERFACE, "Connected"))
@@ -275,28 +289,28 @@ class BluetoothManager:
                         return
                 except Exception as e:
                     self.logging.log(LogLevel.Error, f"Failed to verify connection status: {e}")
-                
+
                 # Get battery information
                 battery_percentage: Optional[int] = self.get_device_battery(local_path)
                 battery_info: str = ''
-                
+
                 if battery_percentage is None:
                     battery_info = ""
                 else:
                     battery_info = f"Battery: {battery_percentage}%"
-                
+
                 # Send notification
                 subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT,
                                 f"{device_name} connected.\n{battery_info}"])
                 success = True
-                
+
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Failed connecting to device {device_name}: {e}")
                 success = False
-            
+
             # Call the callback in the main thread
             GLib.idle_add(lambda: callback(success))
-        
+
         # Start the connection process in a separate real thread
         thread = threading.Thread(target=run_connect, daemon=True)
         thread.start()
@@ -304,6 +318,10 @@ class BluetoothManager:
     def disconnect_device(self, device_path: str) -> bool:
         """Disconnect from a Bluetooth device"""
         try:
+            if self.bus is None:
+                self.logging.log(LogLevel.Error, "D-Bus connection not initialized")
+                return False
+
             device = dbus.Interface(
                 self.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
                 BLUEZ_DEVICE_INTERFACE,
@@ -325,7 +343,7 @@ class BluetoothManager:
 
     def disconnect_device_async(self, device_path: str, callback: Callable[[bool], None]) -> None:
         """Disconnect from a Bluetooth device asynchronously
-        
+
         Args:
             device_path: DBus path of the device
             callback: Function to call when disconnection attempt completes with a boolean success parameter
@@ -334,19 +352,24 @@ class BluetoothManager:
             success = False
             device_name = "Unknown Device"
             try:
+                if self.bus is None:
+                    self.logging.log(LogLevel.Error, "D-Bus connection not initialized")
+                    GLib.idle_add(lambda: callback(False))
+                    return
+
                 # Make a copy of the device_path to avoid any potential threading issues
                 local_path = str(device_path)
-                
+
                 # Get DBus interfaces
                 device = dbus.Interface(
                     self.bus.get_object(BLUEZ_SERVICE_NAME, local_path),
                     BLUEZ_DEVICE_INTERFACE,
                 )
                 properties = dbus.Interface(
-                    self.bus.get_object(BLUEZ_SERVICE_NAME, local_path), 
+                    self.bus.get_object(BLUEZ_SERVICE_NAME, local_path),
                     DBUS_PROP_IFACE
                 )
-                
+
                 # Get device name before disconnecting
                 try:
                     device_name = str(properties.Get(BLUEZ_DEVICE_INTERFACE, "Name"))
@@ -355,25 +378,25 @@ class BluetoothManager:
                         device_name = str(properties.Get(BLUEZ_DEVICE_INTERFACE, "Alias"))
                     except Exception:
                         device_name = "Bluetooth Device"
-                
+
                 # Disconnect the device
                 self.logging.log(LogLevel.Info, f"Disconnecting from {device_name}...")
                 device.Disconnect()
-                
+
                 # Wait to ensure disconnection is completed
                 time.sleep(1)
-                
+
                 # Send notification
                 subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT, f"{device_name} disconnected."])
                 success = True
-                
+
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Failed disconnecting from device {device_name}: {e}")
                 success = False
-            
+
             # Call the callback in the main thread
             GLib.idle_add(lambda: callback(success))
-            
+
         # Start the disconnection process in a separate real thread
         thread = threading.Thread(target=run_disconnect, daemon=True)
         thread.start()
@@ -390,51 +413,45 @@ def get_bluetooth_manager(logging: Logger) -> BluetoothManager:
         _manager = BluetoothManager(logging)
     return _manager
 
-
-import time
-import subprocess
-import logging
-
-
 def restore_last_sink(logging: Logger):
     """Restore the last used audio sink device after startup.
-    
+
     This function attempts to restore the last used audio sink, typically
     a Bluetooth device, if one was previously connected.
     """
     try:
         # Wait for PA to fully initialize
         time.sleep(1.0)
-        
+
         # Get PulseAudio settings directory
         pa_dir = os.path.expanduser("~/.config/pulse")
-        
+
         # If the pulse config directory doesn't exist, exit early
         if not os.path.exists(pa_dir):
             logging.log(LogLevel.Debug, "No PulseAudio config directory found")
             return
-            
+
         # Look for connection config files (specifically the default sink file)
         default_sink_file = os.path.join(pa_dir, "default-sink")
-        
+
         if not os.path.exists(default_sink_file):
             logging.log(LogLevel.Debug, "No default sink file found to restore")
             return
-            
+
         try:
             # Read the saved sink
             with open(default_sink_file, "r") as f:
                 saved_sink = f.read().strip()
-                
+
             if not saved_sink:
                 logging.log(LogLevel.Debug, "No saved sink found")
                 return
-                
+
             # Check if it's a Bluetooth device by name convention
             if not "bluez" in saved_sink.lower():
                 logging.log(LogLevel.Debug, "Saved sink is not a Bluetooth device")
                 return
-                
+
             # Get current sinks
             process = subprocess.run(
                 ["pactl", "list", "sinks", "short"],
@@ -442,27 +459,27 @@ def restore_last_sink(logging: Logger):
                 text=True,
                 check=False
             )
-            
+
             # Check for the presence of the saved device in currently available devices
             current_sinks = process.stdout.splitlines()
             device_found = False
-            
+
             for sink in current_sinks:
                 if saved_sink in sink:
                     device_found = True
                     break
-                    
+
             if not device_found:
                 logging.log(LogLevel.Info, f"Saved Bluetooth sink '{saved_sink}' not currently available")
                 return
-                
+
             # Set the sink as default if it was found
             logging.log(LogLevel.Info, f"Restoring Bluetooth sink: {saved_sink}")
             subprocess.run(
                 ["pactl", "set-default-sink", saved_sink],
                 check=False
             )
-            
+
         except Exception as e:
             logging.log(LogLevel.Error, f"Error restoring Bluetooth sink: {e}")
     except Exception as e:
