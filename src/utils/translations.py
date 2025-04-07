@@ -15,7 +15,7 @@ Usage in tab files:
 
 import os
 from logging import Logger
-from typing import Protocol
+from typing import Protocol, Optional
 
 from utils.logger import LogLevel
 
@@ -54,10 +54,10 @@ class English:
     def __init__(self):
         # app description
         self.msg_desc = "A sleek GTK-themed control panel for Linux."
-        
+
         # USB notifications
         self.usb_connected = "{device} connected."
-        self.usb_disconnected = "{device} disconnected." 
+        self.usb_disconnected = "{device} disconnected."
         self.permission_allowed = "USB permission granted"
         self.permission_blocked = "USB permission blocked"
         self.msg_app_url = "https://github.com/quantumvoid0/better-control"
@@ -950,7 +950,30 @@ class Indonesian:
         self.settings_language_changed_restart = "Mulai ulang aplikasi agar perubahan bahasa diterapkan."
         self.settings_language_changed = "Bahasa telah diubah"
 
-def get_translations(logging: Logger = None, lang: str = "en") -> Translation:
+def _map_system_lang_to_code(system_lang: str, logger: Optional[Logger] = None) -> str:
+    """Helper function to map system language to supported code and optionally log mapping"""
+    if system_lang.startswith("es"):
+        if logger:
+            logger.log(LogLevel.Info, f"System language '{system_lang}' mapped to Spanish (es)")
+        return "es"
+    elif system_lang.startswith("pt"):
+        if logger:
+            logger.log(LogLevel.Info, f"System language '{system_lang}' mapped to Portuguese (pt)")
+        return "pt"
+    elif system_lang.startswith("fr"):
+        if logger:
+            logger.log(LogLevel.Info, f"System language '{system_lang}' mapped to French (fr)")
+        return "fr"
+    elif system_lang.startswith("id"):
+        if logger:
+            logger.log(LogLevel.Info, f"System language '{system_lang}' mapped to Indonesian (id)")
+        return "id"
+    else:
+        if logger:
+            logger.log(LogLevel.Info, f"System language '{system_lang}' not supported, falling back to English (en)")
+        return "en"
+
+def get_translations(logging: Optional[Logger] = None, lang: str = "en") -> Translation:
     """Load the language according to the selected language
 
     Args:
@@ -958,47 +981,35 @@ def get_translations(logging: Logger = None, lang: str = "en") -> Translation:
                    'default' will use the system's $LANG environment variable
 
     Returns:
-        English|Spanish|Portuguese|French: Translation for the selected language
+        Translation: Translation object for the selected language
     """
     # Handle 'default' option by checking system's LANG environment variable
     if lang == "default":
-        system_lang = os.environ.get("LANG").split("_")[0].lower()
-        if logging:
-            logging.log(LogLevel.Info, f"Using system language: {system_lang} from $LANG={os.environ.get('LANG', 'not set')}")
-
-        # Map system language code to our supported languages
-        if system_lang.startswith("es"):
-            lang = "es"
+        env_lang = os.environ.get("LANG")
+        if env_lang is None:
+            # No LANG env var set, fall back to English immediately
+            system_lang_code = "en"
             if logging:
-                logging.log(LogLevel.Info, f"System language '{system_lang}' mapped to Spanish (es)")
-        elif system_lang.startswith("pt"):
-            lang = "pt"
-            if logging:
-                logging.log(LogLevel.Info, f"System language '{system_lang}' mapped to Portuguese (pt)")
-        elif system_lang.startswith("fr"):
-            lang = "fr"
-            if logging:
-                logging.log(LogLevel.Info, f"System language '{system_lang}' mapped to French (fr)")
-        elif system_lang.startswith("id"):
-            lang = "id"
-            if logging:
-                logging.log(LogLevel.Info, f"System language '{system_lang}' mapped to Indonesian (id)")
+                logging.log(LogLevel.Info, "Environment variable LANG not set, falling back to English")
         else:
-            # Default to English for unsupported languages
-            lang = "en"
+            # LANG env var exists
+            parts = env_lang.split("_")
+            system_lang_code = parts[0].lower()
             if logging:
-                logging.log(LogLevel.Info, f"System language '{system_lang}' not supported, falling back to English (en)")
+                logging.log(LogLevel.Info, f"Using system language: {system_lang_code} from $LANG={env_lang}")
+        lang = _map_system_lang_to_code(system_lang_code, logging)
 
     if logging:
         logging.log(LogLevel.Info, f"Using language: {lang}")
 
-    if lang == "es":
-        return Spanish()
-    elif lang == "pt":
-        return Portuguese()
-    elif lang == "fr":
-        return French()
-    elif lang == "id":
-        return Indonesian()
-    return English()
-
+    match lang:
+        case "es":
+            return Spanish()
+        case "pt":
+            return Portuguese()
+        case "fr":
+            return French()
+        case "id":
+            return Indonesian()
+        case _:
+            return English()
