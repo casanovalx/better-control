@@ -314,15 +314,15 @@ class BluetoothManager:
                         if "bluez" in line.lower():
                             sink_name = line.split()[1]
                             subprocess.run(["pactl", "set-default-sink", sink_name], check=True)
-                            manager.current_audio_sink = sink_name
-                            for cb in manager.audio_routing_callbacks:
+                            self.current_audio_sink = sink_name
+                            for cb in self.audio_routing_callbacks:
                                 try:
                                     cb(sink_name)
                                 except Exception as e:
-                                    logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
+                                    self.logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
                             break
                 except Exception as e:
-                    logging.log(LogLevel.Error, f"Failed switching to Bluetooth audio: {e}")
+                    self.logging.log(LogLevel.Error, f"Failed switching to Bluetooth audio: {e}")
                 
                 success = True
 
@@ -419,15 +419,15 @@ class BluetoothManager:
                         if "bluez" not in line.lower():
                             sink_name = line.split()[1]
                             subprocess.run(["pactl", "set-default-sink", sink_name], check=True)
-                            manager.current_audio_sink = sink_name
-                            for cb in manager.audio_routing_callbacks:
+                            self.current_audio_sink = sink_name
+                            for cb in self.audio_routing_callbacks:
                                 try:
                                     cb(sink_name)
                                 except Exception as e:
-                                    logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
+                                    self.logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
                             break
                 except Exception as e:
-                    logging.log(LogLevel.Error, f"Failed switching to default audio: {e}")
+                    self.logging.log(LogLevel.Error, f"Failed switching to default audio: {e}")
                 
                 success = True
 
