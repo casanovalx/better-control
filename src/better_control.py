@@ -59,15 +59,22 @@ def main():
     load_animations_css()
     logger.log(LogLevel.Info, "Loaded animations CSS")
 
-    if (
-        not arg_parser.find_arg(("-f", "--force"))
-        and not check_all_dependencies(logger)
-    ):
-        logger.log(
-            LogLevel.Error,
-            "Missing required dependencies. Please install them and try again or use -f to force start.",
-        )
-        sys.exit(1)
+    # Start dependency check asynchronously to avoid blocking startup
+    def check_dependencies_async():
+        try:
+            if (
+                not arg_parser.find_arg(("-f", "--force"))
+                and not check_all_dependencies(logger)
+            ):
+                logger.log(
+                    LogLevel.Error,
+                    "Missing required dependencies. Please install them and try again or use -f to force start.",
+                )
+                # Optionally, show a GTK dialog warning here
+        except Exception as e:
+            logger.log(LogLevel.Error, f"Dependency check error: {e}")
+
+    threading.Thread(target=check_dependencies_async, daemon=True).start()
 
     try:
         launch_application(arg_parser, logger, txt)
