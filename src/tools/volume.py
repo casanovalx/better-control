@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import subprocess
-from typing import List, Dict
+from typing import List, Dict, Optional
 import re
 
 from utils.logger import LogLevel, Logger
@@ -277,12 +277,26 @@ def set_default_sink(sink_name: str, logging: Logger) -> None:
                     ["pactl", "move-sink-input", app_id, sink_name], check=True
                 )
 
+        # Notify Bluetooth manager of audio routing change
+        from tools.bluetooth import get_bluetooth_manager
+        manager = get_bluetooth_manager(logging)
+        manager.current_audio_sink = sink_name
+        for callback in manager.audio_routing_callbacks:
+            try:
+                callback(sink_name)
+            except Exception as e:
+                logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
+
     except subprocess.CalledProcessError as e:
         logging.log(LogLevel.Error, f"Failed setting default sink: {e}")
 
 
 def get_sinks(logging: Logger) -> List[Dict[str, str]]:
-    """Get list of audio sinks (output devices)."""
+    """Get list of audio sinks (output devices).
+    
+    Returns:
+        List[Dict[str, str]]: List of sinks with keys: id, name, description
+    """
     try:
         output = subprocess.getoutput("pactl list sinks")
         sinks = []
@@ -658,3 +672,23 @@ def set_application_mic_volume(app_id: str, value: int, logging: Logger) -> None
         )
     except subprocess.CalledProcessError as e:
         logging.log(LogLevel.Error, f"Failed setting application mic volume: {e}")
+
+def get_active_sink(logging: Logger) -> Optional[Dict[str, str]]:
+    """Get the currently active audio sink
+    
+    Returns:
+        Optional[Dict[str, str]]: Active sink info or None if not available
+    """
+    try:
+        sink_name = subprocess.getoutput("pactl get-default-sink").strip()
+        if not sink_name:
+            return None
+            
+        sinks = get_sinks(logging)
+        for sink in sinks:
+            if sink.get("name") == sink_name:
+                return sink
+        return None
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Failed getting active sink: {e}")
+        return None
