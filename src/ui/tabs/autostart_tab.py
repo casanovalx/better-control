@@ -175,6 +175,8 @@ class AutostartTab(Gtk.Box):
 
                 # Initial population
                 self.refresh_list()
+                
+                self.connect('key-press-event', self.on_key_press)
 
                 # Set up timer check for external changes
                 GLib.timeout_add(4000, self.check_external_changes)
@@ -184,6 +186,15 @@ class AutostartTab(Gtk.Box):
     def on_realize(self, widget):
         GLib.idle_add(self.refresh_list)
 
+    # keybinds for autostart tab
+    def on_key_press(self, widget, event):
+        keyval = event.keyval
+        
+        if keyval in (114, 82):
+            self.logging.log(LogLevel.Info, "Refreshing list using keybind")
+            self.refresh_list()
+            return True
+            
     def on_toggle1_changed(self, switch, gparam):
         """Handle toggle for system autostart apps"""
         show_system = switch.get_active()

@@ -5,6 +5,7 @@ import logging
 import subprocess
 import threading
 from gi.repository import Gtk, GLib  # type: ignore
+from utils.logger import LogLevel
 from utils.translations import get_translations
 
 class USBGuardTab(Gtk.Box):
@@ -111,12 +112,28 @@ class USBGuardTab(Gtk.Box):
         
         self.pack_end(button_box, False, False, 0)
         
+        self.connect('key-press-event', self.on_key_press)
+        
         # Initial refresh
         self.refresh_devices(None)
         
         # Auto-refresh thread
         self.refresh_thread_running = True
         threading.Thread(target=self.auto_refresh_devices, daemon=True).start()
+        
+     # keybinds for usbguard tab
+    def on_key_press(self, widget, event):
+        keyval = event.keyval
+        
+        if keyval in (114, 82):
+            if self.power_switch.get_active():
+                self.logging.log(LogLevel.Info, "Refreshing devices via keybind")
+                self.refresh_devices(None)
+                return True
+            else:
+                self.logging.log(LogLevel.Info, "Unable to refresh, USBGuard service is not running")
+                return True
+
     
     def auto_refresh_devices(self):
         while self.refresh_thread_running:

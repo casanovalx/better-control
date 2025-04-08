@@ -179,6 +179,7 @@ class ArgParse:
         self.arg_print(f"  {BLUE}-b, --bluetooth{RESET}                 Starts with the bluetooth tab open")
         self.arg_print(f"  {BLUE}-d, --display{RESET}                   Starts with the display tab open")
         self.arg_print(f"  {BLUE}-p, --power{RESET}                     Starts with the power tab open")
+        self.arg_print(f"  {BLUE}-u, --usbguard{RESET}                  Starts with the usbguard tab open")
         self.arg_print(f"  {BLUE}-V, --volume{RESET}                    Starts with the volume tab open")
         self.arg_print(f"  {BLUE}-v{RESET}                              Also starts with the volume tab open")
         self.arg_print(f"  {BLUE}-w, --wifi{RESET}                      Starts with the wifi tab open\n")
