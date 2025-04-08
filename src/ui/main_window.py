@@ -118,6 +118,9 @@ class BetterControl(Gtk.Window):
         self.notebook = Gtk.Notebook()
         self.add(self.notebook)
 
+        # Show the window as early as possible for faster perceived startup
+        self.show_all()
+
         # Hide tab bar in minimal mode
         if self.minimal_mode:
             self.notebook.set_show_tabs(False)
@@ -185,7 +188,7 @@ class BetterControl(Gtk.Window):
         """Thread function to create tabs"""
         # Add a small delay to ensure GTK is fully initialized
         import time
-        time.sleep(0.2)  # 200ms delay - increased for better stability
+        time.sleep(0.05)  # reduced delay for faster startup
 
         try:
             # Get visibility setting, ignore if in minimal mode
