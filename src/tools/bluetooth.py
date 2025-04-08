@@ -30,6 +30,8 @@ class BluetoothManager:
         self.adapter = None
         self.adapter_path = None
         self.bus = None
+        self.audio_routing_callbacks = []
+        self.current_audio_sink = None
 
         try:
             # Initialize DBus with mainloop
@@ -60,6 +62,7 @@ class BluetoothManager:
             # Clean up any resources
             self.adapter = None
             self.bus = None
+            self.audio_routing_callbacks.clear()
         except Exception:
             pass  # Ignore errors during cleanup
 
@@ -302,6 +305,25 @@ class BluetoothManager:
                 # Send notification
                 subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT,
                                 f"{device_name} connected.\n{battery_info}"])
+                
+                # Automatically switch to Bluetooth audio sink
+                try:
+                    # Get list of available sinks
+                    sinks_output = subprocess.getoutput("pactl list sinks short")
+                    for line in sinks_output.splitlines():
+                        if "bluez" in line.lower():
+                            sink_name = line.split()[1]
+                            subprocess.run(["pactl", "set-default-sink", sink_name], check=True)
+                            manager.current_audio_sink = sink_name
+                            for cb in manager.audio_routing_callbacks:
+                                try:
+                                    cb(sink_name)
+                                except Exception as e:
+                                    logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
+                            break
+                except Exception as e:
+                    logging.log(LogLevel.Error, f"Failed switching to Bluetooth audio: {e}")
+                
                 success = True
 
             except Exception as e:
@@ -388,6 +410,25 @@ class BluetoothManager:
 
                 # Send notification
                 subprocess.run(["notify-send", DEFAULT_NOTIFY_SUBJECT, f"{device_name} disconnected."])
+                
+                # Automatically switch back to default non-Bluetooth sink
+                try:
+                    # Get list of available sinks
+                    sinks_output = subprocess.getoutput("pactl list sinks short")
+                    for line in sinks_output.splitlines():
+                        if "bluez" not in line.lower():
+                            sink_name = line.split()[1]
+                            subprocess.run(["pactl", "set-default-sink", sink_name], check=True)
+                            manager.current_audio_sink = sink_name
+                            for cb in manager.audio_routing_callbacks:
+                                try:
+                                    cb(sink_name)
+                                except Exception as e:
+                                    logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
+                            break
+                except Exception as e:
+                    logging.log(LogLevel.Error, f"Failed switching to default audio: {e}")
+                
                 success = True
 
             except Exception as e:
@@ -415,6 +456,41 @@ def get_bluetooth_manager(logging: Logger) -> BluetoothManager:
     if _manager is None:
         _manager = BluetoothManager(logging)
     return _manager
+
+def add_audio_routing_callback(callback: Callable[[str], None], logging: Logger) -> None:
+    """Add a callback to be notified when audio routing changes
+    
+    Args:
+        callback: Function to call with the new sink name when routng changes
+        logging: Logger instance
+    """
+    manager = get_bluetooth_manager(logging)
+    if callback not in manager.audio_routing_callbacks:
+        manager.audio_routing_callbacks.append(callback)
+
+def remove_audio_routing_callback(callback: Callable[[str], None], logging: Logger) -> None:
+    """Remove an audio routng callback
+    
+    Args:
+        callback: Callback function to remove
+        logging: Logger instance
+    """
+    manager = get_bluetooth_manager(logging)
+    if callback in manager.audio_routing_callbacks:
+        manager.audio_routing_callbacks.remove(callback)
+
+def get_current_audio_sink(logging: Logger) -> Optional[str]:
+    """Get the currently active audio sink name
+    
+    Returns:
+        str :Name of current audio sink or None if not available
+    """
+    try:
+        output = subprocess.getoutput("pactl get-default-sink")
+        return output.strip() if output else None
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Failed getting current audio sink: {e}")
+        return None
 
 def restore_last_sink(logging: Logger):
     """Restore the last used audio sink device after startup.
@@ -482,6 +558,15 @@ def restore_last_sink(logging: Logger):
                 ["pactl", "set-default-sink", saved_sink],
                 check=False
             )
+            
+            # Update current sink and notify callbacks
+            manager = get_bluetooth_manager(logging)
+            manager.current_audio_sink = saved_sink
+            for callback in manager.audio_routing_callbacks:
+                try:
+                    callback(saved_sink)
+                except Exception as e:
+                    logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
 
         except Exception as e:
             logging.log(LogLevel.Error, f"Error restoring Bluetooth sink: {e}")
