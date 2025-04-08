@@ -79,9 +79,20 @@ class BatteryTab(Gtk.Box):
         self.pack_start(self.scroll_window, True, True, 0)
 
         self.power_mode_dropdown.connect("changed", self.set_power_mode)
+        
+        self.connect('key-press-event', self.on_key_press)
 
         self.refresh_battery_info()
         GLib.timeout_add_seconds(10, self.refresh_battery_info)
+        
+    # keybinds for battery tab
+    def on_key_press(self, widget, event):
+        keyval = event.keyval
+        
+        if keyval in (114, 82):
+            self.logging.log(LogLevel.Info, "Refreshing battery info via keybind")
+            self.refresh_battery_info()
+            return True
 
     def set_power_mode(self, widget):
         """Handle power mode change using powerprofilesctl."""

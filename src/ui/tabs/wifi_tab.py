@@ -201,9 +201,31 @@ class WiFiTab(Gtk.Box):
         self.prev_rx_bytes = 0
         self.prev_tx_bytes = 0
 
+        self.connect('key-press-event', self.on_key_press)
+        
         # Connect signals for tab visibility tracking
         self.connect("map", self.on_tab_shown)
         self.connect("unmap", self.on_tab_hidden)
+        
+     # keybinds for wifi tab
+    def on_key_press(self, widget, event):
+        keyval = event.keyval
+        
+        if keyval in (114, 82):
+            if self.power_switch.get_active():
+                #  check if wifi is already loading or not
+                for child in self.networks_box.get_children():
+                    box = child.get_child()
+                    if isinstance(box.get_children()[0], Gtk.Spinner):
+                        self.logging.log(LogLevel.Info, "Already refreshing wifi, skipping")
+                        return True
+                    
+                self.logging.log(LogLevel.Info, "Refreshing wifi networks via keybind")
+                self.load_networks()
+                return True
+            else:
+                self.logging.log(LogLevel.Info, "Unable to refresh, wifi is disabled")
+                
 
     def on_tab_shown(self, widget):
         """Handle tab becoming visible"""

@@ -25,7 +25,7 @@ from utils.settings import load_settings, save_settings
 from utils.logger import LogLevel, Logger
 from ui.css.animations import load_animations_css  # animate_widget_show not used
 from utils.translations import Translation, get_translations
-from tools.globals import check_hardware_suppoert
+from tools.globals import check_hardware_support
 
 
 class BetterControl(Gtk.Window):
@@ -188,8 +188,8 @@ class BetterControl(Gtk.Window):
         time.sleep(0.2)  # 200ms delay - increased for better stability
 
         try:
-            # Get visibility setting
-            visibility = self.settings.get("visibility", {})
+            # Get visibility setting, ignore if in minimal mode
+            visibility = {} if self.minimal_mode else self.settings.get("visibility", {})
 
             # Create all tabs
             tab_classes = {
@@ -203,7 +203,10 @@ class BetterControl(Gtk.Window):
                 "USBGuard": USBGuardTab,
             }
 
-            check_hardware_suppoert(self, visibility, self.logging)
+            # Skip hardware check for minimal mode
+            if not self.minimal_mode:
+                check_hardware_support(self, visibility, self.logging)
+
             # Create a lock for thread safety if it doesn't exist yet
             if not hasattr(self, '_tab_creation_lock'):
                 self._tab_creation_lock = threading.RLock()
@@ -244,6 +247,8 @@ class BetterControl(Gtk.Window):
                     tab_to_load = "Display"
                 elif self.arg_parser.find_arg(("-p", "--power")):
                     tab_to_load = "Power"
+                elif self.arg_parser.find_arg(("-u", "--usbguard")):
+                    tab_to_load = "USBGuard"
                 else:
                     # Default to Volume if no tab specified but minimal mode is enabled
                     tab_to_load = "Volume"
@@ -350,7 +355,7 @@ class BetterControl(Gtk.Window):
 
         # Check visibility settings
         visibility = self.settings.get("visibility", {})
-        should_show = visibility.get(tab_name, True)
+        should_show = True if self.minimal_mode else visibility.get(tab_name, True)
 
         if should_show:
             # Add tab to notebook with proper label
@@ -516,6 +521,17 @@ class BetterControl(Gtk.Window):
                 active_tab = "Display"
                 if self.minimal_mode:
                     translated_tab_name = self.tab_name_mapping.get("Display", "Display") if hasattr(self, 'tab_name_mapping') else "Display"
+                    self.set_title(f"Better Control - {translated_tab_name}")
+            elif (
+                self.arg_parser.find_arg(("-u", "--usbguard"))
+                and "USBGuard" in self.tab_pages
+            ):
+                page_num = self.tab_pages["USBGuard"]
+                self.logging.log(LogLevel.Info, f"Setting active tab to USBGuard (page {page_num})")
+                self.notebook.set_current_page(page_num)
+                active_tab = "USBGuard"
+                if self.minimal_mode:
+                    translated_tab_name = self.tab_name_mapping.get("USBGuard", "USBGuard") if hasattr(self, 'tab_name_mapping') else "USBGuard"
                     self.set_title(f"Better Control - {translated_tab_name}")
             elif (
                 self.arg_parser.find_arg(("-p", "--power"))
@@ -974,7 +990,7 @@ class BetterControl(Gtk.Window):
         if keyval in (65289, 65056):  # Tab and Shift+Tab
             return True  # Stop propagation
         # on shift + s show settings dialog
-        if keyval in (115, 83) and state & Gdk.ModifierType.SHIFT_MASK:
+        if keyval in (115, 83) and state & Gdk.ModifierType.SHIFT_MASK and not self.minimal_mode:
             # show settings dialog
             self.toggle_settings_panel(None)
             return True

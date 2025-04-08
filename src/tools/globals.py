@@ -68,7 +68,7 @@ def battery_supported() -> bool:
     except Exception:
         return False
     
-def check_hardware_suppoert(self, visibility, logging):
+def check_hardware_support(self, visibility, logging):
     """Check if wifi, bluetooth, battery is supported or not"""
     
     bluetooth_manager = get_bluetooth_manager(logging)

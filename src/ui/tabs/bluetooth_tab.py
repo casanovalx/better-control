@@ -140,9 +140,24 @@ class BluetoothTab(Gtk.Box):
 
         # Initial device list population
         self.update_device_list()
+        
+        self.connect('key-press-event', self.on_key_press)
 
         # Set up periodic device list updates
         GLib.timeout_add(2000, self.periodic_update)
+        
+    # keybinds for bluetooth tab
+    def on_key_press(self, widget, event):
+        keyval = event.keyval
+        
+        if keyval in (114, 82):
+            if self.power_switch.get_active():
+                self.logging.log(LogLevel.Info, "Refreshing bluetooth list via keybind")
+                self.update_device_list()
+                return True
+            else:
+                self.logging.log(LogLevel.Info, "Unable to refresh devices, bluetooth is off")
+                
 
     def update_device_list(self):
         """Update the list of Bluetooth devices"""
