@@ -253,8 +253,20 @@ class BetterControl(Gtk.Window):
         if not tab_name:
             return
 
-        # If already created, do nothing
-        if self.tabs.get(tab_name):
+        # If already created (not a placeholder), do nothing
+        current_widget = self.tabs.get(tab_name)
+        from ui.tabs.bluetooth_tab import BluetoothTab
+        from ui.tabs.wifi_tab import WiFiTab
+        from ui.tabs.display_tab import DisplayTab
+        from ui.tabs.battery_tab import BatteryTab
+        from ui.tabs.power_tab import PowerTab
+        from ui.tabs.autostart_tab import AutostartTab
+        from ui.tabs.usbguard_tab import USBGuardTab
+        from ui.tabs.volume_tab import VolumeTab
+
+        real_tab_classes = (BluetoothTab, WiFiTab, DisplayTab, BatteryTab, PowerTab, AutostartTab, USBGuardTab, VolumeTab)
+
+        if isinstance(current_widget, real_tab_classes):
             return
 
         # Defer real tab creation to avoid segfault during switch-page
@@ -554,68 +566,82 @@ class BetterControl(Gtk.Window):
 
     def unhide_tab(self, tab_name):
         """Unhide a previously hidden tab"""
-        # First check if tab exists in our tabs dictionary
-        if tab_name not in self.tabs:
-            # Tab doesn't exist???, well then create it
-            try:
-                tab_classes = {
-                    "Bluetooth": BluetoothTab,
-                    "Volume": VolumeTab,
-                    "Wi-Fi": WiFiTab,
-                    "Battery": BatteryTab,
-                    "Display": DisplayTab,
-                    "Power": PowerTab,
-                    "Autostart": AutostartTab,
-                    "USBGuard": USBGuardTab
-                }
-                
-                if tab_name in tab_classes:
-                    self.logging.log(LogLevel.Info, f"Creating missing tab: {tab_name}")
-                    tab = tab_classes[tab_name](self.logging, self.txt)
-                    self.tabs[tab_name] = tab
-                    
-                    # Special handling for Power tab , why? cuz its special
-                    if tab_name == "Power":
-                        self.connect("key-press-event", tab.on_key_press)
-                        tab.is_visible = self.minimal_mode
-                else:
-                    self.logging.log(LogLevel.Warn, f"Cannot unhide non-existent tab: {tab_name}")
-                    return
-            except Exception as e:
-                self.logging.log(LogLevel.Error, f"Failed to create tab {tab_name}: {e}")
+        # Always create a fresh real tab instance when unhiding
+        try:
+            tab_classes = {
+                "Bluetooth": BluetoothTab,
+                "Volume": VolumeTab,
+                "Wi-Fi": WiFiTab,
+                "Battery": BatteryTab,
+                "Display": DisplayTab,
+                "Power": PowerTab,
+                "Autostart": AutostartTab,
+                "USBGuard": USBGuardTab
+            }
+
+            if tab_name in tab_classes:
+                self.logging.log(LogLevel.Info, f"Creating or unhiding tab: {tab_name}")
+                tab = tab_classes[tab_name](self.logging, self.txt)
+                self.tabs[tab_name] = tab
+
+                # Special handling for Power tab
+                if tab_name == "Power":
+                    self.connect("key-press-event", tab.on_key_press)
+                    tab.is_visible = self.minimal_mode
+            else:
+                self.logging.log(LogLevel.Warn, f"Cannot unhide non-existent tab: {tab_name}")
                 return
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Failed to create tab {tab_name}: {e}")
+            return
 
         # Update visibility setting and ensure it persists
         if "visibility" not in self.settings:
             self.settings["visibility"] = {}
         self.settings["visibility"][tab_name] = True
-        
+
         # Special handling for Bluetooth tab to ensure persistence
         if tab_name == "Bluetooth":
             self.settings["bluetooth_visible"] = True
-            
+
         save_settings(self.settings, self.logging)
 
-        # Apply the change
+        # Insert or replace placeholder with the real tab
         try:
-            self.apply_tab_visibility_with_order(tab_name)
-            
-            # Special handling for WiFi tab to load networks
-            if tab_name == "Wi-Fi" and hasattr(self.tabs[tab_name], 'load_networks'):
-                self.tabs[tab_name].load_networks()
-                
-            # Ensure tab is properly shown and stays visible
+            tab.show_all()
             if tab_name in self.tab_pages:
+                # Replace existing placeholder
                 page_num = self.tab_pages[tab_name]
+                self.notebook.remove_page(page_num)
+                new_page_num = self.notebook.insert_page(
+                    tab,
+                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name)),
+                    page_num
+                )
+                self.tab_pages[tab_name] = new_page_num
+                self.tabs[tab_name] = tab
+                self.notebook.set_current_page(new_page_num)
+            else:
+                # Insert as new tab
+                page_num = self.notebook.append_page(
+                    tab,
+                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
+                )
+                self.tab_pages[tab_name] = page_num
+                self.tabs[tab_name] = tab
                 self.notebook.set_current_page(page_num)
-                
-                # For Bluetooth tab, ensure it remains visible
-                if tab_name == "Bluetooth":
-                    self.tabs[tab_name].set_visible(True)
-                    self.tabs[tab_name].show_all()
-                
+
+            # Special handling for WiFi tab to load networks
+            if tab_name == "Wi-Fi" and hasattr(tab, 'load_networks'):
+                tab.load_networks()
+
+            # Special handling for Bluetooth tab to ensure visibility
+            if tab_name == "Bluetooth":
+                tab.set_visible(True)
+                tab.show_all()
+
         except Exception as e:
-            self.logging.log(LogLevel.Error, f"Error applying visibility for {tab_name}: {e}")
+            self.logging.log(LogLevel.Error, f"Error unhiding tab {tab_name}: {e}")
 
     def apply_tab_visibility(self):
         """Apply tab visibility settings"""
