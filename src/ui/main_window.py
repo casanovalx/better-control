@@ -201,8 +201,15 @@ class BetterControl(Gtk.Window):
         elif self.arg_parser.find_arg(("-u", "--usbguard")):
             requested_tab = "USBGuard"
 
-        # Create placeholders for all tabs, except requested one
+        # Load saved tab visibility settings
+        visibility = self.settings.get("visibility", {})
+
+        # Create placeholders or tabs respecting visibility
         for idx, tab_name in enumerate(tab_order):
+            if not visibility.get(tab_name, True):
+                # Skip hidden tabs
+                continue
+
             if tab_name == requested_tab:
                 # Create requested tab immediately
                 try:
@@ -226,7 +233,7 @@ class BetterControl(Gtk.Window):
                     placeholder,
                     self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
                 )
-                self.tabs[tab_name] = None  # Not yet created
+                self.tabs[tab_name] = placeholder  # Track placeholder widget
                 self.tab_pages[tab_name] = page_num
 
         # Connect switch-page to lazy load other tabs
@@ -822,27 +829,26 @@ class BetterControl(Gtk.Window):
                 self.settings["visibility"] = {}
             self.settings["visibility"][tab_name] = False
             save_settings(self.settings, self.logging)
-            
-            # Apply the change
+
+            # Remove tab or placeholder immediately if it exists
             if tab_name in self.tabs:
-                tab = self.tabs[tab_name]
-                page_num = -1
-                # Find current page number if tab is present
-                for i in range(self.notebook.get_n_pages()):
-                    if self.notebook.get_nth_page(i) == tab:
-                        page_num = i
-                        break
-                
-                if page_num != -1:
-                    # Need to remove the tab
-                    self.notebook.remove_page(page_num)
-                    # Update page numbers for tabs after this one
-                    for name, num in self.tab_pages.items():
-                        if num > page_num:
-                            self.tab_pages[name] = num - 1
-                    # Remove from tab_pages
-                    if tab_name in self.tab_pages:
-                        del self.tab_pages[tab_name]
+                tab_widget = self.tabs[tab_name]
+                if tab_widget is not None:
+                    page_num = -1
+                    # Find current page number
+                    for i in range(self.notebook.get_n_pages()):
+                        if self.notebook.get_nth_page(i) == tab_widget:
+                            page_num = i
+                            break
+
+                    if page_num != -1:
+                        self.notebook.remove_page(page_num)
+                        # Update tab_pages mapping
+                        for name, num in list(self.tab_pages.items()):
+                            if num > page_num:
+                                self.tab_pages[name] = num - 1
+                        if tab_name in self.tab_pages:
+                            del self.tab_pages[tab_name]
 
     def on_tab_order_changed(self, widget, tab_order):
         """Handle tab order changed signal from settings tab"""
@@ -924,7 +930,8 @@ class BetterControl(Gtk.Window):
         # Check if Power tab exists and handle its keys globally
         if "Power" in self.tabs:
             power_tab = self.tabs["Power"]
-            if power_tab is not None:
+            from ui.tabs.power_tab import PowerTab
+            if isinstance(power_tab, PowerTab):
                 # Always let Power tab handle keys first, regardless of which tab is active
                 if power_tab.on_key_press(widget, event):
                     return True
