@@ -574,9 +574,80 @@ class BetterControl(Gtk.Window):
 
         return False  # Required for GLib.idle_add
 
+    def unhide_tab(self, tab_name):
+        """Unhide a previously hidden tab"""
+        # First check if tab exists in our tabs dictionary
+        if tab_name not in self.tabs:
+            # Tab doesn't exist???, well then create it
+            try:
+                tab_classes = {
+                    "Bluetooth": BluetoothTab,
+                    "Volume": VolumeTab,
+                    "Wi-Fi": WiFiTab,
+                    "Battery": BatteryTab,
+                    "Display": DisplayTab,
+                    "Power": PowerTab,
+                    "Autostart": AutostartTab,
+                    "USBGuard": USBGuardTab
+                }
+                
+                if tab_name in tab_classes:
+                    self.logging.log(LogLevel.Info, f"Creating missing tab: {tab_name}")
+                    tab = tab_classes[tab_name](self.logging, self.txt)
+                    self.tabs[tab_name] = tab
+                    
+                    # Special handling for Power tab , why? cuz its special
+                    if tab_name == "Power":
+                        self.connect("key-press-event", tab.on_key_press)
+                        tab.is_visible = self.minimal_mode
+                else:
+                    self.logging.log(LogLevel.Warn, f"Cannot unhide non-existent tab: {tab_name}")
+                    return
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"Failed to create tab {tab_name}: {e}")
+                return
+
+        # Update visibility setting and ensure it persists
+        if "visibility" not in self.settings:
+            self.settings["visibility"] = {}
+        self.settings["visibility"][tab_name] = True
+        
+        # Special handling for Bluetooth tab to ensure persistence
+        if tab_name == "Bluetooth":
+            self.settings["bluetooth_visible"] = True
+            
+        save_settings(self.settings, self.logging)
+
+        # Apply the change
+        try:
+            self.apply_tab_visibility_with_order(tab_name)
+            
+            # Special handling for WiFi tab to load networks
+            if tab_name == "Wi-Fi" and hasattr(self.tabs[tab_name], 'load_networks'):
+                self.tabs[tab_name].load_networks()
+                
+            # Ensure tab is properly shown and stays visible
+            if tab_name in self.tab_pages:
+                page_num = self.tab_pages[tab_name]
+                self.notebook.set_current_page(page_num)
+                
+                # For Bluetooth tab, ensure it remains visible
+                if tab_name == "Bluetooth":
+                    self.tabs[tab_name].set_visible(True)
+                    self.tabs[tab_name].show_all()
+                
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Error applying visibility for {tab_name}: {e}")
+
     def apply_tab_visibility(self):
         """Apply tab visibility settings"""
+        self.apply_tab_visibility_with_order()
+
+    def apply_tab_visibility_with_order(self, newly_unhidden_tab=None):
+        """Apply tab visibility settings with optional tab ordering"""
         visibility = self.settings.get("visibility", {})
+        tab_order = self.settings.get("tab_order", [])
+        
         # Iterate through all tabs
         for tab_name, tab in self.tabs.items():
             # Default to showing tab if no setting exists
@@ -587,6 +658,7 @@ class BetterControl(Gtk.Window):
                 if self.notebook.get_nth_page(i) == tab:
                     page_num = i
                     break
+            
             # Apply visibility
             if should_show and page_num == -1:
                 # Need to add the tab
@@ -596,6 +668,23 @@ class BetterControl(Gtk.Window):
                     self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name)),
                 )
                 self.tab_pages[tab_name] = page_num
+                
+                # If this is a newly unhidden tab, reorder it properly
+                if tab_name == newly_unhidden_tab and tab_name in tab_order:
+                    target_pos = tab_order.index(tab_name)
+                    # Count only visible tabs before this one
+                    visible_count = 0
+                    for t in tab_order[:target_pos]:
+                        if t in self.tabs and visibility.get(t, True):
+                            visible_count += 1
+                    if page_num != visible_count:
+                        self.notebook.reorder_child(tab, visible_count)
+                        # Update page numbers
+                        self.tab_pages[tab_name] = visible_count
+                        for name, num in self.tab_pages.items():
+                            if name != tab_name and num >= visible_count and num < page_num:
+                                self.tab_pages[name] = num + 1
+                
                 self.notebook.show_all()  # Ensure notebook updates
             elif not should_show and page_num != -1:
                 # Need to remove the tab
@@ -754,67 +843,35 @@ class BetterControl(Gtk.Window):
 
     def on_tab_visibility_changed(self, widget, tab_name, visible):
         """Handle tab visibility changed signal from settings tab"""
-        # Update settings
-        if "visibility" not in self.settings:
-            self.settings["visibility"] = {}
-        self.settings["visibility"][tab_name] = visible
-        save_settings(self.settings, self.logging)
-        # Apply the change
-        if tab_name in self.tabs:
-            tab = self.tabs[tab_name]
-            page_num = -1
-            # Find current page number if tab is present
-            for i in range(self.notebook.get_n_pages()):
-                if self.notebook.get_nth_page(i) == tab:
-                    page_num = i
-                    break
-            if visible and page_num == -1:
-                # Need to add the tab
-                tab.show_all()  # Ensure tab is visible
-
-                # First append the tab to the notebook
-                page_num = self.notebook.append_page(
-                    tab,
-                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name)),
-                )
-                self.tab_pages[tab_name] = page_num
-
-                # Then reorder it according to the tab_order setting
-                tab_order = self.settings.get(
-                    "tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"]
-                )
-                if tab_name in tab_order:
-                    # Find the desired position for this tab
-                    target_position = 0
-                    for t in tab_order:
-                        if t == tab_name:
-                            break
-                        # Only count tabs that are currently visible
-                        if t in self.tab_pages:
-                            target_position += 1
-
-                    # Reorder the tab to its correct position
-                    if target_position != page_num:
-                        self.notebook.reorder_child(tab, target_position)
-
-                        # Update page numbers in self.tab_pages
-                        for name, num in self.tab_pages.items():
-                            if name == tab_name:
-                                self.tab_pages[name] = target_position
-                            elif num >= target_position and num < page_num:
-                                self.tab_pages[name] = num + 1
-
-                self.notebook.show_all()  # Ensure notebook updates
-            elif not visible and page_num != -1:
-                # Need to remove the tab
-                self.notebook.remove_page(page_num)
-                # Update page numbers for tabs after this one
-                for name, num in self.tab_pages.items():
-                    if num > page_num:
-                        self.tab_pages[name] = num - 1
-                # Remove from tab_pages
-                if tab_name in self.tab_pages:
-                    del self.tab_pages[tab_name]
+        if visible:
+            self.unhide_tab(tab_name)
+        else:
+            # Update settings
+            if "visibility" not in self.settings:
+                self.settings["visibility"] = {}
+            self.settings["visibility"][tab_name] = False
+            save_settings(self.settings, self.logging)
+            
+            # Apply the change
+            if tab_name in self.tabs:
+                tab = self.tabs[tab_name]
+                page_num = -1
+                # Find current page number if tab is present
+                for i in range(self.notebook.get_n_pages()):
+                    if self.notebook.get_nth_page(i) == tab:
+                        page_num = i
+                        break
+                
+                if page_num != -1:
+                    # Need to remove the tab
+                    self.notebook.remove_page(page_num)
+                    # Update page numbers for tabs after this one
+                    for name, num in self.tab_pages.items():
+                        if num > page_num:
+                            self.tab_pages[name] = num - 1
+                    # Remove from tab_pages
+                    if tab_name in self.tab_pages:
+                        del self.tab_pages[tab_name]
 
     def on_tab_order_changed(self, widget, tab_order):
         """Handle tab order changed signal from settings tab"""
