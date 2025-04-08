@@ -133,196 +133,148 @@ class BetterControl(Gtk.Window):
         # Initialize tabs and tab_pages earlier to avoid race conditions
         # These were previously initialized here but moved up to prevent segfaults
 
-        # Skip loading spinner in minimal mode for faster startup
-        if not self.minimal_mode:
-            self.loading_spinner = Gtk.Spinner()
-            self.loading_spinner.start()
-            # Add animation class to spinner
-            self.loading_spinner.get_style_context().add_class("spinner-pulse")
-
-            self.loading_label = Gtk.Label(label=self.txt.loading_tabs)
-            # Add animation class to label
-            self.loading_label.get_style_context().add_class("fade-in")
-
-            loading_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-            loading_box.set_halign(Gtk.Align.CENTER)
-            loading_box.set_valign(Gtk.Align.CENTER)
-            loading_box.pack_start(self.loading_spinner, False, False, 0)
-            loading_box.pack_start(self.loading_label, False, False, 0)
-            self.loading_page = self.notebook.append_page(
-                loading_box, Gtk.Label(label=self.txt.loading)
-            )
-        else:
-            # In minimal mode, we don't need a loading page
-            self.loading_page = -1  # Set to invalid page number
+        # Skip loading spinner entirely for faster startup
+        self.loading_page = -1  # No loading page used anymore
 
         # Store arg_parser before creating tabs
         self.arg_parser = arg_parser
 
-        self.create_tabs_async()
+        self.create_lazy_tabs()
         self.create_settings_button()
 
         self.connect("destroy", self.on_destroy)
         self.notebook.connect("switch-page", self.on_tab_switched)
 
-    def create_tabs_async(self):
-        """Create all tabs asynchronously"""
-        self.logging.log(LogLevel.Info, "Starting asynchronous tab creation")
-        # Start a thread to create tabs in the background
-        # Modern GTK threading approach:
-        # 1. Create tabs in a background thread
-        # 2. Use GLib.idle_add to update the UI from the background thread
-        # 3. Use Python threading primitives for synchronization
-        # 4. Never directly access GTK widgets from non-main threads
-        try:
-            thread = threading.Thread(target=self._create_tabs_thread)
-            thread.daemon = True
-            thread.start()
-            self.logging.log(LogLevel.Info, "Tab creation thread started successfully")
-        except Exception as e:
-            self.logging.log(LogLevel.Error, f"Failed to start tab creation thread: {e}")
-            # Create a fallback empty tab if thread creation fails
-            self._create_fallback_tab()
+    def create_lazy_tabs(self):
+        """Create only the initial tab, defer others until selected"""
+        self.logging.log(LogLevel.Info, "Initializing lazy tab loading")
 
-    def _create_tabs_thread(self):
-        """Thread function to create tabs"""
-        # Add a small delay to ensure GTK is fully initialized
-        import time
-        time.sleep(0.05)  # reduced delay for faster startup
+        # Map tab names to classes
+        self.tab_classes = {
+            "Volume": VolumeTab,
+            "Wi-Fi": WiFiTab,
+            "Bluetooth": BluetoothTab,
+            "Battery": BatteryTab,
+            "Display": DisplayTab,
+            "Power": PowerTab,
+            "Autostart": AutostartTab,
+            "USBGuard": USBGuardTab,
+        }
 
-        try:
-            # Get visibility setting, ignore if in minimal mode
-            visibility = {} if self.minimal_mode else self.settings.get("visibility", {})
+        # Map tab names to translated labels
+        self.tab_name_mapping = {
+            "Volume": self.txt.msg_tab_volume,
+            "Wi-Fi": self.txt.msg_tab_wifi,
+            "Bluetooth": self.txt.msg_tab_bluetooth,
+            "Battery": self.txt.msg_tab_battery,
+            "Display": self.txt.msg_tab_display,
+            "Power": self.txt.msg_tab_power,
+            "Autostart": self.txt.msg_tab_autostart,
+            "USBGuard": self.txt.msg_tab_usbguard,
+        }
 
-            # Create all tabs
-            tab_classes = {
-                "Volume": VolumeTab,
-                "Wi-Fi": WiFiTab,
-                "Bluetooth": BluetoothTab,
-                "Battery": BatteryTab,
-                "Display": DisplayTab,
-                "Power": PowerTab,
-                "Autostart": AutostartTab,
-                "USBGuard": USBGuardTab,
-            }
+        # Initialize tabs dict
+        self.tabs = {}
+        self.tab_pages = {}
 
-            # Skip hardware check for minimal mode
-            if not self.minimal_mode:
-                check_hardware_support(self, visibility, self.logging)
+        # Define tab order from user settings or default
+        tab_order = self.settings.get("tab_order", ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"])
 
-            # Create a lock for thread safety if it doesn't exist yet
-            if not hasattr(self, '_tab_creation_lock'):
-                self._tab_creation_lock = threading.RLock()
-                self.logging.log(LogLevel.Info, "Created tab creation lock")
+        # Default initial tab to first in saved tab order
+        requested_tab = tab_order[0] if tab_order else "Volume"
 
-            # Create a mapping between internal tab names and translated tab names
-            self.tab_name_mapping = {
-                "Volume": self.txt.msg_tab_volume,
-                "Wi-Fi": self.txt.msg_tab_wifi,
-                "Bluetooth": self.txt.msg_tab_bluetooth,
-                "Battery": self.txt.msg_tab_battery,
-                "Display": self.txt.msg_tab_display,
-                "Power": self.txt.msg_tab_power,
-                "Autostart": self.txt.msg_tab_autostart,
-                "USBGuard": self.txt.msg_tab_usbguard,
-            }
+        # Override with command-line args if specified
+        if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
+            requested_tab = "Volume"
+        elif self.arg_parser.find_arg(("-w", "--wifi")):
+            requested_tab = "Wi-Fi"
+        elif self.arg_parser.find_arg(("-a", "--autostart")):
+            requested_tab = "Autostart"
+        elif self.arg_parser.find_arg(("-b", "--bluetooth")):
+            requested_tab = "Bluetooth"
+        elif self.arg_parser.find_arg(("-B", "--battery")):
+            requested_tab = "Battery"
+        elif self.arg_parser.find_arg(("-d", "--display")):
+            requested_tab = "Display"
+        elif self.arg_parser.find_arg(("-p", "--power")):
+            requested_tab = "Power"
+        elif self.arg_parser.find_arg(("-u", "--usbguard")):
+            requested_tab = "USBGuard"
 
-            # Track if thread is still running to avoid segfaults during shutdown
-            with self._tab_creation_lock:
-                self.tabs_thread_running = True
-
-            # In minimal mode, only load the tab specified by command line arguments
-            if self.minimal_mode:
-                self.logging.log(LogLevel.Info, "Minimal mode: Only loading selected tab")
-                # Determine which tab to load based on command line arguments
-                tab_to_load = None
-                if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
-                    tab_to_load = "Volume"
-                elif self.arg_parser.find_arg(("-w", "--wifi")):
-                    tab_to_load = "Wi-Fi"
-                elif self.arg_parser.find_arg(("-a", "--autostart")):
-                    tab_to_load = "Autostart"
-                elif self.arg_parser.find_arg(("-b", "--bluetooth")):
-                    tab_to_load = "Bluetooth"
-                elif self.arg_parser.find_arg(("-B", "--battery")):
-                    tab_to_load = "Battery"
-                elif self.arg_parser.find_arg(("-d", "--display")):
-                    tab_to_load = "Display"
-                elif self.arg_parser.find_arg(("-p", "--power")):
-                    tab_to_load = "Power"
-                elif self.arg_parser.find_arg(("-u", "--usbguard")):
-                    tab_to_load = "USBGuard"
-                else:
-                    # Default to Volume if no tab specified but minimal mode is enabled
-                    tab_to_load = "Volume"
-                    self.logging.log(LogLevel.Info, "No tab specified in minimal mode, defaulting to Volume")
-
-                # Only create the selected tab
-                if tab_to_load in tab_classes:
-                    try:
-                        self.logging.log(LogLevel.Debug, f"Starting to create {tab_to_load} tab")
-                        tab_instance = tab_classes[tab_to_load](self.logging, self.txt)
-                        
-                        # Store tab instance and add to notebook
-                        with self._tab_creation_lock:
-                            if self.tabs_thread_running:
-                                # Add to tabs dictionary
-                                self.tabs[tab_to_load] = tab_instance
-                                
-                                # Special handling for power tab to ensure keybinds work
-                                if tab_to_load == "Power":
-                                    tab_instance.minimal_mode = True
-                                    tab_instance.is_visible = True
-                                    
-                                # Add to UI on the main thread
-                                GLib.idle_add(self._add_tab_to_ui, tab_to_load, tab_instance)
-                        
-                        self.logging.log(LogLevel.Debug, f"Successfully created {tab_to_load} tab instance")
-                    except Exception as e:
-                        self.logging.log(LogLevel.Error, f"Error creating {tab_to_load} tab: {e}")
-                        self.logging.log(LogLevel.Error, f"Stack trace: {traceback.format_exc()}")
+        # Create placeholders for all tabs, except requested one
+        for idx, tab_name in enumerate(tab_order):
+            if tab_name == requested_tab:
+                # Create requested tab immediately
+                try:
+                    tab_instance = self.tab_classes[tab_name](self.logging, self.txt)
+                    tab_instance.show_all()
+                    page_num = self.notebook.append_page(
+                        tab_instance,
+                        self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
+                    )
+                    self.tabs[tab_name] = tab_instance
+                    self.tab_pages[tab_name] = page_num
+                    self.notebook.set_current_page(page_num)
+                    self.logging.log(LogLevel.Info, f"Created initial tab: {tab_name}")
+                except Exception as e:
+                    self.logging.log(LogLevel.Error, f"Failed to create initial tab {tab_name}: {e}")
             else:
-                # Normal mode: Create all tabs one by one
-                for tab_name, tab_class in tab_classes.items():
-                    try:
-                        # Check if thread should still run - use lock to prevent race conditions
-                        with self._tab_creation_lock:
-                            if not hasattr(self, 'tabs_thread_running') or not self.tabs_thread_running:
-                                self.logging.log(LogLevel.Info, "Tab creation thread stopped")
-                                return
-                        # Skip non-visible tab creation
-                        if not visibility.get(tab_name, True):
-                            self.logging.log(LogLevel.Info, f"Skipping non visible tab :{tab_name}")
-                            continue
+                # Insert empty placeholder
+                placeholder = Gtk.Box()
+                placeholder.show_all()
+                page_num = self.notebook.append_page(
+                    placeholder,
+                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
+                )
+                self.tabs[tab_name] = None  # Not yet created
+                self.tab_pages[tab_name] = page_num
 
-                        # Create the tab
-                        self.logging.log(LogLevel.Debug, f"Starting to create {tab_name} tab")
-                        tab = tab_class(self.logging, self.txt)
-                        self.logging.log(LogLevel.Debug, f"Successfully created {tab_name} tab instance")
+        # Connect switch-page to lazy load other tabs
+        self.notebook.connect("switch-page", self.lazy_load_tab)
 
-                        # Update UI from main thread safely
-                        GLib.idle_add(self._add_tab_to_ui, tab_name, tab)
+        # Show all widgets
+        self.show_all()
 
-                        # Small delay to avoid blocking the UI
-                        GLib.usleep(10000)  # 10ms delay
+    def lazy_load_tab(self, notebook, page, page_num):
+        """Instantiate tab on first switch if not yet created"""
+        # Determine tab name by page_num
+        tab_name = None
+        for name, num in self.tab_pages.items():
+            if num == page_num:
+                tab_name = name
+                break
+        if not tab_name:
+            return
 
-                    except Exception as e:
-                        error_msg = f"Failed creating {tab_name} tab: {e}"
-                        self.logging.log(LogLevel.Error, error_msg)
-                        # Print full traceback to stderr
-                        import traceback
-                        traceback.print_exc()
-                        print(f"FATAL ERROR: {error_msg}", file=sys.stderr)
+        # If already created, do nothing
+        if self.tabs.get(tab_name):
+            return
 
-            # Complete initialization on main thread
-            GLib.idle_add(self._finish_tab_loading)
+        # Defer real tab creation to avoid segfault during switch-page
+        def replace_placeholder():
+            try:
+                tab_class = self.tab_classes.get(tab_name)
+                if not tab_class:
+                    return False
+                tab_instance = tab_class(self.logging, self.txt)
+                tab_instance.show_all()
+                self.notebook.remove_page(page_num)
+                new_page_num = self.notebook.insert_page(
+                    tab_instance,
+                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name)),
+                    page_num
+                )
+                self.tabs[tab_name] = tab_instance
+                self.tab_pages[tab_name] = new_page_num
+                self.logging.log(LogLevel.Info, f"Lazily created tab: {tab_name}")
+                self.show_all()
+                # Activate the newly created tab immediately
+                self.notebook.set_current_page(new_page_num)
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"Failed to lazily create tab {tab_name}: {e}")
+            return False  # Only run once
 
-            # Mark thread as completed - use lock to prevent race conditions
-            with self._tab_creation_lock:
-                self.tabs_thread_running = False
-
-        finally:
-            pass
+        GLib.idle_add(replace_placeholder)
 
     def _add_tab_to_ui(self, tab_name, tab):
         """Add a tab to the UI (called from main thread)"""
@@ -972,9 +924,10 @@ class BetterControl(Gtk.Window):
         # Check if Power tab exists and handle its keys globally
         if "Power" in self.tabs:
             power_tab = self.tabs["Power"]
-            # Always let Power tab handle keys first, regardless of which tab is active
-            if power_tab.on_key_press(widget, event):
-                return True
+            if power_tab is not None:
+                # Always let Power tab handle keys first, regardless of which tab is active
+                if power_tab.on_key_press(widget, event):
+                    return True
 
         # In minimal mode, we want to let the active tab handle key events first
         if self.minimal_mode:
