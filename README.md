@@ -195,7 +195,7 @@ sudo make uninstall
 
 ## 🧪 Compatibility Matrix
 
-Better-Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasma. It should work on most Linux distributions with minor adjustments.
+Better Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasma. It should work on most Linux distributions with minor adjustments.
 
 <table>
   <tr>
@@ -225,7 +225,7 @@ Better-Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasm
 </table>
 
 > [!NOTE]
-> If you test Better-Control on a different setup, please share your experience in the discussions or issues section.
+> If you test Better Control on a different setup, please share your experience in the discussions or issues section.
 
 <br>
 
