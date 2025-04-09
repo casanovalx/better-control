@@ -13,7 +13,7 @@ from utils.settings import load_settings, save_settings
 from tools.display import get_brightness, get_display_info, get_displays, rotate_display, set_brightness
 from tools.hyprland import get_hyprland_displays, set_hyprland_transform, get_hyprland_rotation
 from tools.globals import get_current_session
-
+from ui.dialogs.rotation_dialog import RotationConfirmDialog
 
 class DisplayTab(Gtk.Box):
     """Display settings tab"""
@@ -264,27 +264,18 @@ class DisplayTab(Gtk.Box):
                 success = rotate_display(self.current_display, "generic", rotation, self.logging)
 
             if success:
-                # show confirmation dialog for display rotation 
-                dialog = Gtk.MessageDialog(
-                    transient_for=self.get_toplevel(),
-                    flags=0,
-                    message_type=Gtk.MessageType.QUESTION,
-                    buttons=Gtk.ButtonsType.NONE,
-                    text="Keep display changes?"
-                )
-                dialog.add_buttons("Revert back", Gtk.ResponseType.CANCEL)
-                dialog.add_buttons("Keep changes", Gtk.ResponseType.OK)
-                dialog.set_default_response(Gtk.ResponseType.CANCEL)
-                
+                # show confirmation dialog for display rotation
+                dialog = RotationConfirmDialog(
+                    self.get_toplevel(),
+                    self.current_display,
+                    self.previous_orientation, 
+                    self.session,
+                    self.logging
+                )               
                 response = dialog.run()
                 dialog.destroy()
                 
-                if response == Gtk.ResponseType.CANCEL:
-                    if "Hyprland" in self.session:
-                        set_hyprland_transform(self.logging, self.current_display, self.previous_orientation)
-                    else:
-                        rotate_display(self.current_display, "gnome", self.previous_orientation, self.logging)
-                elif response == Gtk.ResponseType.OK:
+                if response == Gtk.ResponseType.OK:
                     self.previous_orientation = rotation
 
     def get_current_orientation(self) -> str:
