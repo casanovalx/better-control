@@ -156,3 +156,9 @@ notebook > stack {
 .autostart-icon-animate {
     animation: pulse 600ms ease-in-out;
 }
+
+
+expander {
+    padding: 6px;
+    border-radius: 6px;
+}

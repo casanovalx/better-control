@@ -124,22 +124,22 @@ class DisplayTab(Gtk.Box):
             display_combo.set_active(0)
         display_combo.connect("changed", self.on_display_changed)
         orientation_buttons.pack_start(display_combo, True, True, 0)
-        
-        rotations = [
-            ("normal", "object-rotate-right-symbolic", self.txt.display_default),
-            ("left", "object-rotate-left-symbolic", self.txt.display_left),
-            ("right", "object-rotate-right-symbolic", self.txt.display_right),
-            ("inverted", "object-flip-vertical-symbolic", self.txt.display_inverted)
-        ]
-        for rotation, icon_name, tooltip in rotations:
-            button = Gtk.Button()
-            icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.LARGE_TOOLBAR)
-            button.set_image(icon)
-            button.set_tooltip_text(tooltip)
-            button.connect("clicked", self.on_rotation_clicked, rotation)
-            orientation_buttons.pack_start(button, True, True, 0)
-        
+              
         orientation_box.pack_start(orientation_buttons, False, False, 0)
+        
+        # Rotation controls in an expander (collapsed by default)
+        rotation_expander = Gtk.Expander(label=f"<b>{self.txt.display_rotation}</b>")
+        rotation_expander.set_use_markup(True)
+        rotation_expander.set_expanded(False)
+        rotation_expander.set_margin_top(10)
+        
+        # Create a container for rotation controls
+        rotation_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        rotation_box.set_margin_top(10)
+        rotation_box.pack_start(self.create_rotation_controls(), True, True, 0)
+        rotation_expander.add(rotation_box)
+        orientation_box.pack_start(rotation_expander, False, False, 0)
+        
         orientation_frame.add(orientation_box)
         
         # Brightness section
@@ -402,3 +402,122 @@ class DisplayTab(Gtk.Box):
     def on_destroy(self, widget):
         """Clean up resources when widget is destroyed"""
         self.stop_auto_update()
+
+    def create_rotation_controls(self):
+        """Create rotation controls with hyprland's transform options"""
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+
+        # Section 1: Simple Rotations (CW/CCW)
+        simple_rotation_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        simple_label = Gtk.Label()
+        simple_label.set_markup("<span weight='medium'>Quick Rotate</span>")
+        simple_label.set_halign(Gtk.Align.START)
+        simple_rotation_box.pack_start(simple_label, False, False, 0)
+
+        simple_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        simple_buttons.set_homogeneous(True)
+
+        # Rotate CW/CCW buttons
+        rotations = [
+            ("rotate-ccw", "object-rotate-left-symbolic", "Rotate Counter-Clockwise"),
+            ("rotate-cw", "object-rotate-right-symbolic", "Rotate Clockwise")
+        ]
+
+        for action, icon_name, tooltip in rotations:
+            button = Gtk.Button()
+            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.LARGE_TOOLBAR)
+            box.pack_start(icon, False, False, 0)
+            label = Gtk.Label(tooltip)
+            box.pack_start(label, False, False, 0)
+            button.add(box)
+            button.set_tooltip_text(tooltip)
+            button.connect("clicked", self.on_rotation_clicked, action)
+            simple_buttons.pack_start(button, True, True, 0)
+
+        simple_rotation_box.pack_start(simple_buttons, False, False, 0)
+        main_box.pack_start(simple_rotation_box, False, False, 0)
+
+        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        separator.set_margin_top(6)
+        separator.set_margin_bottom(6)
+        main_box.pack_start(separator, False, False, 0)
+
+        # Section 2: basic rotations (0-3)
+        basic_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        basic_label = Gtk.Label()
+        basic_label.set_markup("<span weight='medium'>Basic Rotations</span>")
+        basic_label.set_halign(Gtk.Align.START)
+        basic_box.pack_start(basic_label, False, False, 0)
+
+        basic_grid = Gtk.Grid()
+        basic_grid.set_row_spacing(8)
+        basic_grid.set_column_spacing(8)
+        basic_grid.set_row_homogeneous(True)
+        basic_grid.set_column_homogeneous(True)
+
+        # Hyprland transforms 0-3
+        rotations = [
+            ("normal", "Normal (0°)", 0, 0),
+            ("90°", "90° Right", 0, 1),
+            ("180°", "180°", 1, 0),
+            ("270°", "270° Left", 1, 1)
+        ]
+
+        for action, label, row, col in rotations:
+            button = Gtk.Button(label=label)
+            button.connect("clicked", self.on_rotation_clicked, action)
+            basic_grid.attach(button, col, row, 1, 1)
+
+        basic_box.pack_start(basic_grid, False, False, 0)
+        main_box.pack_start(basic_box, False, False, 0)
+
+        separator2 = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        separator2.set_margin_top(6)
+        separator2.set_margin_bottom(6)
+        main_box.pack_start(separator2, False, False, 0)
+
+        # Section 3: flip controls (4-7)
+        flip_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        flip_label = Gtk.Label()
+        flip_label.set_markup("<span weight='medium'>Flip Controls</span>")
+        flip_label.set_halign(Gtk.Align.START)
+        flip_box.pack_start(flip_label, False, False, 0)
+
+        flip_grid = Gtk.Grid()
+        flip_grid.set_row_spacing(8)
+        flip_grid.set_column_spacing(8)
+        flip_grid.set_row_homogeneous(True)
+        flip_grid.set_column_homogeneous(True)
+
+        # Hyprland transforms 4-7
+        flips = [
+            ("flip", "Flip Horizontal", 0, 0),
+            ("flip-vertical", "Flip Vertical", 0, 1),
+            ("flip-90°", "Flip + 90°", 1, 0),
+            ("flip-270°", "Flip + 270°", 1, 1)
+        ]
+
+        for action, label, row, col in flips:
+            button = Gtk.Button(label=label)
+            button.connect("clicked", self.on_rotation_clicked, action)
+            flip_grid.attach(button, col, row, 1, 1)
+
+        flip_box.pack_start(flip_grid, False, False, 0)
+        main_box.pack_start(flip_box, False, False, 0)
+
+        # Add help text explaining transforms
+        help_text = Gtk.Label()
+        help_text.set_markup(
+            "<i><small>"
+            "Transform values:\n"
+            "0: Normal | 1: 90° | 2: 180° | 3: 270° \n"
+            "4: Flip H | 5: Flip V | 6: Flip+90° | 7: Flip+270°"
+            "</small></i>"
+        )
+        help_text.set_margin_top(8)
+        help_text.set_xalign(0)  # Align left
+        help_text.set_line_wrap(True)
+        main_box.pack_start(help_text, False, False, 0)
+
+        return main_box
