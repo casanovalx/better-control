@@ -245,8 +245,13 @@ class DisplayTab(Gtk.Box):
     def on_rotation_clicked(self, button, rotation):
         """Handle orientation button click"""
         if self.current_display:
-            current_orientation = self.get_current_orientation()
-
+            
+            # Get orientation if in hyprland
+            if "Hyprland" in self.session:
+                current_orientation = get_hyprland_rotation()
+            else:
+                current_orientation = self.get_current_orientation()
+            
             # Skip if trying to rotate to current orientation
             if rotation.lower() == current_orientation.lower():
                 self.logging.log(LogLevel.Info, f"Already in {get_hyprland_rotation()}")
@@ -254,7 +259,7 @@ class DisplayTab(Gtk.Box):
             
             self.previous_orientation = current_orientation
             if "Hyprland" in self.session:
-                success = set_hyprland_transform(self.current_display, rotation)
+                success = set_hyprland_transform(self.logging, self.current_display, rotation)
             else:
                 success = rotate_display(self.current_display, "generic", rotation, self.logging)
 
@@ -276,7 +281,7 @@ class DisplayTab(Gtk.Box):
                 
                 if response == Gtk.ResponseType.CANCEL:
                     if "Hyprland" in self.session:
-                        set_hyprland_transform(self.current_display, self.previous_orientation)
+                        set_hyprland_transform(self.logging, self.current_display, self.previous_orientation)
                     else:
                         rotate_display(self.current_display, "gnome", self.previous_orientation, self.logging)
                 elif response == Gtk.ResponseType.OK:
