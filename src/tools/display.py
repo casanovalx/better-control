@@ -101,7 +101,7 @@ def rotate_display(display: str, desktop_env: str, orientation: str, logging: Lo
         session = get_current_session()
         
         if "Hyprland" in session:
-            return set_hyprland_transform(display, orientation)
+            return set_hyprland_transform(logging, display, orientation)
 
         elif desktop_env.lower() == "gnome":
             rotation_map = {

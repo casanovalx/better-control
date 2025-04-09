@@ -3,6 +3,8 @@
 from pathlib import Path
 import subprocess
 
+from utils.logger import LogLevel, Logger
+
 CONFIG_FILES = [
     Path.home() / ".config/hypr/hyprland.conf",
     Path.home() / ".config/hypr/autostart.conf"
@@ -80,22 +82,38 @@ def get_hyprland_displays() -> dict:
             
         displays = {}
         current_display = None
-        
+
         for line in result.stdout.split('\n'):
             line = line.strip()
             if line.startswith('Monitor'):
                 current_display = line.split()[1]
-            elif 'transform:' in line and current_display:
-                transform = int(line.split(':')[1].strip())
-                displays[current_display] = transform
-                current_display = None
-                
+                displays[current_display] = {}
+
+            elif current_display:
+                if 'transform:' in line:
+                    transform = int(line.split(':')[1].strip())
+                    displays[current_display]['transform'] = transform
+                elif '@' in line and 'x' in line and 'at ' in line:
+                    res_part = line.split('@')[0].strip()
+                    width, height = map(int, res_part.split('x'))
+                    displays[current_display]['resolution'] = {'width': width, 'height': height}
+
+                    # Get refresh rate
+                    refresh_part = line.split('@')[1].split(' at ')[0].strip()
+                    refresh = int(float(refresh_part))
+                    displays[current_display]['refresh_rate'] = refresh
+
+                if ' at ' in line:
+                        pos_part = line.split(' at ')[1].strip()
+                        pos_x, pos_y = map(int, pos_part.split('x'))
+                        displays[current_display]['position'] = {'x': pos_x, 'y': pos_y}
+
         return displays
     except Exception as e:
         print(f"Error getting Hyprland displays: {e}")
         return {}
     
-def set_hyprland_transform(display: str, orientation: str) -> bool:
+def set_hyprland_transform(logging: Logger, display: str, orientation: str) -> bool:
     """Set display transform in Hyprland
 
     Args:
@@ -105,24 +123,41 @@ def set_hyprland_transform(display: str, orientation: str) -> bool:
         bool: True if successful, False otherwise
     """
     try:
+        displays = get_hyprland_displays()
+        if display not in displays:
+            logging.log(LogLevel.Error, f"Display '{display}' not found")
+            return False
+
+        info = displays[display]
+        
+        resolution = info['resolution']
+        refresh = info['refresh_rate']
+        if 'position' not in info:
+            position = {'x': 0, 'y': 0}  # Default position
+            logging.log(LogLevel.Warn, f"Position information missing for display '{display}', using (0,0)")
+        else:
+            position = info['position']
         transform_map = {
-            "normal": 0,
-            "right": 1,
-            "inverted": 2,
-            "left": 3
+            "normal": 0, "right": 1, "inverted": 2, "left": 3
         }
         
         transform = transform_map.get(orientation.lower(), 0)
-        
+        pos_str = f"{position['x']}x{position['y']}"
         # hyprctl command to transform display 
         cmd = [
             "hyprctl",
             "keyword",
-            f"monitor {display},preferred,auto,1,transform,{transform}"
+            f"monitor {display},{resolution['width']}x{resolution['height']}@{refresh},"
+            f"{pos_str},1,transform,{transform}"
         ]
         
+        logging.log(LogLevel.Info, f"Running command: {' '.join(cmd)}")
         result = subprocess.run(cmd, check=True)
-        return result.returncode == 0
+        
+        if result.returncode != 0:
+            logging.log(LogLevel.Error, f"Command failed with: {result.stderr}")
+            return False
+        return True
 
     except Exception as e:
         print(f"Error setting Hyprland transform: {e}")
