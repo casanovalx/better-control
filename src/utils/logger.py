@@ -3,9 +3,32 @@ from enum import Enum
 from io import TextIOWrapper
 import os
 import re
+import sys
+import traceback
 from sys import stderr, stdout
 import time
 from typing import Dict, List, Optional, Pattern, Tuple
+
+CRASH_LOG_DIR = os.path.join(
+    os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")),
+    "better-control",
+    "crashes"
+)
+
+def emergency_log(message: str, stack: str = "") -> None:
+    """Emergency logging for crashes"""
+    try:
+        os.makedirs(CRASH_LOG_DIR, exist_ok=True)
+        crash_file = os.path.join(
+            CRASH_LOG_DIR,
+            f"crash_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        )
+        with open(crash_file, "w") as f:
+            f.write(f"CRASH: {message}\n")
+            f.write(f"Python: {sys.version}\n")
+            f.write(f"Stack:\n{stack}\n")
+    except:
+        pass
 
 from utils.arg_parser import ArgParse
 from utils.pair import Pair

@@ -22,70 +22,78 @@ def ensure_config_dir(logging: Logger) -> None:
         logging.log(LogLevel.Error, f"Error creating config directory: {e}")
 
 def load_settings(logging: Logger) -> dict:
-    """Load settings from the settings file
-
-    Returns:
-        dict: Dictionary containing settings
-    """
-    # Ensure config directory exists before attempting to load settings
+    """Load settings from the settings file with validation"""
     ensure_config_dir(logging)
+    default_settings = {
+        "visibility": {},
+        "positions": {},
+        "usbguard_hidden_devices": [],
+        "language": "en"
+    }
 
-    settings = {"visibility": {}, "positions": {}}
-    logging.log(LogLevel.Info, f"Loading settings from {SETTINGS_FILE}")
-    if os.path.exists(SETTINGS_FILE):
-        try:
-            with open(SETTINGS_FILE, "r") as f:
-                data = json.load(f)
-                # Handle legacy format (just visibility settings)
-                if isinstance(data, dict) and not ("visibility" in data and "positions" in data):
-                    settings["visibility"] = data
-                    logging.log(LogLevel.Info, "Loaded legacy format settings")
-                else:
-                    settings = data
-                    logging.log(LogLevel.Info, f"Loaded settings: {list(settings.keys())}")
-                    if "language" in settings:
-                        logging.log(LogLevel.Info, f"Language setting found: {settings['language']}")
-                    else:
-                        logging.log(LogLevel.Warn, "No language setting found in settings file")
-        except Exception as e:
-            logging.log(LogLevel.Error, f"Error loading settings: {e}")
-    else:
-        logging.log(LogLevel.Warn, f"Settings file not found at {SETTINGS_FILE}, using defaults")
-    return settings
+    if not os.path.exists(SETTINGS_FILE):
+        logging.log(LogLevel.Info, "Using default settings (file not found)")
+        return default_settings
 
-def save_settings(settings: dict, logging: Logger) -> None:
-    """Save settings to the settings file
-    Args:
-        settings (dict): Settings to save
-    """
     try:
-        # Ensure the config directory exists
-        ensure_config_dir(logging)
-
-        # Log what we're saving
-        logging.log(LogLevel.Info, f"Saving settings to {SETTINGS_FILE}")
-        logging.log(LogLevel.Info, f"Settings keys: {list(settings.keys())}")
-
-        # Ensure language setting is preserved
-        if "language" in settings:
-            logging.log(LogLevel.Info, f"Saving language setting: {settings['language']}")
-        else:
-            # Try to load existing settings to preserve language
-            if os.path.exists(SETTINGS_FILE):
-                try:
-                    with open(SETTINGS_FILE, "r") as f:
-                        existing_settings = json.load(f)
-                        if "language" in existing_settings:
-                            settings["language"] = existing_settings["language"]
-                            logging.log(LogLevel.Info, f"Preserved existing language setting: {settings['language']}")
-                except Exception as e:
-                    logging.log(LogLevel.Error, f"Error loading existing settings: {e}")
-            else:
-                logging.log(LogLevel.Warn, "No language setting found in settings to save")
-
-        with open(SETTINGS_FILE, "w") as f:
-            json.dump(settings, f, indent=4)
-            logging.log(LogLevel.Info, "Settings saved successfully")
-
+        with open(SETTINGS_FILE, 'r') as f:
+            content = f.read().strip()
+            if not content.startswith('{'):
+                content = '{' + content  # Fix malformed JSON
+            settings = json.loads(content)
+            logging.log(LogLevel.Info, f"Loaded settings from {SETTINGS_FILE}")
+            
+        if not isinstance(settings, dict):
+            logging.log(LogLevel.Warn, "Invalid settings format - using defaults")
+            return default_settings
+            
+        for key in default_settings:
+            if key not in settings:
+                settings[key] = default_settings[key]
+                logging.log(LogLevel.Info, f"Added missing setting: {key}")
+                
+        return settings
+        
     except Exception as e:
-        logging.log(LogLevel.Error, f"Error saving settings: {e}")
+        logging.log_error(f"Error loading settings: {e}")
+        return default_settings
+
+def save_settings(settings: dict, logging: Logger) -> bool:
+    """Save settings to the settings file with atomic write and validation"""
+    try:
+        ensure_config_dir(logging)
+        
+        if not isinstance(settings, dict):
+            logging.log_error("Invalid settings - not a dictionary")
+            return False
+            
+        default_settings = {
+            "visibility": {},
+            "positions": {},
+            "usbguard_hidden_devices": [],
+            "language": "en"
+        }
+        for key in default_settings:
+            if key not in settings:
+                settings[key] = default_settings[key]
+
+        temp_path = SETTINGS_FILE + '.tmp'
+        with open(temp_path, 'w') as f:
+            json.dump(settings, f, indent=4)
+        
+
+        with open(temp_path, 'r') as f:
+            json.load(f) 
+            
+        os.replace(temp_path, SETTINGS_FILE)
+        logging.log_info(f"Settings saved successfully to {SETTINGS_FILE}")
+        return True
+        
+    except Exception as e:
+        logging.log_error(f"Error saving settings: {e}")
+        try:
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.unlink(temp_path)
+        except:
+            pass
+        return False

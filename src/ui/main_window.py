@@ -31,11 +31,22 @@ from tools.globals import check_hardware_support
 class BetterControl(Gtk.Window):
 
     def __init__(self, txt: Translation, arg_parser: ArgParse, logging: Logger) -> None:
-        # Initialize thread lock before anything else
+        # Initialize thread safety mechanisms
+        self._initialized = False
+        self._is_destroyed = False
+        self._init_lock = threading.Lock()
         self._tab_creation_lock = threading.RLock()
+        self._destroy_lock = threading.Lock()
 
-        # Initialize GTK window
-        super().__init__(title="Better Control")
+        # Safe GTK initialization
+        with self._init_lock:
+            try:
+                # Initialize GTK window
+                super().__init__(title="Better Control")
+                self._initialized = True
+            except Exception as e:
+                logging.log(LogLevel.Error, f"Window initialization failed: {e}")
+                raise
 
         self.logging = logging
         self.set_default_size(600, 400)
@@ -1051,13 +1062,38 @@ class BetterControl(Gtk.Window):
         return False  # Let other handlers process the event
 
     def on_destroy(self, window):
-        """Save settings and quit"""
-        self.logging.log(LogLevel.Info, "Application shutting down")
+        """Thread-safe window destruction with initialization check"""
+        if self._is_destroyed or not hasattr(self, '_initialized') or not self._initialized:
+            return
+            
+        with self._destroy_lock:
+            self._is_destroyed = True
+            self.logging.log(LogLevel.Info, "Application shutting down")
 
-        # Stop any ongoing tab creation - use lock to prevent race conditions
-        if hasattr(self, '_tab_creation_lock') and hasattr(self, 'tabs_thread_running'):
-            with self._tab_creation_lock:
-                self.tabs_thread_running = False
+            # Phase 1: Stop background operations
+            try:
+                if hasattr(self, '_tab_creation_lock') and hasattr(self, 'tabs_thread_running'):
+                    with self._tab_creation_lock:
+                        self.tabs_thread_running = False
+            except:
+                pass
+
+            # Phase 2: Clean up children
+            try:
+                for child in self.get_children():
+                    try:
+                        child.destroy()
+                    except:
+                        pass
+            except:
+                pass
+
+            # Phase 3: Final cleanup
+            try:
+                if Gtk.main_level() > 0:
+                    GLib.idle_add(Gtk.main_quit)
+            except:
+                pass
 
         # Ensure USBGuard is in the tab_order setting before saving
         if "tab_order" in self.settings:

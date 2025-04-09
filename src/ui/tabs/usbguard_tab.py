@@ -14,6 +14,8 @@ class USBGuardTab(Gtk.Box):
         self.logging = logging
         self.txt = txt
         self.previous_devices = None  # Initialize as None to skip first refresh
+        from utils.hidden_devices import HiddenDevices
+        self.hidden_devices = HiddenDevices(logging)
         self.manual_operations = set()  # Track devices being manually allowed/blocked
         self.set_margin_start(10)
         self.set_margin_end(10)
@@ -106,6 +108,10 @@ class USBGuardTab(Gtk.Box):
         
         # Control buttons
         button_box = Gtk.Box(spacing=10)
+        self.manage_button = Gtk.Button(label="Manage Devices")
+        self.manage_button.connect("clicked", self.show_manage_dialog)
+        button_box.pack_start(self.manage_button, False, False, 0)
+        
         self.policy_button = Gtk.Button(label=get_translations().policy)
         self.policy_button.connect("clicked", self.show_policy_dialog)
         button_box.pack_start(self.policy_button, False, False, 0)
@@ -164,12 +170,15 @@ class USBGuardTab(Gtk.Box):
                 )
                 return
                 
-            # Get device list with better error handling
+            # Get device list excluding hidden devices
             result = subprocess.run(["usbguard", "list-devices"],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE,
                                  check=True)
-            current_devices = result.stdout.decode('utf-8')
+            current_devices = "\n".join(
+                line for line in result.stdout.decode('utf-8').splitlines()
+                if line.strip() and not self.hidden_devices.contains(line.split()[0].split(':')[0])
+            )
             self.check_device_changes(current_devices)
             self.update_device_list(current_devices)
             self.status_label.set_text("")
@@ -243,12 +252,23 @@ class USBGuardTab(Gtk.Box):
         for child in self.device_list.get_children():
             self.device_list.remove(child)
         
-        if not devices_str.strip():
+        # Filter out hidden devices
+        visible_devices = []
+        for line in devices_str.splitlines():
+            if not line.strip():
+                continue
+            device_id = line.split()[0].split(':')[0]
+            if not self.hidden_devices.contains(device_id):
+                visible_devices.append(line)
+            else:
+                self.logging.log_info(f"Filtering out hidden device: {device_id}")
+        
+        if not visible_devices:
             self.show_error(get_translations().no_devices)
             return
         
-        # Add new devices
-        for line in devices_str.splitlines():
+        # Add new devices (only non-hidden ones)
+        for line in visible_devices:
             if not line.strip():
                 continue
                 
@@ -445,6 +465,120 @@ Status: {status_text}
                 print(f"Failed to block device: {e}")
             self.show_error(get_translations().operation_failed)
         
+
+    def show_manage_dialog(self, widget):
+        """Show dialog to manage hidden devices"""
+        dialog = None
+        try:
+            # Get ALL devices (including hidden ones) for management dialog
+            result = subprocess.run(["usbguard", "list-devices"],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 check=True)
+            devices = result.stdout.decode('utf-8').splitlines()
+            # Also include any hidden devices that might be currently disconnected
+            for device_id in self.hidden_devices:
+                if not any(d.startswith(device_id) for d in devices):
+                    devices.append(f"{device_id}: hidden (disconnected)")
+            
+            if not devices:
+                self.show_error("No USB devices found")
+                return
+            
+            dialog = Gtk.Dialog(title="Manage Visibility Of Devices",
+                            parent=self.get_toplevel(),
+                            flags=Gtk.DialogFlags.MODAL)
+            dialog.add_button("Done", Gtk.ResponseType.OK)
+            
+            header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            header_box.set_margin_start(10)
+            header_box.set_margin_end(10)
+            header_box.set_margin_top(10)
+            header_box.set_margin_bottom(10)
+            
+            
+            icon = Gtk.Image.new_from_icon_name("preferences-other-symbolic", Gtk.IconSize.DIALOG)
+            header_box.pack_start(icon, False, False, 0)
+            
+            title = Gtk.Label(label="<b>Manage Visibility Of Devices</b>")
+            title.set_use_markup(True)
+            header_box.pack_start(title, False, False, 0)
+            
+            dialog.get_content_area().pack_start(header_box, False, False, 0)
+                        
+            spacer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            spacer.set_size_request(-1, 10)  # height = 10px
+            dialog.get_content_area().pack_start(spacer, False, False, 0)
+
+ 
+            scrolled = Gtk.ScrolledWindow()
+            scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+            
+            # Create list box for devices
+            listbox = Gtk.ListBox()
+            listbox.set_selection_mode(Gtk.SelectionMode.NONE)
+
+            for device in devices:
+                if not device.strip():
+                    continue
+                    
+                device_id = device.split()[0].split(':')[0]
+                row = Gtk.ListBoxRow()
+                box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+                box.set_margin_start(10)
+                box.set_margin_end(10)
+                box.set_margin_top(5)
+                box.set_margin_bottom(5)
+                
+                check = Gtk.CheckButton()
+                # Initialize as checked (hidden) so unchecking will hide
+                check.set_active(not self.hidden_devices.contains(device_id))
+                check.connect("toggled", lambda b, d=device_id: self.on_device_toggled(b, not b.get_active(), d))
+                box.pack_start(check, False, False, 0)
+                
+                label = Gtk.Label(label=self.get_device_name(device))
+                label.set_halign(Gtk.Align.START)
+                box.pack_start(label, True, True, 0)
+                
+                row.add(box)
+                listbox.add(row)
+            
+            scrolled.add(listbox)
+            dialog.get_content_area().pack_start(scrolled, True, True, 0)
+            dialog.set_default_size(500, 400)  
+            dialog.show_all()
+            
+            response = dialog.run()
+            if response == Gtk.ResponseType.OK:
+                self.refresh_devices(None)
+            
+        except subprocess.CalledProcessError as e:
+            error_msg = e.stderr.decode('utf-8') if e.stderr else str(e)
+            self.show_error(f"Failed to get device list:\n{error_msg}")
+        finally:
+            if dialog:
+                dialog.destroy()
+
+    def on_device_toggled(self, button, should_hide, device_id):
+        """Handle device checkbox toggles
+        Args:
+            button: The checkbox widget
+            should_hide: True if device should be hidden, False to show
+            device_id: The device ID to toggle
+        """
+        try:
+            if should_hide:
+                if self.hidden_devices.add(device_id):
+                    self.logging.log(LogLevel.Info, f"Hiding device: {device_id}")
+                else:
+                    self.logging.log(LogLevel.Error, f"Failed to hide device: {device_id}")
+            else:
+                if self.hidden_devices.remove(device_id):
+                    self.logging.log(LogLevel.Info, f"Unhiding device: {device_id}")
+                else:
+                    self.logging.log(LogLevel.Error, f"Failed to unhide device: {device_id}")
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Error in device toggle handler: {e}")
 
     def show_policy_dialog(self, widget):
         # Store current selection
