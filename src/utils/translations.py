@@ -156,6 +156,13 @@ class English:
         self.display_right = "Right"
         self.display_inverted = "Inverted"
         
+        self.display_rotation = "Rotation Options"
+        self.display_simple_rotation = "Quick Rotation"
+        self.display_specific_orientation = "Specific Orientation"
+        self.display_flip_controls = "Display Flipping"
+        self.display_rotate_cw = "Rotate Clockwise"
+        self.display_rotate_ccw = "Rotate Counter-clockwise"
+        self.display_rotation_help = "Rotation applies right away. It’ll reset if you don’t confirm in 10 seconds."
 
         # Power tab translations
         self.power_title = "Power Management"

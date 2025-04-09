@@ -141,11 +141,27 @@ def set_hyprland_transform(logging: Logger, display: str, orientation: str) -> b
             logging.log(LogLevel.Warn, f"Position information missing for display '{display}', using (0,0)")
         else:
             position = info['position']
+        current_transform = info.get('transform', 0)
         transform_map = {
-            "normal": 0, "right": 1, "inverted": 2, "left": 3
+            "normal": 0,
+            "90°": 1,
+            "180°": 2,
+            "270°": 3,
+            "flip": 4,
+            "flip-vertical": 5,
+            "flip-90°": 6,
+            "flip-270°": 7,
+            "rotate-cw": (current_transform + 1) % 4,
+            "rotate-ccw": (current_transform - 1) % 4,
+            "flip-cw": ((current_transform + 1) % 4) + 4 if current_transform >= 4 else current_transform,
+            "flip-ccw": ((current_transform - 1) % 4) + 4 if current_transform >= 4 else current_transform
         }
         
-        transform = transform_map.get(orientation.lower(), 0)
+        if orientation.lower() in ["rotate-cw", "rotate-ccw", "flip-cw", "flip-ccw"]:
+            transform = transform_map[orientation.lower()]
+        else:
+            transform = transform_map.get(orientation.lower(), 0)
+
         pos_str = f"{position['x']}x{position['y']}"
         # hyprctl command to transform display 
         cmd = [
@@ -153,10 +169,7 @@ def set_hyprland_transform(logging: Logger, display: str, orientation: str) -> b
             "keyword",
             f"monitor {display},{resolution['width']}x{resolution['height']}@{refresh},"
             f"{pos_str},{scale},transform,{transform}"
-        ]
-        
-        # Strore orignal to revert back
-        orignal_transform = info.get('transform', 0)
+        ]        
         
         logging.log(LogLevel.Info, f"Running command: {' '.join(cmd)}")
         result = subprocess.run(cmd, check=True)
@@ -181,9 +194,13 @@ def get_hyprland_rotation():
                 transform_value = int(line.strip().split(":")[1].strip())
                 transform_map = {
                     0: "normal",
-                    1: "right",
-                    2: "inverted",
-                    3: "left"
+                    1: "90°",
+                    2: "180°",
+                    3: "270°",
+                    4: "flip",
+                    5: "flip-vertical",
+                    6: "flip-90°",
+                    7: "flip-270°"
                 }
                 return transform_map.get(transform_value, f"unknown ({transform_value})")
     except Exception as e:
