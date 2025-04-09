@@ -93,6 +93,9 @@ def get_hyprland_displays() -> dict:
                 if 'transform:' in line:
                     transform = int(line.split(':')[1].strip())
                     displays[current_display]['transform'] = transform
+                elif 'scale:' in line:
+                    scale = float(line.split(':')[1].strip())
+                    displays[current_display]['scale'] = scale
                 elif '@' in line and 'x' in line and 'at ' in line:
                     res_part = line.split('@')[0].strip()
                     width, height = map(int, res_part.split('x'))
@@ -132,6 +135,7 @@ def set_hyprland_transform(logging: Logger, display: str, orientation: str) -> b
         
         resolution = info['resolution']
         refresh = info['refresh_rate']
+        scale = info.get('scale', 1.0)
         if 'position' not in info:
             position = {'x': 0, 'y': 0}  # Default position
             logging.log(LogLevel.Warn, f"Position information missing for display '{display}', using (0,0)")
@@ -148,8 +152,11 @@ def set_hyprland_transform(logging: Logger, display: str, orientation: str) -> b
             "hyprctl",
             "keyword",
             f"monitor {display},{resolution['width']}x{resolution['height']}@{refresh},"
-            f"{pos_str},1,transform,{transform}"
+            f"{pos_str},{scale},transform,{transform}"
         ]
+        
+        # Strore orignal to revert back
+        orignal_transform = info.get('transform', 0)
         
         logging.log(LogLevel.Info, f"Running command: {' '.join(cmd)}")
         result = subprocess.run(cmd, check=True)
