@@ -150,6 +150,12 @@ class English:
         self.display_title = "Display Settings"
         self.display_brightness = "Screen Brightness"
         self.display_blue_light = "Blue Light"
+        self.display_orientation = "Orientation"
+        self.display_default = "Default"
+        self.display_left = "Left"
+        self.display_right = "Right"
+        self.display_inverted = "Inverted"
+        
 
         # Power tab translations
         self.power_title = "Power Management"
@@ -329,6 +335,12 @@ class Spanish:
         self.display_title = "Configuración de Pantalla"
         self.display_brightness = "Brillo de Pantalla"
         self.display_blue_light = "Luz Azul"
+        self.display_orientation = "Orientación"
+        self.display_default = "Predeterminado"
+        self.display_left = "Izquierda"
+        self.display_right = "Derecha"
+        self.display_inverted = "Invertido"
+
 
         # Power tab translations
         self.power_title = "Gestión de Energía"
@@ -507,6 +519,12 @@ class Portuguese:
         self.display_title = "Configurações de Tela"
         self.display_brightness = "Brilho da Tela"
         self.display_blue_light = "Luz Azul"
+        self.display_orientation = "Orientação"
+        self.display_default = "Padrão"
+        self.display_left = "Esquerda"
+        self.display_right = "Direita"
+        self.display_inverted = "Invertido"
+
 
         # Power tab translations
         self.power_title = "Gerenciamento de Energia"
@@ -685,6 +703,12 @@ class French:
         self.display_title = "Paramètres d'Affichage"
         self.display_brightness = "Luminosité de l'Écran"
         self.display_blue_light = "Lumière Bleue"
+        self.display_orientation = "Orientation"
+        self.display_default = "Par défaut"
+        self.display_left = "Gauche"
+        self.display_right = "Droite"
+        self.display_inverted = "Inversé"
+
 
         # Power tab translations
         self.power_title = "Gestion de l'Alimentation"
@@ -772,7 +796,7 @@ class French:
         self.settings_language_changed = "Langue modifiée"
 
 class Indonesian:
-    """English language translation for the application"""
+    """Indonesian language translation for the application"""
     def __init__(self):
         # app description
         self.msg_desc = "Panel kontrol GTK yang unik untuk Linux"
@@ -863,6 +887,12 @@ class Indonesian:
         self.display_title = "Pengaturan Tampilan"
         self.display_brightness = "Kecerahan Layar"
         self.display_blue_light = "Anti Radiasi"
+        self.display_orientation = "Orientasi"
+        self.display_default = "Default"
+        self.display_left = "Kiri"
+        self.display_right = "Kanan"
+        self.display_inverted = "Terbalik"
+
 
         # Power tab translations
         self.power_title = "Pengelolaan Daya"

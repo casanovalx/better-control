@@ -67,3 +67,82 @@ def toggle_hyprland_startup(command):
     
     # Reload hyprland
     subprocess.run(["hyprctl", "reload"])
+    
+def get_hyprland_displays() -> dict:
+    """Get current displays and their transforms from hyprctl monitors
+    Returns:
+        dict: Dictionary with display names as keys and transforms as values for each display
+    """
+    try:
+        result = subprocess.run(["hyprctl", "monitors"], capture_output=True, text=True)
+        if result.returncode != 0:
+            return {}
+            
+        displays = {}
+        current_display = None
+        
+        for line in result.stdout.split('\n'):
+            line = line.strip()
+            if line.startswith('Monitor'):
+                current_display = line.split()[1]
+            elif 'transform:' in line and current_display:
+                transform = int(line.split(':')[1].strip())
+                displays[current_display] = transform
+                current_display = None
+                
+        return displays
+    except Exception as e:
+        print(f"Error getting Hyprland displays: {e}")
+        return {}
+    
+def set_hyprland_transform(display: str, orientation: str) -> bool:
+    """Set display transform in Hyprland
+
+    Args:
+        display: Display name (e.g. 'eDP-1')
+        orientation: Desired orientation ('normal: 0', 'right:1 ', 'inverted: 2', 'left: 3')
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        transform_map = {
+            "normal": 0,
+            "right": 1,
+            "inverted": 2,
+            "left": 3
+        }
+        
+        transform = transform_map.get(orientation.lower(), 0)
+        
+        # hyprctl command to transform display 
+        cmd = [
+            "hyprctl",
+            "keyword",
+            f"monitor {display},preferred,auto,1,transform,{transform}"
+        ]
+        
+        result = subprocess.run(cmd, check=True)
+        return result.returncode == 0
+
+    except Exception as e:
+        print(f"Error setting Hyprland transform: {e}")
+        return False
+
+
+def get_hyprland_rotation():
+    try:
+        result = subprocess.run(["hyprctl", "monitors"], capture_output=True, text=True)
+        output = result.stdout
+
+        for line in output.splitlines():
+            if "transform:" in line:
+                transform_value = int(line.strip().split(":")[1].strip())
+                transform_map = {
+                    0: "normal",
+                    1: "right",
+                    2: "inverted",
+                    3: "left"
+                }
+                return transform_map.get(transform_value, f"unknown ({transform_value})")
+    except Exception as e:
+        return f"Error: {e}"
