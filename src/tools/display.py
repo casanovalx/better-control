@@ -4,7 +4,8 @@ import subprocess
 from typing import Dict, List
 
 from utils.logger import LogLevel, Logger
-
+from tools.globals import get_current_session
+from tools.hyprland import get_hyprland_displays, set_hyprland_transform
 
 def get_brightness(logging: Logger) -> int:
     """Get the current brightness level
@@ -62,13 +63,75 @@ def get_display_info(display: str, logging: Logger) -> Dict[str, str]:
         Dict[str, str]: Dictionary containing display information
     """
     try:
-        output = subprocess.getoutput(f"xrandr --query --verbose | grep -A10 {display}")
-        info = {}
-        for line in output.split("\n"):
-            if ":" in line:
-                key, value = line.split(":", 1)
-                info[key.strip()] = value.strip()
-        return info
+        session = get_current_session()
+        if "Hyprland" in session:
+            displays = get_hyprland_displays()
+            transform_map = {
+                0: "normal",
+                1: "right",
+                2: "inverted",
+                3: "left"
+            }
+            if display in displays:
+                return {"rotation": transform_map.get(displays[display], "normal")}
+        
+        output = subprocess.run(f"xrandr --query --verbose | grep -A10 {display}", capture_output=True,text=True)
+        lines = output.stdout.split("\n")
+        
+        for i, line in enumerate(lines):
+            if display in line and " connected" in line:
+                parts = line.split()
+                for idx, part in enumerate(parts):
+                    if part.startswith("(") and part.endswith(")"):
+                        orientation = parts[idx + 1]
+                        return {"rotation": orientation}
     except Exception as e:
         logging.log(LogLevel.Error, f"Failed getting display info: {e}")
-        return {}
+        return {"rotation": "normal"}
+
+def rotate_display(display: str, desktop_env: str, orientation: str, logging: Logger) -> None:
+    """Change the orientation of the display
+    Args:
+        display: Display name
+        orientation: Orientation ('normal', 'left', 'right', 'inverted')
+        desktop_env: Desktop environment ('hyprland', 'sway', 'gnome')
+        logging: Logger
+    """
+    try:
+        session = get_current_session()
+        
+        if "Hyprland" in session:
+            return set_hyprland_transform(display, orientation)
+
+        elif desktop_env.lower() == "gnome":
+            rotation_map = {
+                "normal": "normal",
+                "left": "left",
+                "right": "right",
+                "inverted": "inverted"
+            }
+            rotation = rotation_map.get(orientation.lower(), "normal")
+            # Use gsettings to rotate display in gnome
+            cmd = [
+                "gsettings", 
+                "set", 
+                "org.gnome.settings-daemon.plugins.orientation", 
+                "active", 
+                "true"
+            ]
+            subprocess.run(cmd, check=True)
+
+            # Apply the rotation to the specific monitor
+            cmd = [
+                "xrandr",
+                "--output",
+                display,
+                "--rotate",
+                rotation
+            ]
+            subprocess.run(cmd, check=True)
+        return True
+    except Exception as err:
+        logging.log(LogLevel.Error, f"Failed to change display orientation for {display}: {err}")
+        return False
+    

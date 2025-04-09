@@ -4,25 +4,30 @@ import gi  # type: ignore
 import subprocess
 
 from utils.logger import LogLevel, Logger
-from utils.translations import English, Spanish
+from utils.translations import Translation
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib  # type: ignore
 
 from utils.settings import load_settings, save_settings
-from tools.display import get_brightness, set_brightness
+from tools.display import get_brightness, get_display_info, get_displays, rotate_display, set_brightness
+from tools.hyprland import get_hyprland_displays, set_hyprland_transform, get_hyprland_rotation
+from tools.globals import get_current_session
 
 
 class DisplayTab(Gtk.Box):
     """Display settings tab"""
 
-    def __init__(self, logging: Logger, txt: English|Spanish):
+    def __init__(self, logging: Logger, txt: Translation):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.txt = txt
         self.logging = logging
         self.update_timeout_id = None
         self.update_interval = 500  # milliseconds
         self.is_visible = False
+        self.session = get_current_session()
+        displays = get_displays(self.logging)
+        self.current_display = displays[0] if displays else None
 
         self.set_margin_start(15)
         self.set_margin_end(15)
@@ -30,7 +35,6 @@ class DisplayTab(Gtk.Box):
         self.set_margin_bottom(15)
         self.set_hexpand(True)
         self.set_vexpand(True)
-
         # Create header box with title
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         header_box.set_hexpand(True)
@@ -83,6 +87,61 @@ class DisplayTab(Gtk.Box):
         content_box.set_margin_start(10)
         content_box.set_margin_end(10)
 
+        # Display orientation section
+        orientation_label = Gtk.Label()
+        orientation_label.set_markup(f"<b>{self.txt.display_orientation}</b>")
+        orientation_label.set_halign(Gtk.Align.START)
+        content_box.pack_start(orientation_label, False, True, 0)
+        
+        # Orientation fram
+        orientation_frame = Gtk.Frame()
+        orientation_frame.set_shadow_type(Gtk.ShadowType.IN)
+        orientation_frame.set_margin_top(5)
+        orientation_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        orientation_box.set_margin_start(10)
+        orientation_box.set_margin_end(10)
+        orientation_box.set_margin_top(10)
+        orientation_box.set_margin_bottom(10)
+        content_box.pack_start(orientation_frame, False, True, 0)
+        
+        # Orientation buttons
+        orientation_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        
+        # Get displays according to current session
+        displays = []
+        if "Hyprland" in self.session:
+            hypr_displays = get_hyprland_displays()
+            displays = list(hypr_displays.keys())
+        else:
+            displays = get_displays(self.logging)
+            
+        self.current_display = displays[0] if displays else None
+        
+        display_combo = Gtk.ComboBoxText()
+        for display in displays:
+            display_combo.append_text(display)
+        if self.current_display:
+            display_combo.set_active(0)
+        display_combo.connect("changed", self.on_display_changed)
+        orientation_buttons.pack_start(display_combo, True, True, 0)
+        
+        rotations = [
+            ("normal", "object-rotate-right-symbolic", self.txt.display_default),
+            ("left", "object-rotate-left-symbolic", self.txt.display_left),
+            ("right", "object-rotate-right-symbolic", self.txt.display_right),
+            ("inverted", "object-flip-vertical-symbolic", self.txt.display_inverted)
+        ]
+        for rotation, icon_name, tooltip in rotations:
+            button = Gtk.Button()
+            icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.LARGE_TOOLBAR)
+            button.set_image(icon)
+            button.set_tooltip_text(tooltip)
+            button.connect("clicked", self.on_rotation_clicked, rotation)
+            orientation_buttons.pack_start(button, True, True, 0)
+        
+        orientation_box.pack_start(orientation_buttons, False, False, 0)
+        orientation_frame.add(orientation_box)
+        
         # Brightness section
         brightness_label = Gtk.Label()
         brightness_label.set_markup(f"<b>{self.txt.display_brightness}</b>")
@@ -177,6 +236,70 @@ class DisplayTab(Gtk.Box):
         if self.get_mapped():
             self.is_visible = True
             self.start_auto_update()
+        
+        self.previous_orientation = "normal"
+    
+    def on_display_changed(self, combo):
+        self.current_display = combo.get_active_text()
+
+    def on_rotation_clicked(self, button, rotation):
+        """Handle orientation button click"""
+        if self.current_display:
+            current_orientation = self.get_current_orientation()
+
+            # Skip if trying to rotate to current orientation
+            if rotation.lower() == current_orientation.lower():
+                self.logging.log(LogLevel.Info, f"Already in {get_hyprland_rotation()}")
+                return
+            
+            self.previous_orientation = current_orientation
+            if "Hyprland" in self.session:
+                success = set_hyprland_transform(self.current_display, rotation)
+            else:
+                success = rotate_display(self.current_display, "generic", rotation, self.logging)
+
+            if success:
+                # show confirmation dialog for display rotation 
+                dialog = Gtk.MessageDialog(
+                    transient_for=self.get_toplevel(),
+                    flags=0,
+                    message_type=Gtk.MessageType.QUESTION,
+                    buttons=Gtk.ButtonsType.NONE,
+                    text="Keep display changes?"
+                )
+                dialog.add_buttons("Revert back", Gtk.ResponseType.CANCEL)
+                dialog.add_buttons("Keep changes", Gtk.ResponseType.OK)
+                dialog.set_default_response(Gtk.ResponseType.CANCEL)
+                
+                response = dialog.run()
+                dialog.destroy()
+                
+                if response == Gtk.ResponseType.CANCEL:
+                    if "Hyprland" in self.session:
+                        set_hyprland_transform(self.current_display, self.previous_orientation)
+                    else:
+                        rotate_display(self.current_display, "gnome", self.previous_orientation, self.logging)
+                elif response == Gtk.ResponseType.OK:
+                    self.previous_orientation = rotation
+
+    def get_current_orientation(self) -> str:
+        """Get current display orientation"""
+        try:
+            if "Hyprland" in self.session:
+                displays = get_hyprland_displays()
+                # mapped according to hyprctl display -> transform: 0 
+                transform_map = {
+                    0: "normal",
+                    1: "right",
+                    2: "inverted",
+                    3: "left"
+                }
+                return transform_map.get(displays.get(self.current_display, 0), "normal").lower()
+            else:
+                info = get_display_info(self.current_display, self.logging)
+                return info.get("rotation", "normal").lower()
+        except:
+            return "normal"
 
     def on_brightness_changed(self, scale):
         """Handle brightness scale changes"""
