@@ -303,13 +303,19 @@ class BetterControl(Gtk.Window):
             thread = threading.Thread(target=worker, daemon=True)
             thread.start()
 
-        # Start preloading all tabs except the initial one
-        for tab_name in tab_order:
-            if not visibility.get(tab_name, True):
-                continue  # Skip hidden tabs
-            if tab_name == requested_tab:
-                continue  # Already created
-            preload_tab(tab_name)
+        def delayed_preload():
+            for i, tab_name in enumerate(tab_order):
+                if not visibility.get(tab_name, True):
+                    continue  
+                if tab_name == requested_tab:
+                    continue 
+                if i < 2:  
+                    preload_tab(tab_name)
+                else:  
+                    GLib.timeout_add(5000, lambda name=tab_name: preload_tab(name) or False)
+        
+        # Start the delayed loading process
+        GLib.idle_add(delayed_preload)
 
         # Show all widgets
         self.show_all()

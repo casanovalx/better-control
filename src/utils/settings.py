@@ -55,7 +55,7 @@ def load_settings(logging: Logger) -> dict:
         return settings
         
     except Exception as e:
-        logging.log_error(f"Error loading settings: {e}")
+        logging.log(LogLevel.Error, f"Error loading settings: {e}")
         return default_settings
 
 def save_settings(settings: dict, logging: Logger) -> bool:
@@ -64,7 +64,7 @@ def save_settings(settings: dict, logging: Logger) -> bool:
         ensure_config_dir(logging)
         
         if not isinstance(settings, dict):
-            logging.log_error("Invalid settings - not a dictionary")
+            logging.log(LogLevel.Error, "Invalid settings - not a dictionary")
             return False
             
         default_settings = {
@@ -86,11 +86,11 @@ def save_settings(settings: dict, logging: Logger) -> bool:
             json.load(f) 
             
         os.replace(temp_path, SETTINGS_FILE)
-        logging.log_info(f"Settings saved successfully to {SETTINGS_FILE}")
+        logging.log(LogLevel.Info, f"Settings saved successfully to {SETTINGS_FILE}")
         return True
         
     except Exception as e:
-        logging.log_error(f"Error saving settings: {e}")
+        logging.log(LogLevel.Error, f"Error saving settings: {e}")
         try:
             if 'temp_path' in locals() and os.path.exists(temp_path):
                 os.unlink(temp_path)
