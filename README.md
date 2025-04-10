@@ -11,11 +11,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/quantumvoid0/better-control?style=flat-square&color=yellow)](https://github.com/quantumvoid0/better-control/stargazers)
 
 </div>
-
 <br>
-
-> [!NOTE]
-> 🎨 The application follows your system GTK theme for a native and integrated look.
 
 > [!IMPORTANT]
 > 🚧 This project is under active development. Contributions, feature requests, ideas, and testers are welcome!
@@ -30,10 +26,10 @@
 - 🌙 Respects your system's light/dark theme settings
 - 🧩 Modular design - use only what you need
 
-<br>
-
-## 📋 Requirements
-
+## Dependencies
+<details>
+<summary><b>Dependencies</b></summary>
+  
 Before installing, ensure you have `git` and `base-devel` installed.
 
 ### Core Dependencies
@@ -55,25 +51,12 @@ Before installing, ensure you have `git` and `base-devel` installed.
 | **Blue Light Filter** | gammastep |
 | **USBGuard** | usbguard |
 
-
-> [!TIP]
+> [TIP]
 > If you don't need a specific feature, you can safely omit its corresponding dependency and hide its tab in the settings.
 
-<br>
+</details>
 
-### Usage
-
-`control` or `better-control` command will run the gui application. use `control --help` or `better-control --help` to see more specific launch commands
-
-### Keybindings
-
-| Keybinding | Action |
-|------------|--------|
-| `Shift + S` | Open Settings Dialog |
-| `Q` or `Ctrl + Q` | Quit Application |
-
-
-## 💾 Installation
+# > 💾 Installation
 
 <details>
 <summary><b>🏗️ Arch-based Distributions</b></summary>
@@ -81,10 +64,7 @@ Before installing, ensure you have `git` and `base-devel` installed.
 ```bash
 yay -S better-control-git
 ```
-> This will directly install dependencies and the app. No further steps required.
-
 If you dont have an AUR helper like yay above , follow the steps below
-
 ```
 git clone https://aur.archlinux.org/better-control-git.git
 cd better-control-git
@@ -107,6 +87,12 @@ makepkg -si
 ```bash
 sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle
 ```
+```bash
+git clone https://github.com/quantumvoid0/better-control.git
+cd better-control
+make
+sudo make install
+```
 </details>
 
 <details>
@@ -114,6 +100,12 @@ sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-
 
 ```bash
 sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle
+```
+```bash
+git clone https://github.com/quantumvoid0/better-control.git
+cd better-control
+make
+sudo make install
 ```
 </details>
 
@@ -126,6 +118,12 @@ sudo xbps-install -S python3-pip
 pip install setproctitle
 
 ```
+```bash
+git clone https://github.com/quantumvoid0/better-control.git
+cd better-control
+make
+sudo make install
+```
 </details>
 
 <details>
@@ -136,10 +134,6 @@ sudo apk add gtk3 networkmanager bluez bluez-utils pulseaudio brightnessctl py3-
 pip install setproctitle
 
 ```
-</details>
-
-### Manual Installation Steps
-
 ```bash
 git clone https://github.com/quantumvoid0/better-control.git
 cd better-control
@@ -147,43 +141,25 @@ make
 sudo make install
 ```
 
-## Contribution
-Feel free to propose PR and suggest new features, improvements. If you wish to contribute with translation for the app into your language, please see the `utils/translations.py` file.
+</details>
 
-## 📚 Documentation
-
-For more information, please refer to the [official documentation](https://github.com/quantumvoid0/better-control/wiki).
-
-<br>
-
-## 📄 License
-
-This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) for more details.
-
-<br>
-
-## 🗑️ Uninstallation
+# > 🗑️ Uninstallation
 
 <details>
 <summary><b>🏗️ Arch-based Distributions</b></summary>
 
 ```bash
-sudo pacman -Rns better-control-git
-```
-
-
-> The above lines will also remove the dependencies if another app is not using them , if you dont want to remove the dependencies, follow the steps below
-
-
-```
 sudo pacman -R better-control-git
 ```
-
+> The above lines will not remove the dependencies , but if you want to remove dependencies use the lines below:
+```
+sudo pacman -Rns better-control-git
+```
 </details>
 
 <details>
 <summary><b>📦 Other Distributions</b></summary>
-
+  
 ```bash
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
@@ -191,9 +167,27 @@ sudo make uninstall
 ```
 </details>
 
-<br>
+# > Usage
 
-## 🧪 Compatibility Matrix
+`control` or `better-control` command will run the gui application. use `control --help` or `better-control --help` to see more specific launch commands
+
+## Keybindings
+
+| Keybinding | Action |
+|------------|--------|
+| `Shift + S` | Open Settings Dialog |
+| `Q` or `Ctrl + Q` | Quit Application |
+
+# > 📚 Contribution
+Feel free to propose PR and suggest new features, improvements. If you wish to contribute with translation for the app into your language, please see the `utils/translations.py` file.
+
+
+## 📄 License
+
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) for more details.
+
+
+# > 🧪 Compatibility Matrix
 
 Better Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasma. It should work on most Linux distributions with minor adjustments.
 
