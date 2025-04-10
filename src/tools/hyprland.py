@@ -151,10 +151,10 @@ def set_hyprland_transform(logging: Logger, display: str, orientation: str) -> b
             "flip-vertical": 5,
             "flip-90°": 6,
             "flip-270°": 7,
-            "rotate-cw": (current_transform + 1) % 4,
-            "rotate-ccw": (current_transform - 1) % 4,
-            "flip-cw": ((current_transform + 1) % 4) + 4 if current_transform >= 4 else current_transform,
-            "flip-ccw": ((current_transform - 1) % 4) + 4 if current_transform >= 4 else current_transform
+            "rotate-ccw": (current_transform + 1) % 4,
+            "rotate-cw": (current_transform - 1) % 4,
+            "flip-ccw": ((current_transform + 1) % 4) + 4 if current_transform >= 4 else current_transform,
+            "flip-cw": ((current_transform - 1) % 4) + 4 if current_transform >= 4 else current_transform
         }
         
         if orientation.lower() in ["rotate-cw", "rotate-ccw", "flip-cw", "flip-ccw"]:

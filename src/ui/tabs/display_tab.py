@@ -91,9 +91,8 @@ class DisplayTab(Gtk.Box):
         orientation_label = Gtk.Label()
         orientation_label.set_markup(f"<b>{self.txt.display_orientation}</b>")
         orientation_label.set_halign(Gtk.Align.START)
-        content_box.pack_start(orientation_label, False, True, 0)
         
-        # Orientation fram
+        # Orientation frame
         orientation_frame = Gtk.Frame()
         orientation_frame.set_shadow_type(Gtk.ShadowType.IN)
         orientation_frame.set_margin_top(5)
@@ -102,7 +101,6 @@ class DisplayTab(Gtk.Box):
         orientation_box.set_margin_end(10)
         orientation_box.set_margin_top(10)
         orientation_box.set_margin_bottom(10)
-        content_box.pack_start(orientation_frame, False, True, 0)
         
         # Orientation buttons
         orientation_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
@@ -221,6 +219,8 @@ class DisplayTab(Gtk.Box):
         bluelight_box.pack_start(bluelight_buttons, False, False, 0)
         bluelight_frame.add(bluelight_box)
         content_box.pack_start(bluelight_frame, False, True, 0)
+        content_box.pack_start(orientation_label, False, True, 0)
+        content_box.pack_start(orientation_frame, False, True, 0)
 
         scroll_window.add(content_box)
         self.pack_start(scroll_window, True, True, 0)
@@ -419,8 +419,8 @@ class DisplayTab(Gtk.Box):
 
         # Rotate CW/CCW buttons
         rotations = [
-            ("rotate-ccw", "object-rotate-left-symbolic", "Rotate Counter-Clockwise"),
-            ("rotate-cw", "object-rotate-right-symbolic", "Rotate Clockwise")
+            ("rotate-cw", "object-rotate-right-symbolic", "Rotate Clockwise"),
+            ("rotate-ccw", "object-rotate-left-symbolic", "Rotate Counter-Clockwise")
         ]
 
         for action, icon_name, tooltip in rotations:
@@ -461,7 +461,7 @@ class DisplayTab(Gtk.Box):
             ("normal", "Normal (0°)", 0, 0),
             ("90°", "90° Right", 0, 1),
             ("180°", "180°", 1, 0),
-            ("270°", "270° Left", 1, 1)
+            ("270°", "90° Left", 1, 1)
         ]
 
         for action, label, row, col in rotations:
