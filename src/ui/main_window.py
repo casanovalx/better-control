@@ -5,6 +5,9 @@ import traceback
 import gi  # type: ignore
 import threading
 import sys
+import json
+import os
+from datetime import datetime
 
 from tools.bluetooth import BluetoothManager
 from utils.arg_parser import ArgParse
@@ -31,6 +34,17 @@ from tools.globals import check_hardware_support
 class BetterControl(Gtk.Window):
 
     def __init__(self, txt: Translation, arg_parser: ArgParse, logging: Logger) -> None:
+        # Initialize cache directory
+        self.cache_dir = os.path.expanduser("~/.cache/better-control")
+        os.makedirs(self.cache_dir, exist_ok=True)
+        
+        # Preload frequently used icons
+        self._icon_cache = {
+            name: Gtk.IconTheme.get_default().load_icon(name, 16, 0)
+            for name in ["audio-volume-high-symbolic", "network-wireless-symbolic",
+                        "bluetooth-symbolic", "battery-good-symbolic"]
+        }
+        
         # Initialize thread safety mechanisms
         self._initialized = False
         self._is_destroyed = False
@@ -44,6 +58,8 @@ class BetterControl(Gtk.Window):
                 # Initialize GTK window
                 super().__init__(title="Better Control")
                 self._initialized = True
+                # Show window immediately for faster perceived startup
+                self.show_all()
             except Exception as e:
                 logging.log(LogLevel.Error, f"Window initialization failed: {e}")
                 raise
@@ -129,9 +145,6 @@ class BetterControl(Gtk.Window):
         self.notebook = Gtk.Notebook()
         self.add(self.notebook)
 
-        # Show the window as early as possible for faster perceived startup
-        self.show_all()
-
         # Hide tab bar in minimal mode
         if self.minimal_mode:
             self.notebook.set_show_tabs(False)
@@ -157,7 +170,7 @@ class BetterControl(Gtk.Window):
         self.notebook.connect("switch-page", self.on_tab_switched)
 
     def create_lazy_tabs(self):
-        """Create only the initial tab, defer others until selected"""
+        """Create placeholder tabs with loading indicators that will be replaced with real content"""
         self.logging.log(LogLevel.Info, "Initializing lazy tab loading")
 
         # Map tab names to classes
@@ -215,37 +228,94 @@ class BetterControl(Gtk.Window):
         # Load saved tab visibility settings
         visibility = self.settings.get("visibility", {})
 
-        # Create placeholders or tabs respecting visibility
-        for idx, tab_name in enumerate(tab_order):
-            if not visibility.get(tab_name, True):
-                # Skip hidden tabs
-                continue
+        # Determine active tab (command line args > first visible)
+        active_tab = None
+        # Check command line args first
+        if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
+            active_tab = "Volume"
+        elif self.arg_parser.find_arg(("-w", "--wifi")):
+            active_tab = "Wi-Fi"
+        elif self.arg_parser.find_arg(("-a", "--autostart")):
+            active_tab = "Autostart"
+        elif self.arg_parser.find_arg(("-b", "--bluetooth")):
+            active_tab = "Bluetooth"
+        elif self.arg_parser.find_arg(("-B", "--battery")):
+            active_tab = "Battery"
+        elif self.arg_parser.find_arg(("-d", "--display")):
+            active_tab = "Display"
+        elif self.arg_parser.find_arg(("-p", "--power")):
+            active_tab = "Power"
+        elif self.arg_parser.find_arg(("-u", "--usbguard")):
+            active_tab = "USBGuard"
+        
+        # If no args specified, use first visible tab
+        if active_tab is None:
+            visible_tabs = [name for name in tab_order if visibility.get(name, True)]
+            if visible_tabs:
+                active_tab = visible_tabs[0]
 
-            if tab_name == requested_tab:
-                # Create requested tab immediately
-                try:
-                    tab_instance = self.tab_classes[tab_name](self.logging, self.txt)
-                    tab_instance.show_all()
-                    page_num = self.notebook.append_page(
-                        tab_instance,
-                        self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
-                    )
-                    self.tabs[tab_name] = tab_instance
-                    self.tab_pages[tab_name] = page_num
-                    self.notebook.set_current_page(page_num)
-                    self.logging.log(LogLevel.Info, f"Created initial tab: {tab_name}")
-                except Exception as e:
-                    self.logging.log(LogLevel.Error, f"Failed to create initial tab {tab_name}: {e}")
-            else:
-                # Insert empty placeholder
-                placeholder = Gtk.Box()
-                placeholder.show_all()
-                page_num = self.notebook.append_page(
-                    placeholder,
-                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
+        # Create all tab labels immediately with empty placeholders
+        for tab_name in tab_order:
+            if not visibility.get(tab_name, True):
+                continue
+                
+            # Create empty placeholder
+            placeholder = Gtk.Box()
+            placeholder.show_all()
+            
+            # Add tab with label but empty content
+            page_num = self.notebook.append_page(
+                placeholder,
+                self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name))
+            )
+            self.tabs[tab_name] = placeholder
+            self.tab_pages[tab_name] = page_num
+            
+            # Load active tab content immediately
+            if tab_name == active_tab and tab_name in self.tab_classes:
+                tab_instance = self.tab_classes[tab_name](self.logging, self.txt)
+                tab_instance.show_all()
+                self.notebook.remove_page(page_num)
+                page_num = self.notebook.insert_page(
+                    tab_instance,
+                    self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name)),
+                    page_num
                 )
-                self.tabs[tab_name] = placeholder  # Track placeholder widget
+                self.tabs[tab_name] = tab_instance
                 self.tab_pages[tab_name] = page_num
+                self.notebook.set_current_page(page_num)
+
+        # Determine active tab (command line args > first visible)
+        active_tab = None
+        # Check command line args first
+        if self.arg_parser.find_arg(("-V", "--volume")) or self.arg_parser.find_arg(("-v", "")):
+            active_tab = "Volume"
+        elif self.arg_parser.find_arg(("-w", "--wifi")):
+            active_tab = "Wi-Fi"
+        elif self.arg_parser.find_arg(("-a", "--autostart")):
+            active_tab = "Autostart"
+        elif self.arg_parser.find_arg(("-b", "--bluetooth")):
+            active_tab = "Bluetooth"
+        elif self.arg_parser.find_arg(("-B", "--battery")):
+            active_tab = "Battery"
+        elif self.arg_parser.find_arg(("-d", "--display")):
+            active_tab = "Display"
+        elif self.arg_parser.find_arg(("-p", "--power")):
+            active_tab = "Power"
+        elif self.arg_parser.find_arg(("-u", "--usbguard")):
+            active_tab = "USBGuard"
+        
+        # If no args specified, use first visible tab
+        if active_tab is None:
+            visible_tabs = [name for name in tab_order if visibility.get(name, True)]
+            if visible_tabs:
+                active_tab = visible_tabs[0]
+
+        # Load active tab immediately if found
+        if active_tab and active_tab in self.tab_pages:
+            page_num = self.tab_pages[active_tab]
+            self.notebook.set_current_page(page_num)
+            GLib.idle_add(lambda: self.lazy_load_tab(self.notebook, None, page_num))
 
         # Connect switch-page to lazy load other tabs
         self.notebook.connect("switch-page", self.lazy_load_tab)
@@ -304,15 +374,40 @@ class BetterControl(Gtk.Window):
             thread.start()
 
         def delayed_preload():
-            for i, tab_name in enumerate(tab_order):
-                if not visibility.get(tab_name, True):
-                    continue  
-                if tab_name == requested_tab:
-                    continue 
-                if i < 2:  
-                    preload_tab(tab_name)
-                else:  
-                    GLib.timeout_add(5000, lambda name=tab_name: preload_tab(name) or False)
+            # Load all other tabs after 3 second delay
+            visible_tabs = [name for name in tab_order 
+                          if visibility.get(name, True) and name != active_tab]
+            
+            def load_tab(tab_name):
+                if tab_name in self.tab_classes and tab_name in self.tab_pages:
+                    # Get existing page number for this tab
+                    page_num = self.tab_pages[tab_name]
+                    
+                    # Load from cache if available
+                    cached_state = self.load_from_cache(tab_name)
+                    
+                    # Create tab instance in background thread
+                    def create_tab():
+                        tab_instance = self.tab_classes[tab_name](self.logging, self.txt)
+                        if cached_state and hasattr(tab_instance, 'load_state'):
+                            tab_instance.load_state(cached_state)
+                        return tab_instance
+                    
+                    # Replace placeholder with real content
+                    tab_instance = create_tab()
+                    tab_instance.show_all()
+                    self.notebook.remove_page(page_num)
+                    new_page_num = self.notebook.insert_page(
+                        tab_instance,
+                        self.create_tab_label(tab_name, self.get_icon_for_tab(tab_name)),
+                        page_num
+                    )
+                    self.tabs[tab_name] = tab_instance
+                    self.tab_pages[tab_name] = new_page_num
+            
+            # Load other tabs with staggered delays (100ms, 200ms, 300ms...)
+            for i, tab_name in enumerate(visible_tabs, start=1):
+                GLib.timeout_add(100 * i, lambda name=tab_name: load_tab(name) or False)
         
         # Start the delayed loading process
         GLib.idle_add(delayed_preload)
@@ -320,8 +415,41 @@ class BetterControl(Gtk.Window):
         # Show all widgets
         self.show_all()
 
+    def get_cache_file(self, tab_name):
+        """Get cache file path for a tab"""
+        return os.path.join(self.cache_dir, f"{tab_name}.json")
+
+    def load_from_cache(self, tab_name):
+        """Load tab data from cache if valid"""
+        cache_file = self.get_cache_file(tab_name)
+        if not os.path.exists(cache_file):
+            return None
+            
+        try:
+            with open(cache_file, 'r') as f:
+                data = json.load(f)
+                # Check if cache is expired (1 hour)
+                cache_time = datetime.fromisoformat(data['timestamp'])
+                if (datetime.now() - cache_time).total_seconds() > 3600:
+                    return None
+                return data['state']
+        except Exception:
+            return None
+
+    def save_to_cache(self, tab_name, state):
+        """Save tab state to cache"""
+        try:
+            cache_file = self.get_cache_file(tab_name)
+            with open(cache_file, 'w') as f:
+                json.dump({
+                    'timestamp': datetime.now().isoformat(),
+                    'state': state
+                }, f)
+        except Exception as e:
+            self.logging.log(LogLevel.Warning, f"Failed to cache {tab_name} state: {e}")
+
     def lazy_load_tab(self, notebook, page, page_num):
-        """Instantiate tab on first switch if not yet created"""
+        """Instantiate tab on first switch if not yet created, using cache if available"""
         # Determine tab name by page_num
         tab_name = None
         for name, num in self.tab_pages.items():
@@ -353,7 +481,16 @@ class BetterControl(Gtk.Window):
                 tab_class = self.tab_classes.get(tab_name)
                 if not tab_class:
                     return False
+                # Try loading from cache first
+                cached_state = self.load_from_cache(tab_name)
                 tab_instance = tab_class(self.logging, self.txt)
+                
+                if cached_state and hasattr(tab_instance, 'load_state'):
+                    try:
+                        tab_instance.load_state(cached_state)
+                    except Exception as e:
+                        self.logging.log(LogLevel.Warning, f"Failed to load {tab_name} from cache: {e}")
+                
                 tab_instance.show_all()
                 self.notebook.remove_page(page_num)
                 new_page_num = self.notebook.insert_page(
@@ -363,6 +500,13 @@ class BetterControl(Gtk.Window):
                 )
                 self.tabs[tab_name] = tab_instance
                 self.tab_pages[tab_name] = new_page_num
+                # Save to cache if tab supports it
+                if hasattr(tab_instance, 'get_state'):
+                    try:
+                        self.save_to_cache(tab_name, tab_instance.get_state())
+                    except Exception as e:
+                        self.logging.log(LogLevel.Warning, f"Failed to cache {tab_name} state: {e}")
+                
                 self.logging.log(LogLevel.Info, f"Lazily created tab: {tab_name}")
                 self.show_all()
                 # Activate the newly created tab immediately
@@ -835,18 +979,26 @@ class BetterControl(Gtk.Window):
 
     def get_icon_for_tab(self, tab_name):
         """Get icon name for a tab"""
+        if hasattr(self, '_icon_cache'):
+            cached = self._icon_cache.get(tab_name.lower())
+            if cached:
+                return cached
+                
         icons = {
             "Volume": "audio-volume-high-symbolic",
             "Wi-Fi": "network-wireless-symbolic",
             "Bluetooth": "bluetooth-symbolic",
             "Battery": "battery-good-symbolic",
             "Display": "video-display-symbolic",
-            "Settings": "preferences-system-symbolic",
+            "Settings": "preferences-system-symbolic", 
             "Power": "system-shutdown-symbolic",
             "Autostart": "system-run-symbolic",
             "USBGuard": "drive-removable-media-symbolic",
         }
-        return icons.get(tab_name, "application-x-executable-symbolic")
+        icon_name = icons.get(tab_name, "application-x-executable-symbolic")
+        if hasattr(self, '_icon_cache'):
+            self._icon_cache[tab_name.lower()] = icon_name
+        return icon_name
 
     def create_settings_button(self):
         """Create settings button in the notebook action area"""

@@ -475,11 +475,9 @@ Status: {status_text}
     def on_allow_device(self, widget, device_id):
         try:
             self.manual_operations.add(device_id)
-            
-            
+            # Temporary allow (won't persist after unplug/restart)
             subprocess.run(["usbguard", "allow-device", device_id], check=True)
             
-        
             result = subprocess.run(["usbguard", "list-devices"],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE,
@@ -488,15 +486,13 @@ Status: {status_text}
             device_info = next((d for d in devices if d.startswith(device_id)), "")
             device_name = self.get_device_name(device_info)
             
-        
-            subprocess.run([
-                "notify-send",
-                "-i", "emblem-ok-symbolic",
-                f"Better Control",
-                f"{device_name} has been allowed."
-            ])
+            #subprocess.run([
+                #"notify-send",
+                #"-i", "emblem-ok-symbolic",
+                #f"Better Control",
+                #f"{device_name} has been temporarily allowed (will block after unplug)"
+            #])
             
-        
             self.refresh_devices(None)
             self.manual_operations.discard(device_id)
             
@@ -522,12 +518,12 @@ Status: {status_text}
             device_info = next((d for d in devices if d.startswith(device_id)), "")
             device_name = self.get_device_name(device_info)
             
-            subprocess.run([
-                "notify-send",
-                "-i", "emblem-default-symbolic",
-                f"Better Control",
-                f"{device_name} has been permanently allowed (added to policy)."
-            ])
+            #subprocess.run([
+#                "notify-send",
+                #"-i", "emblem-default-symbolic",
+                #f"Better Control",
+                #f"{device_name} has been permanently allowed (added to policy)."
+            #])
             
             self.refresh_devices(None)
             self.manual_operations.discard(device_id)
@@ -543,11 +539,8 @@ Status: {status_text}
         try:
             self.manual_operations.add(device_id)
             
-            # First block the device temporarily
-            subprocess.run(["usbguard", "block-device", device_id], check=True)
-            
-            # Then remove from policy (permanent list)
-            subprocess.run(["usbguard", "reject-device", device_id], check=True)
+            # Block permanently with -p flag
+            subprocess.run(["usbguard", "block-device", "-p", device_id], check=True)
             
             # Also remove from hidden devices if present
             self.hidden_devices.remove(device_id)
@@ -561,12 +554,12 @@ Status: {status_text}
             device_info = next((d for d in devices if d.startswith(device_id)), "")
             device_name = self.get_device_name(device_info)
             
-            subprocess.run([
-                "notify-send",
-                "-i", "action-unavailable-symbolic",
-                f"Better Control",
-                f"{device_name} has been blocked and removed from permanent list."
-            ])
+            #subprocess.run([
+                #"notify-send",
+                #"-i", "action-unavailable-symbolic",
+                #f"Better Control",
+                #f"{device_name} has been permanently blocked"
+            #])
             
             self.refresh_devices(None)
             self.manual_operations.discard(device_id)
@@ -860,27 +853,70 @@ Status: {status_text}
             return "Unknown Device"
 
     def check_device_changes(self, current_devices):
-        """Check for device changes and trigger notifications"""
+        """Block new devices unless permanently allowed"""
         current_set = set(device.strip() for device in current_devices.splitlines() if device.strip())
         
-        # Skip first refresh (initial device list) [gotta keep em notifications clean]
+        # Skip first refresh (initial device list)
         if self.previous_devices is None:
             self.previous_devices = current_set
             return
             
-        # New devices
+        # Get permanent allow rules
+        try:
+            policy_check = subprocess.run(
+                ["usbguard", "list-rules"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True
+            )
+            policy_rules = policy_check.stdout.decode('utf-8')
+        except subprocess.CalledProcessError:
+            policy_rules = ""
+            
+        # Handle new devices
         for device in current_set - self.previous_devices:
             device_id = device.split()[0].split(":")[0]
             if device_id not in self.manual_operations:
-                device_name = self.get_device_name(device)
-
+                # Check if device is in permanent allow policy
+                try:
+                    allow_check = subprocess.run(
+                        ["usbguard", "list-rules"],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        check=True
+                    )
+                    allow_rules = allow_check.stdout.decode('utf-8')
+                    
+                    # Skip if device is permanently allowed
+                    if f"allow id {device_id}" in allow_rules.lower():
+                        continue
+                        
+                    # Block permanently if not allowed
+                    subprocess.run(["usbguard", "block-device", "-p", device_id], check=True)
+                    device_name = self.get_device_name(device)
+                    #subprocess.run([
+                        #"notify-send",
+                        #"-i", "action-unavailable-symbolic",
+                        ##f"{device_name} was permanently blocked"
+                    #])
+                    # Log the blocking
+                    if hasattr(self.logging, 'info'):
+                        self.logging.info(f"Permanently blocked device {device_id} ({device_name})")
+                except subprocess.CalledProcessError as e:
+                    if hasattr(self.logging, 'error'):
+                        self.logging.error(f"Failed to block device {device_id}: {e}")
+                    # Retry blocking if first attempt failed
+                    try:
+                        subprocess.run(["usbguard", "block-device", device_id], check=True)
+                    except subprocess.CalledProcessError as e:
+                        if hasattr(self.logging, 'error'):
+                            self.logging.error(f"Failed to block device {device_id} on retry: {e}")
         
         # Removed devices
         for device in self.previous_devices - current_set:
             device_id = device.split()[0].split(":")[0]
             if device_id not in self.manual_operations:
                 device_name = self.get_device_name(device)
-
         
         self.previous_devices = current_set
 
