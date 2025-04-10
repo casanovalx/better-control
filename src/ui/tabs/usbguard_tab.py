@@ -760,24 +760,14 @@ Status: {status_text}
             device_id = device.split()[0].split(":")[0]
             if device_id not in self.manual_operations:
                 device_name = self.get_device_name(device)
-                subprocess.run([
-                    "notify-send",
-                    "-i", "drive-removable-media-symbolic",
-                    "Better Control",
-                    self.txt.usb_connected.format(device=device_name)
-                ])
+
         
         # Removed devices
         for device in self.previous_devices - current_set:
             device_id = device.split()[0].split(":")[0]
             if device_id not in self.manual_operations:
                 device_name = self.get_device_name(device)
-                subprocess.run([
-                    "notify-send",
-                    "-i", "drive-removable-media-symbolic",
-                    "Better Control",
-                    self.txt.usb_disconnected.format(device=device_name)
-                ])
+
         
         self.previous_devices = current_set
 
