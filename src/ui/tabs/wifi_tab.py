@@ -10,7 +10,7 @@ import subprocess
 from utils.translations import Translation
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib # type: ignore
+from gi.repository import Gtk, GLib, Gdk  # type: ignore
 from tools.globals import get_wifi_css
 
 from tools.wifi import (
@@ -34,7 +34,10 @@ class WiFiTab(Gtk.Box):
         get_wifi_css()
         self.txt = txt
         self.logging = logging
-        self.logging.log(LogLevel.Info, "Initializing WiFi tab")
+        self.logging.log(LogLevel.Debug, "WiFi tab: Starting initialization")
+        
+        # Debug container visibility
+        self._debug_containers = []
         self.set_margin_start(15)
         self.set_margin_end(15)
         self.set_margin_top(15)
@@ -83,19 +86,37 @@ class WiFiTab(Gtk.Box):
 
         header_box.pack_start(title_box, True, True, 0)
 
-        # Add refresh button
-        refresh_button = Gtk.Button()
-        refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
-        refresh_button.set_image(refresh_icon)
+        # Add refresh button with expandable animation
+        self.refresh_button = Gtk.Button()
+        self.refresh_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        self.refresh_label = Gtk.Label(label="Refresh")
+        self.refresh_label.set_margin_start(5)
+        self.refresh_btn_box.pack_start(self.refresh_icon, False, False, 0)
+        
+        # Animation controller
+        self.refresh_revealer = Gtk.Revealer()
+        self.refresh_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_RIGHT)
+        self.refresh_revealer.set_transition_duration(150)
+        self.refresh_revealer.add(self.refresh_label)
+        self.refresh_revealer.set_reveal_child(False)
+        self.refresh_btn_box.pack_start(self.refresh_revealer, False, False, 0)
+        
+        self.refresh_button.add(self.refresh_btn_box)
         refresh_tooltip = getattr(self.txt, "wifi_refresh_tooltip", "Refresh WiFi List")
-        refresh_button.set_tooltip_text(refresh_tooltip)
-        refresh_button.connect("clicked", self.on_refresh_clicked)
+        self.refresh_button.set_tooltip_text(refresh_tooltip)
+        self.refresh_button.connect("clicked", self.on_refresh_clicked)
+        
+        # Hover behavior
+        self.refresh_button.set_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
+        self.refresh_button.connect("enter-notify-event", self.on_refresh_enter)
+        self.refresh_button.connect("leave-notify-event", self.on_refresh_leave)
 
         # Disable refresh button if WiFi is not supported
         if not wifi_supported:
-            refresh_button.set_sensitive(False)
+            self.refresh_button.set_sensitive(False)
 
-        header_box.pack_end(refresh_button, False, False, 0)
+        header_box.pack_end(self.refresh_button, False, False, 0)
 
         self.pack_start(header_box, False, False, 0)
 
@@ -229,8 +250,18 @@ class WiFiTab(Gtk.Box):
 
     def on_tab_shown(self, widget):
         """Handle tab becoming visible"""
-        self.logging.log(LogLevel.Info, "WiFi tab became visible, refreshing networks")
+        self.logging.log(LogLevel.Debug, "WiFi tab: on_tab_shown triggered")
         self.tab_visible = True
+        
+        # Debug container visibility
+        def check_visibility():
+            self.logging.log(LogLevel.Debug, f"WiFi tab visible: {self.get_visible()}")
+            for child in self.get_children():
+                self.logging.log(LogLevel.Debug, f"Child {type(child).__name__} visible: {child.get_visible()}")
+            return False
+            
+        GLib.idle_add(check_visibility)
+        
         self.update_network_list()
 
         # Start network speed updates when tab becomes visible
@@ -582,6 +613,20 @@ class WiFiTab(Gtk.Box):
         thread = threading.Thread(target=power_toggle_thread)
         thread.daemon = True
         thread.start()
+
+    def on_refresh_enter(self, widget, event):
+        alloc = widget.get_allocation()
+        if (0 <= event.x <= alloc.width and 
+            0 <= event.y <= alloc.height):
+            self.refresh_revealer.set_reveal_child(True)
+        return False
+    
+    def on_refresh_leave(self, widget, event):
+        alloc = widget.get_allocation()
+        if not (0 <= event.x <= alloc.width and 
+               0 <= event.y <= alloc.height):
+            self.refresh_revealer.set_reveal_child(False)
+        return False
 
     def on_refresh_clicked(self, button):
         """Handle refresh button click"""

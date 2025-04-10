@@ -8,7 +8,7 @@ import subprocess
 import os
 import threading
 from datetime import datetime
-from gi.repository import Gtk, GLib  # type: ignore
+from gi.repository import Gtk, GLib,Gdk  # type: ignore
 from utils.logger import LogLevel, Logger
 
 
@@ -613,17 +613,36 @@ class BatteryTab(Gtk.Box):
 
         header_box.pack_start(title_box, True, True, 0)
 
-        # Add refresh button with modern styling
-        refresh_button = Gtk.Button()
-        refresh_icon = Gtk.Image.new_from_icon_name(
-            "view-refresh-symbolic", Gtk.IconSize.BUTTON
-        )
-        refresh_button.set_image(refresh_icon)
-        refresh_button.set_tooltip_text(self.txt.battery_tooltip_refresh)
-        refresh_button.connect("clicked", self.refresh_battery_info)
-        header_box.pack_end(refresh_button, False, False, 0)
+        # Add combined refresh/scan button with expandable animation
+        self.refresh_button = Gtk.Button()
+        self.refresh_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        self.refresh_label = Gtk.Label(label="Refresh")
+        self.refresh_label.set_margin_start(5)
+        self.refresh_btn_box.pack_start(self.refresh_icon, False, False, 0)
+        
+        # Animation controller
+        self.refresh_revealer = Gtk.Revealer()
+        self.refresh_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_RIGHT)
+        self.refresh_revealer.set_transition_duration(150)
+        self.refresh_revealer.add(self.refresh_label)
+        self.refresh_revealer.set_reveal_child(False)
+        self.refresh_btn_box.pack_start(self.refresh_revealer, False, False, 0)
+        
+        self.refresh_button.add(self.refresh_btn_box)
+        refresh_tooltip = getattr(self.txt, "refresh_tooltip", "Refresh Info")
+        self.refresh_button.set_tooltip_text(refresh_tooltip)
+        self.refresh_button.connect("clicked", self.refresh_battery_info)
+        
+        # Hover behavior
+        self.refresh_button.set_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
+        self.refresh_button.connect("enter-notify-event", self.on_refresh_enter)
+        self.refresh_button.connect("leave-notify-event", self.on_refresh_leave)
 
+        # Add refresh button to header
+        header_box.pack_end(self.refresh_button, False, False, 0)
         self.pack_start(header_box, False, False, 0)
+
 
         # Create scrollable content
         self.scroll_window = Gtk.ScrolledWindow()
@@ -650,3 +669,18 @@ class BatteryTab(Gtk.Box):
         self.dropdown_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         self.dropdown_box.set_margin_top(5)
         # Note: The dropdown is not visible but set active in code to trigger mode change
+
+
+    def on_refresh_enter(self, widget, event):
+        alloc = widget.get_allocation()
+        if (0 <= event.x <= alloc.width and 
+            0 <= event.y <= alloc.height):
+            self.refresh_revealer.set_reveal_child(True)
+        return False
+    
+    def on_refresh_leave(self, widget, event):
+        alloc = widget.get_allocation()
+        if not (0 <= event.x <= alloc.width and 
+               0 <= event.y <= alloc.height):
+            self.refresh_revealer.set_reveal_child(False) 
+        return False

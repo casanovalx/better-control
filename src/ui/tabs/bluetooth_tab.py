@@ -6,7 +6,7 @@ from utils.logger import LogLevel, Logger
 from utils.translations import English, Spanish
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib  # type: ignore
+from gi.repository import Gtk, GLib, Gdk # type: ignore
 
 from tools.bluetooth import (
     get_bluetooth_status,
@@ -78,18 +78,34 @@ class BluetoothTab(Gtk.Box):
 
         header_box.pack_start(title_box, True, True, 0)
 
-        # Add scan button
-        self.scan_button = Gtk.Button()
-        scan_icon = Gtk.Image.new_from_icon_name(
-            "view-refresh-symbolic", Gtk.IconSize.BUTTON
-        )
-        self.scan_button.set_image(scan_icon)
-        self.scan_button.set_tooltip_text(self.txt.bluetooth_tooltip_refresh)
-        self.scan_button.connect("clicked", self.on_scan_clicked)
-        # Set initial visibility based on Bluetooth status
-        self.scan_button.set_visible(get_bluetooth_status(self.logging))
-        header_box.pack_end(self.scan_button, False, False, 0)
+        # Add combined refresh/scan button with expandable animation
+        self.refresh_button = Gtk.Button()
+        self.refresh_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        self.refresh_label = Gtk.Label(label="Refresh")
+        self.refresh_label.set_margin_start(5)
+        self.refresh_btn_box.pack_start(self.refresh_icon, False, False, 0)
+        
+        # Animation controller
+        self.refresh_revealer = Gtk.Revealer()
+        self.refresh_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_RIGHT)
+        self.refresh_revealer.set_transition_duration(150)
+        self.refresh_revealer.add(self.refresh_label)
+        self.refresh_revealer.set_reveal_child(False)
+        self.refresh_btn_box.pack_start(self.refresh_revealer, False, False, 0)
+        
+        self.refresh_button.add(self.refresh_btn_box)
+        refresh_tooltip = getattr(self.txt, "refresh_tooltip", "Refresh and Scan for Devices")
+        self.refresh_button.set_tooltip_text(refresh_tooltip)
+        self.refresh_button.connect("clicked", self.on_scan_clicked)
+        
+        # Hover behavior
+        self.refresh_button.set_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
+        self.refresh_button.connect("enter-notify-event", self.on_refresh_enter)
+        self.refresh_button.connect("leave-notify-event", self.on_refresh_leave)
 
+        # Add refresh button to header
+        header_box.pack_end(self.refresh_button, False, False, 0)
         self.pack_start(header_box, False, False, 0)
 
         # Create scrollable content
@@ -145,6 +161,21 @@ class BluetoothTab(Gtk.Box):
 
         # Set up periodic device list updates
         GLib.timeout_add(2000, self.periodic_update)
+
+
+    def on_refresh_enter(self, widget, event):
+        alloc = widget.get_allocation()
+        if (0 <= event.x <= alloc.width and 
+            0 <= event.y <= alloc.height):
+            self.refresh_revealer.set_reveal_child(True)
+        return False
+    
+    def on_refresh_leave(self, widget, event):
+        alloc = widget.get_allocation()
+        if not (0 <= event.x <= alloc.width and 
+               0 <= event.y <= alloc.height):
+            self.refresh_revealer.set_reveal_child(False) 
+        return False
         
     # keybinds for bluetooth tab
     def on_key_press(self, widget, event):
@@ -277,9 +308,10 @@ class BluetoothTab(Gtk.Box):
             return
 
         self.logging.log(LogLevel.Info, "Starting Bluetooth device scan")
-        # Disable button during scan
+        # Update button during scan
         button.set_sensitive(False)
-        button.set_label(self.txt.bluetooth_scanning)
+        self.refresh_label.set_label(self.txt.bluetooth_scanning)
+        self.refresh_revealer.set_reveal_child(True)
 
         # Start discovery
         try:
@@ -353,8 +385,12 @@ class BluetoothTab(Gtk.Box):
             if self.discovery_check_id:
                 GLib.source_remove(self.discovery_check_id)
                 self.discovery_check_id = None
+            # Restore original button appearance with hover behavior
             button.set_sensitive(True)
-            button.set_label(self.txt.bluetooth_scan_devices)
+            self.refresh_label.set_label("Refresh")
+            self.refresh_revealer.set_reveal_child(False)
+            # Force update the button appearance
+            self.refresh_btn_box.queue_draw()
             self.update_device_list()
 
     def on_connect_clicked(self, button, device_path):

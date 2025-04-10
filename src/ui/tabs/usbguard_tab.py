@@ -4,7 +4,7 @@ import gi
 import logging
 import subprocess
 import threading
-from gi.repository import Gtk, GLib  # type: ignore
+from gi.repository import Gtk, GLib , Gdk # type: ignore
 from utils.logger import LogLevel
 from utils.translations import get_translations
 
@@ -59,9 +59,32 @@ class USBGuardTab(Gtk.Box):
         top_row.pack_start(Gtk.Box(), True, True, 0)
         
         # Refresh button
-        self.refresh_button = Gtk.Button.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
-        self.refresh_button.set_tooltip_text(get_translations().refresh)
+        self.refresh_button = Gtk.Button()
+        self.refresh_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        self.refresh_label = Gtk.Label(label="Refresh")
+        self.refresh_label.set_margin_start(5)
+        self.refresh_btn_box.pack_start(self.refresh_icon, False, False, 0)
+        
+        # Animation controller
+        self.refresh_revealer = Gtk.Revealer()
+        self.refresh_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_RIGHT)
+        self.refresh_revealer.set_transition_duration(150)
+        self.refresh_revealer.add(self.refresh_label)
+        self.refresh_revealer.set_reveal_child(False)
+        self.refresh_btn_box.pack_start(self.refresh_revealer, False, False, 0)
+        
+        self.refresh_button.add(self.refresh_btn_box)
+        refresh_tooltip = getattr(self.txt, "refresh_tooltip", "Refresh and Scan for Devices")
+        self.refresh_button.set_tooltip_text(refresh_tooltip)
         self.refresh_button.connect("clicked", self.refresh_devices)
+        
+        # Hover behavior
+        self.refresh_button.set_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
+        self.refresh_button.connect("enter-notify-event", self.on_refresh_enter)
+        self.refresh_button.connect("leave-notify-event", self.on_refresh_leave)
+
+        # Add refresh button to header
         top_row.pack_end(self.refresh_button, False, False, 0)
         
         header_box.pack_start(top_row, False, False, 0)
@@ -380,14 +403,67 @@ Status: {status_text}
             btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
             
             if status == "block":
-                allow_btn = Gtk.Button.new_from_icon_name("emblem-ok-symbolic", Gtk.IconSize.BUTTON)
+                # Temporary allow button with internal label animation
+                allow_btn = Gtk.Button()
+                allow_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                allow_icon = Gtk.Image.new_from_icon_name("emblem-ok-symbolic", Gtk.IconSize.BUTTON)
+                allow_btn_box.pack_start(allow_icon, False, False, 0)
+                allow_label = Gtk.Label(label=get_translations().allow)
+                allow_revealer = Gtk.Revealer()
+                allow_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_RIGHT)
+                allow_revealer.set_transition_duration(150)
+                allow_revealer.add(allow_label)
+                allow_revealer.set_reveal_child(False)
+                allow_btn_box.pack_start(allow_revealer, False, False, 0)
+                allow_btn.add(allow_btn_box)
                 allow_btn.set_tooltip_text(get_translations().allow)
                 allow_btn.connect("clicked", self.on_allow_device, device_id)
+                
+                allow_btn.set_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
+                allow_btn.connect("enter-notify-event", self.on_button_hover_enter, allow_revealer)
+                allow_btn.connect("leave-notify-event", self.on_button_hover_leave, allow_revealer)
                 btn_box.pack_start(allow_btn, False, False, 0)
+                
+                # Permanent allow button with internal label animation
+                perm_allow_btn = Gtk.Button()
+                perm_allow_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                perm_allow_icon = Gtk.Image.new_from_icon_name("emblem-default-symbolic", Gtk.IconSize.BUTTON)
+                perm_allow_btn_box.pack_start(perm_allow_icon, False, False, 0)
+                perm_allow_label = Gtk.Label(label=get_translations().permanent_allow)
+                perm_allow_revealer = Gtk.Revealer()
+                perm_allow_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_RIGHT)
+                perm_allow_revealer.set_transition_duration(150)
+                perm_allow_revealer.add(perm_allow_label)
+                perm_allow_revealer.set_reveal_child(False)
+                perm_allow_btn_box.pack_start(perm_allow_revealer, False, False, 0)
+                perm_allow_btn.add(perm_allow_btn_box)
+                perm_allow_btn.set_tooltip_text(get_translations().permanent_allow_tooltip)
+                perm_allow_btn.connect("clicked", self.on_permanent_allow_device, device_id)
+                
+                perm_allow_btn.set_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
+                perm_allow_btn.connect("enter-notify-event", self.on_button_hover_enter, perm_allow_revealer)
+                perm_allow_btn.connect("leave-notify-event", self.on_button_hover_leave, perm_allow_revealer)
+                btn_box.pack_start(perm_allow_btn, False, False, 0)
             else:
-                block_btn = Gtk.Button.new_from_icon_name("action-unavailable-symbolic", Gtk.IconSize.BUTTON)
+                # Block button with internal label animation
+                block_btn = Gtk.Button()
+                block_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                block_icon = Gtk.Image.new_from_icon_name("action-unavailable-symbolic", Gtk.IconSize.BUTTON)
+                block_btn_box.pack_start(block_icon, False, False, 0)
+                block_label = Gtk.Label(label=get_translations().block)
+                block_revealer = Gtk.Revealer()
+                block_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_RIGHT)
+                block_revealer.set_transition_duration(150)
+                block_revealer.add(block_label)
+                block_revealer.set_reveal_child(False)
+                block_btn_box.pack_start(block_revealer, False, False, 0)
+                block_btn.add(block_btn_box)
                 block_btn.set_tooltip_text(get_translations().block)
                 block_btn.connect("clicked", self.on_block_device, device_id)
+                
+                block_btn.set_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
+                block_btn.connect("enter-notify-event", self.on_button_hover_enter, block_revealer)
+                block_btn.connect("leave-notify-event", self.on_button_hover_leave, block_revealer)
                 btn_box.pack_start(block_btn, False, False, 0)
             
             box.pack_end(btn_box, False, False, 0)
@@ -430,16 +506,53 @@ Status: {status_text}
             else:
                 print(f"Failed to allow device: {e}")
             self.show_error(get_translations().operation_failed)
+
+    def on_permanent_allow_device(self, widget, device_id):
+        """Handle permanently allowing a USB device by adding to policy"""
+        try:
+            self.manual_operations.add(device_id)
+            
+            subprocess.run(["usbguard", "allow-device", "-p", device_id], check=True)
+            
+            result = subprocess.run(["usbguard", "list-devices"],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 check=True)
+            devices = result.stdout.decode('utf-8').splitlines()
+            device_info = next((d for d in devices if d.startswith(device_id)), "")
+            device_name = self.get_device_name(device_info)
+            
+            subprocess.run([
+                "notify-send",
+                "-i", "emblem-default-symbolic",
+                f"Better Control",
+                f"{device_name} has been permanently allowed (added to policy)."
+            ])
+            
+            self.refresh_devices(None)
+            self.manual_operations.discard(device_id)
+            
+        except subprocess.CalledProcessError as e:
+            if hasattr(self.logging, 'log_error'):
+                self.logging.log_error(f"Failed to permanently allow device: {e}")
+            else:
+                print(f"Failed to permanently allow device: {e}")
+            self.show_error(get_translations().operation_failed)
     
     def on_block_device(self, widget, device_id):
         try:
-        
             self.manual_operations.add(device_id)
             
-        
+            # First block the device temporarily
             subprocess.run(["usbguard", "block-device", device_id], check=True)
             
-            # Get device info in same format as connection events
+            # Then remove from policy (permanent list)
+            subprocess.run(["usbguard", "reject-device", device_id], check=True)
+            
+            # Also remove from hidden devices if present
+            self.hidden_devices.remove(device_id)
+            
+            # Get device info for notification
             result = subprocess.run(["usbguard", "list-devices"],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE,
@@ -452,7 +565,7 @@ Status: {status_text}
                 "notify-send",
                 "-i", "action-unavailable-symbolic",
                 f"Better Control",
-                f"{device_name} has been blocked."
+                f"{device_name} has been blocked and removed from permanent list."
             ])
             
             self.refresh_devices(None)
@@ -815,5 +928,35 @@ Status: {status_text}
         ))
         return False  
 
+    def on_button_hover_enter(self, widget, event, revealer):
+        """Handle button hover enter event"""
+        alloc = widget.get_allocation()
+        if (0 <= event.x <= alloc.width and 
+            0 <= event.y <= alloc.height):
+            revealer.set_reveal_child(True)
+        return False
+    
+    def on_button_hover_leave(self, widget, event, revealer):
+        """Handle button hover leave event"""
+        alloc = widget.get_allocation()
+        if not (0 <= event.x <= alloc.width and 
+               0 <= event.y <= alloc.height):
+            revealer.set_reveal_child(False) 
+        return False
+
     def on_destroy(self, widget):
         self.refresh_thread_running = False
+
+    def on_refresh_enter(self, widget, event):
+        alloc = widget.get_allocation()
+        if (0 <= event.x <= alloc.width and 
+            0 <= event.y <= alloc.height):
+            self.refresh_revealer.set_reveal_child(True)
+        return False
+    
+    def on_refresh_leave(self, widget, event):
+        alloc = widget.get_allocation()
+        if not (0 <= event.x <= alloc.width and 
+               0 <= event.y <= alloc.height):
+            self.refresh_revealer.set_reveal_child(False) 
+        return False

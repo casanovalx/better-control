@@ -80,18 +80,35 @@ class AutostartTab(Gtk.Box):
                 header_box.pack_start(title_box, True, True, 0)
 
                 # Add scan button with better styling
-                self.scan_button = Gtk.Button()
-                scan_icon = Gtk.Image.new_from_icon_name(
-                    "view-refresh-symbolic", Gtk.IconSize.BUTTON
-                )
-                self.scan_button.set_image(scan_icon)
-                self.scan_button.set_tooltip_text(getattr(self.txt, 'autostart_tooltip_rescan', 'Rescan'))
-                self.scan_button.connect("clicked", self.on_scan_clicked)
-                self.scan_button.get_style_context().add_class("scan-button")
-                self.scan_button.set_visible(True)
-                header_box.pack_end(self.scan_button, False, False, 0)
+                self.refresh_button = Gtk.Button()
+                self.refresh_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+                self.refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+                self.refresh_label = Gtk.Label(label="Refresh")
+                self.refresh_label.set_margin_start(5)
+                self.refresh_btn_box.pack_start(self.refresh_icon, False, False, 0)
+                
+                # Animation controller
+                self.refresh_revealer = Gtk.Revealer()
+                self.refresh_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_RIGHT)
+                self.refresh_revealer.set_transition_duration(150)
+                self.refresh_revealer.add(self.refresh_label)
+                self.refresh_revealer.set_reveal_child(False)
+                self.refresh_btn_box.pack_start(self.refresh_revealer, False, False, 0)
+                
+                self.refresh_button.add(self.refresh_btn_box)
+                refresh_tooltip = getattr(self.txt, "refresh_tooltip", "Refresh and Scan for Services")
+                self.refresh_button.set_tooltip_text(refresh_tooltip)
+                self.refresh_button.connect("clicked", self.refresh_list)
+                
+                # Hover behavior
+                self.refresh_button.set_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
+                self.refresh_button.connect("enter-notify-event", self.on_refresh_enter)
+                self.refresh_button.connect("leave-notify-event", self.on_refresh_leave)
 
+                # Add refresh button to header
+                header_box.pack_end(self.refresh_button, False, False, 0)
                 self.pack_start(header_box, False, False, 0)
+
 
                 # Add session info with badge styling
                 current_session = get_current_session()
@@ -263,8 +280,11 @@ class AutostartTab(Gtk.Box):
             self.logging.log(LogLevel.Debug, f"Found {len(startup_apps)} autostart apps")
             return startup_apps
 
-    def refresh_list(self):
-        """Clear and repopulate the list of autostart apps"""
+    def refresh_list(self, widget=None):
+        """Clear and repopulate the list of autostart apps
+        Args:
+            widget: Optional widget that triggered the refresh (from GTK signals)
+        """
         # Run on a separate thread to avoid blocking the ui
         if hasattr(self, '_refresh_thread') and self._refresh_thread.is_alive():
             self.logging.log(LogLevel.Debug, "Refresh thread is already running")
@@ -465,4 +485,18 @@ class AutostartTab(Gtk.Box):
             if app_info["path"] != old_apps[app_name]["path"]:
                 return True
 
+        return False
+
+    def on_refresh_enter(self, widget, event):
+        alloc = widget.get_allocation()
+        if (0 <= event.x <= alloc.width and 
+            0 <= event.y <= alloc.height):
+            self.refresh_revealer.set_reveal_child(True)
+        return False
+    
+    def on_refresh_leave(self, widget, event):
+        alloc = widget.get_allocation()
+        if not (0 <= event.x <= alloc.width and 
+               0 <= event.y <= alloc.height):
+            self.refresh_revealer.set_reveal_child(False) 
         return False

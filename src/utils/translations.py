@@ -110,6 +110,8 @@ class English:
         self.no_devices = "No USB devices connected"
         self.operation_failed = "Operation failed"
         self.policy_error = "Failed to load policy"
+        self.permanent_allow = "Permanently Allow"
+        self.permanent_allow_tooltip = "Permanently allow this device (adds to policy)"
         self.msg_tab_battery = "Battery"
         self.msg_tab_bluetooth = "Bluetooth"
         self.msg_tab_display = "Display"
