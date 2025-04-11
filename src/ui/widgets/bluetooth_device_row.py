@@ -44,18 +44,30 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
         name_label.set_max_width_chars(20)
         if self.is_connected:
             name_label.set_markup(f"<b>{self.device_name}</b>")
-        name_box.pack_start(name_label, True, True, 0)
+        name_status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        name_status_box.pack_start(name_label, False, True, 0)
 
         if self.is_connected:
-            # Show connection status and battery if available
-            status_text = f" ({self.txt.connected}"
-            if self.battery_percentage is not None:
-                status_text += f", {self.battery_percentage}%"
-            status_text += ")"
+            status_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=3)
+            status_container.get_style_context().add_class("device-status-container")
             
-            connected_label = Gtk.Label(label=status_text)
-            connected_label.get_style_context().add_class("success-label")
-            name_box.pack_start(connected_label, False, False, 0)
+            # Connection indicator
+            connection_indicator = Gtk.DrawingArea()
+            connection_indicator.set_size_request(12, 12)
+            connection_indicator.get_style_context().add_class("connection-indicator")
+            connection_indicator.get_style_context().add_class("connected")
+            status_container.pack_start(connection_indicator, False, False, 0)
+            
+            status_text = self.txt.connected
+            if self.battery_percentage is not None:
+                status_text += f" • {self.battery_percentage}%"
+            status_label = Gtk.Label(label=status_text)
+            status_label.get_style_context().add_class("status-label")
+            status_container.pack_start(status_label, False, False, 0)
+            
+            name_status_box.pack_start(status_container, False, False, 4)
+        
+        name_box.pack_start(name_status_box, True, True, 0)
 
         left_box.pack_start(name_box, False, False, 0)
 
@@ -119,6 +131,23 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
             "unknown": "Device",
         }
         return type_names.get(self.device_type, "Bluetooth Device")
+
+    def get_battery_level_icon(self):
+        """Return battery level icon suffix based on percentage"""
+        if not self.battery_percentage:
+            return "missing"
+        if self.battery_percentage >= 90:
+            return "100"
+        elif self.battery_percentage >= 70:
+            return "080"
+        elif self.battery_percentage >= 50:
+            return "060"
+        elif self.battery_percentage >= 30:
+            return "040"
+        elif self.battery_percentage >= 10:
+            return "020"
+        else:
+            return "000"
 
     def get_mac_address(self):
         return self.mac_address
