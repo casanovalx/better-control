@@ -202,6 +202,12 @@ class USBGuardTab(Gtk.Box):
                 line for line in result.stdout.decode('utf-8').splitlines()
                 if line.strip() and not self.hidden_devices.contains(line.split()[0].split(':')[0])
             )
+            
+            # Force state update on manual refresh
+            if widget:
+                self.previous_devices = None
+                self.manual_operations.clear()
+                
             self.check_device_changes(current_devices)
             self.update_device_list(current_devices)
             self.status_label.set_text("")
@@ -860,6 +866,13 @@ Status: {status_text}
         if self.previous_devices is None:
             self.previous_devices = current_set
             return
+            
+        # Handle reconnected devices
+        for device in current_set:
+            device_id = device.split()[0].split(":")[0]
+            if device_id in self.manual_operations:
+                # Skip recently modified devices
+                continue
             
         # Get permanent allow rules
         try:
