@@ -24,6 +24,7 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
         self.is_connected = device['connected']
         self.is_paired = device['paired']
         self.device_type = device['icon'] if device['icon'] else 'unknown'
+        self.battery_percentage = device.get('battery', None)
 
         # Main container for the row
         container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -46,7 +47,13 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
         name_box.pack_start(name_label, True, True, 0)
 
         if self.is_connected:
-            connected_label = Gtk.Label(label=f" ({self.txt.connected})")
+            # Show connection status and battery if available
+            status_text = f" ({self.txt.connected}"
+            if self.battery_percentage is not None:
+                status_text += f", {self.battery_percentage}%"
+            status_text += ")"
+            
+            connected_label = Gtk.Label(label=status_text)
             connected_label.get_style_context().add_class("success-label")
             name_box.pack_start(connected_label, False, False, 0)
 

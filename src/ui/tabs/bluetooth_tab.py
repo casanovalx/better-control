@@ -205,6 +205,13 @@ class BluetoothTab(Gtk.Box):
             try:
                 devices = get_devices(self.logging)
                 for device in devices:
+                    # Get battery info for connected devices
+                    if device['connected']:
+                        from tools.bluetooth import get_bluetooth_manager
+                        manager = get_bluetooth_manager(self.logging)
+                        battery = manager.get_device_battery(device['path'])
+                        if battery is not None:
+                            device['battery'] = battery
                     device_row = BluetoothDeviceRow(device, self.txt)
                     device_row.connect_button.connect(
                         "clicked", self.on_connect_clicked, device["path"]

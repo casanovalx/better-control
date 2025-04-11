@@ -449,12 +449,26 @@ class BluetoothManager:
 # Create a global instance of the BluetoothManager
 _manager = None
 
+# Sleep/wake event handling
+def _setup_sleep_wake_handlers(logging: Logger):
+    """Setup systemd sleep/wake event handlers to restore audio after wake"""
+    try:
+        import dbus
+        bus = dbus.SystemBus()
+        systemd = bus.get_object('org.freedesktop.login1', '/org/freedesktop/login1')
+        systemd.connect_to_signal('PrepareForSleep', 
+            lambda sleeping: restore_last_sink(logging) if not sleeping else None,
+            dbus_interface='org.freedesktop.login1.Manager')
+        logging.log(LogLevel.Info, "Registered sleep/wake event handler")
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Failed to setup sleep/wake handlers: {e}")
 
 def get_bluetooth_manager(logging: Logger) -> BluetoothManager:
     """Get or create the global BluetoothManager instance"""
     global _manager
     if _manager is None:
         _manager = BluetoothManager(logging)
+        _setup_sleep_wake_handlers(logging)
     return _manager
 
 def add_audio_routing_callback(callback: Callable[[str], None], logging: Logger) -> None:
@@ -493,10 +507,10 @@ def get_current_audio_sink(logging: Logger) -> Optional[str]:
         return None
 
 def restore_last_sink(logging: Logger):
-    """Restore the last used audio sink device after startup.
+    """Restore the last used audio sink and source devices after startup or wake.
 
-    This function attempts to restore the last used audio sink, typically
-    a Bluetooth device, if one was previously connected.
+    This function attempts to restore both output and input audio devices,
+    typically Bluetooth devices, if they were previously connected.
     """
     try:
         # Wait for PA to fully initialize
@@ -510,72 +524,57 @@ def restore_last_sink(logging: Logger):
             logging.log(LogLevel.Debug, "No PulseAudio config directory found")
             return
 
-        # Look for connection config files (specifically the default sink file)
+        # Restore output sink
         default_sink_file = os.path.join(pa_dir, "default-sink")
+        if os.path.exists(default_sink_file):
+            try:
+                with open(default_sink_file, "r") as f:
+                    saved_sink = f.read().strip()
 
-        if not os.path.exists(default_sink_file):
-            logging.log(LogLevel.Debug, "No default sink file found to restore")
-            return
+                if saved_sink and "bluez" in saved_sink.lower():
+                    # Check if sink is available
+                    sinks = subprocess.getoutput("pactl list sinks short")
+                    if saved_sink in sinks:
+                        logging.log(LogLevel.Info, f"Restoring Bluetooth sink: {saved_sink}")
+                        subprocess.run(["pactl", "set-default-sink", saved_sink], check=False)
+                        
+                        # Update current sink and notify callbacks
+                        manager = get_bluetooth_manager(logging)
+                        manager.current_audio_sink = saved_sink
+                        for callback in manager.audio_routing_callbacks:
+                            try:
+                                callback(saved_sink)
+                            except Exception as e:
+                                logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
+            except Exception as e:
+                logging.log(LogLevel.Error, f"Error restoring Bluetooth sink: {e}")
 
-        try:
-            # Read the saved sink
-            with open(default_sink_file, "r") as f:
-                saved_sink = f.read().strip()
+        # Restore input source (with same forced logic as output)
+        default_source_file = os.path.join(pa_dir, "default-source")
+        if os.path.exists(default_source_file):
+            try:
+                with open(default_source_file, "r") as f:
+                    saved_source = f.read().strip()
 
-            if not saved_sink:
-                logging.log(LogLevel.Debug, "No saved sink found")
-                return
+                if saved_source and "bluez" in saved_source.lower():
+                    # Check if source is available
+                    sources = subprocess.getoutput("pactl list sources short")
+                    if saved_source in sources:
+                        logging.log(LogLevel.Info, f"Restoring Bluetooth source: {saved_source}")
+                        subprocess.run(["pactl", "set-default-source", saved_source], check=False)
+                        
+                        # Also set the source for all active inputs
+                        inputs = subprocess.getoutput("pactl list short sink-inputs").splitlines()
+                        for input_line in inputs:
+                            input_id = input_line.split()[0]
+                            subprocess.run(["pactl", "move-sink-input", input_id, saved_source], check=False)
+            except Exception as e:
+                logging.log(LogLevel.Error, f"Error restoring Bluetooth source: {e}")
 
-            # Check if it's a Bluetooth device by name convention
-            if not "bluez" in saved_sink.lower():
-                logging.log(LogLevel.Debug, "Saved sink is not a Bluetooth device")
-                return
-
-            # Get current sinks
-            process = subprocess.run(
-                ["pactl", "list", "sinks", "short"],
-                capture_output=True,
-                text=True,
-                check=False
-            )
-
-            # Check for the presence of the saved device in currently available devices
-            current_sinks = process.stdout.splitlines()
-            device_found = False
-
-            for sink in current_sinks:
-                if saved_sink in sink:
-                    device_found = True
-                    break
-
-            if not device_found:
-                logging.log(LogLevel.Info, f"Saved Bluetooth sink '{saved_sink}' not currently available")
-                return
-
-            # Set the sink as default if it was found
-            logging.log(LogLevel.Info, f"Restoring Bluetooth sink: {saved_sink}")
-            subprocess.run(
-                ["pactl", "set-default-sink", saved_sink],
-                check=False
-            )
-            
-            # Update current sink and notify callbacks
-            manager = get_bluetooth_manager(logging)
-            manager.current_audio_sink = saved_sink
-            for callback in manager.audio_routing_callbacks:
-                try:
-                    callback(saved_sink)
-                except Exception as e:
-                    logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
-
-        except Exception as e:
-            logging.log(LogLevel.Error, f"Error restoring Bluetooth sink: {e}")
     except Exception as e:
-        # Handle any unexpected errors without crashing
         logging.log(LogLevel.Error, f"Unexpected error in restore_last_sink: {e}")
     finally:
-        # Always log completion to help with debugging
-        logging.log(LogLevel.Debug, "Audio sink restoration process completed")
+        logging.log(LogLevel.Debug, "Audio device restoration process completed")
 
 
 # Convenience functions using the global manager
