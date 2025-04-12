@@ -137,6 +137,11 @@ class VolumeTab(Gtk.Box):
         self.connect("map", self.on_tab_shown)
         self.connect("unmap", self.on_tab_hidden)
 
+        # Register for audio device change notifications
+        from tools.bluetooth import add_audio_routing_callback
+        self._audio_device_changed_cb = self._on_audio_device_changed
+        add_audio_routing_callback(self._audio_device_changed_cb, logging)
+
         # Connect destroy signal for proper cleanup
         self.connect_destroy_signal()
 
@@ -1237,6 +1242,13 @@ class VolumeTab(Gtk.Box):
 
         self.connect("destroy", on_destroy)
 
+    def _on_audio_device_changed(self, sink_name):
+        """Callback when audio routing changes"""
+        GLib.idle_add(self.update_device_lists)
+        if sink_name:
+            self.logging.log(LogLevel.Info, 
+                f"Audio device changed to: {sink_name}")
+
     def __del__(self):
         """Clean up resources when tab is destroyed"""
         self.stop_pulse_monitoring()
@@ -1246,6 +1258,13 @@ class VolumeTab(Gtk.Box):
     def on_destroy(self, widget):
         """Clean up resources when tab is destroyed"""
         self.stop_pulse_monitoring()
+        
+        # Remove audio device change callback
+        if hasattr(self, '_audio_device_changed_cb'):
+            from tools.bluetooth import remove_audio_routing_callback
+            remove_audio_routing_callback(self._audio_device_changed_cb, self.logging)
+            del self._audio_device_changed_cb
+
         # Cancel any pending timeouts
         if hasattr(self, "_volume_change_timeout_id") and self._volume_change_timeout_id:
             GLib.source_remove(self._volume_change_timeout_id)

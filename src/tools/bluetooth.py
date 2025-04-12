@@ -32,6 +32,7 @@ class BluetoothManager:
         self.bus = None
         self.audio_routing_callbacks = []
         self.current_audio_sink = None
+        self.signal_match = None
 
         try:
             # Initialize DBus with mainloop
@@ -41,6 +42,15 @@ class BluetoothManager:
 
             # Find the adapter
             self.adapter_path = self.find_adapter()
+
+            # Set up signal handler for device property changes
+            if self.bus:
+                self.signal_match = self.bus.add_signal_receiver(
+                    self._on_device_property_changed,
+                    signal_name="PropertiesChanged",
+                    dbus_interface=DBUS_PROP_IFACE,
+                    path_keyword="path"
+                )
             if self.adapter_path:
                 self.adapter = dbus.Interface(
                     self.bus.get_object(BLUEZ_SERVICE_NAME, self.adapter_path),
@@ -60,11 +70,98 @@ class BluetoothManager:
         """Cleanup resources"""
         try:
             # Clean up any resources
+            if self.signal_match:
+                self.signal_match.remove()
+                self.signal_match = None
             self.adapter = None
             self.bus = None
             self.audio_routing_callbacks.clear()
         except Exception:
             pass  # Ignore errors during cleanup
+
+    def _on_device_property_changed(self, interface, changed_properties, invalidated_properties, path):
+        """Handle DBus property change signals for Bluetooth devices"""
+        try:
+            if interface != BLUEZ_DEVICE_INTERFACE:
+                return
+
+            # Check if this is a connection state change
+            if "Connected" in changed_properties and changed_properties["Connected"]:
+                # Device connected - switch audio
+                self._switch_to_bluetooth_audio(path)
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"Error handling device property change: {e}")
+
+    def _switch_to_bluetooth_audio(self, device_path):
+        """Switch both input and output audio to Bluetooth device with retries"""
+        max_attempts = 5
+        base_delay = 0.5  # seconds
+        
+        for attempt in range(max_attempts):
+            try:
+                # Get list of available sinks and sources
+                sinks_output = subprocess.getoutput("pactl list sinks short")
+                sources_output = subprocess.getoutput("pactl list sources short")
+                
+                bluez_sinks = [
+                    line.split()[1] 
+                    for line in sinks_output.splitlines() 
+                    if "bluez" in line.lower()
+                ]
+                
+                bluez_sources = [
+                    line.split()[1] 
+                    for line in sources_output.splitlines() 
+                    if "bluez" in line.lower()
+                ]
+                
+                if not bluez_sinks and not bluez_sources:
+                    if attempt == max_attempts - 1:
+                        self.logging.log(LogLevel.Warn, "No Bluetooth audio devices found after retries")
+                        return
+                    time.sleep(base_delay * (2 ** attempt))
+                    continue
+                    
+                # Switch output if available
+                if bluez_sinks:
+                    sink_name = bluez_sinks[0]
+                    verify_output = subprocess.run(["pactl", "list", "sinks", "short"], 
+                                                 capture_output=True, text=True)
+                    if sink_name in verify_output.stdout:
+                        subprocess.run(["pactl", "set-default-sink", sink_name], check=True)
+                        self.current_audio_sink = sink_name
+                        self.logging.log(LogLevel.Info, f"Switched to Bluetooth output: {sink_name}")
+                
+                # Switch input if available
+                if bluez_sources:
+                    source_name = bluez_sources[0]
+                    verify_output = subprocess.run(["pactl", "list", "sources", "short"],
+                                                 capture_output=True, text=True)
+                    if source_name in verify_output.stdout:
+                        subprocess.run(["pactl", "set-default-source", source_name], check=True)
+                        self.logging.log(LogLevel.Info, f"Switched to Bluetooth input: {source_name}")
+                
+                # Notify callbacks with the new sink name
+                if self.current_audio_sink:
+                    for cb in self.audio_routing_callbacks:
+                        try:
+                            cb(self.current_audio_sink)
+                        except Exception as e:
+                            self.logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
+                else:
+                    self.logging.log(LogLevel.Warn, "No audio sink available to notify callbacks")
+                
+                return
+                
+            except subprocess.CalledProcessError as e:
+                self.logging.log(LogLevel.Error, f"Audio switch command failed (attempt {attempt+1}): {e}")
+                if attempt == max_attempts - 1:
+                    self.logging.log(LogLevel.Error, "Max retries reached for audio switching")
+                    return
+                time.sleep(base_delay * (2 ** attempt))
+            except Exception as e:
+                self.logging.log(LogLevel.Error, f"Unexpected error switching audio (attempt {attempt+1}): {e}")
+                return
 
     def get_device_battery(self, device_path: str) -> Optional[int]:
         """Retrieve battery percentage for a Bluetooth device using busctl."""
@@ -307,22 +404,7 @@ class BluetoothManager:
                                 f"{device_name} connected.\n{battery_info}"])
                 
                 # Automatically switch to Bluetooth audio sink
-                try:
-                    # Get list of available sinks
-                    sinks_output = subprocess.getoutput("pactl list sinks short")
-                    for line in sinks_output.splitlines():
-                        if "bluez" in line.lower():
-                            sink_name = line.split()[1]
-                            subprocess.run(["pactl", "set-default-sink", sink_name], check=True)
-                            self.current_audio_sink = sink_name
-                            for cb in self.audio_routing_callbacks:
-                                try:
-                                    cb(sink_name)
-                                except Exception as e:
-                                    self.logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
-                            break
-                except Exception as e:
-                    self.logging.log(LogLevel.Error, f"Failed switching to Bluetooth audio: {e}")
+                self._switch_to_bluetooth_audio(local_path)
                 
                 success = True
 

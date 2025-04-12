@@ -154,6 +154,15 @@ class BluetoothTab(Gtk.Box):
         scroll_window.add(content_box)
         self.pack_start(scroll_window, True, True, 0)
 
+        # Check for connected Bluetooth devices and switch audio if necessary
+        devices = get_devices(self.logging)
+        for device in devices:
+            if device['connected']:
+                from tools.bluetooth import get_bluetooth_manager
+                manager = get_bluetooth_manager(self.logging)
+                manager._switch_to_bluetooth_audio(device['path'])
+                break
+
         # Initial device list population
         self.update_device_list()
         
