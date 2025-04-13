@@ -196,10 +196,9 @@ expander {
 }
 
 .status-label {
-    font-size: 1em;
-    color: #ddd;
+    font-size: 0.9em;
+    opacity: 0.83;
     margin: 0 0 0 -20;
-    font-style: italic;
 }
 
 .connection-label {
