@@ -24,7 +24,7 @@
 - 📱 Modern, clean interface for system controls
 - 🎚️ Quick access to common system settings
 - 🌙 Respects your system's light/dark theme settings
-- 🧩 Modular design - use only what you need
+- 🧩 Modular design - use only what you need (see dependencies for more info)
 
 ## Dependencies
 <details>
