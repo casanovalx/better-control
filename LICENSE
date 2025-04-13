@@ -672,3 +672,8 @@ may consider it more useful to permit linking proprietary applications with
 the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <https://www.gnu.org/licenses/why-not-lgpl.html>.
+
+Additional Terms:
+
+As a condition of using any part of this code in derivative works or applications, you must include visible attribution to the original author in a prominent part of the UI or documentation.
+This attribution must be preserved in any forks or modified versions.
