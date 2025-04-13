@@ -375,12 +375,32 @@ def get_network_speed(logging: Logger) -> Dict[str, float]:
         logging.log(LogLevel.Error, f"Failed getting network speed: {e}")
         return {"rx_bytes": 0, "tx_bytes": 0, "wifi_supported": False}
 
+def get_pillow_install_instructions():
+    """Returns installation instructions for Pillow on various distros"""
+    instructions = (
+        "Pillow (Python Imaging Library) is required for QR code generation.\n"
+        "Install it for your distribution:\n\n"
+        "Alpine: sudo apk add py3-pillow\n"
+        "Fedora: sudo dnf install python3-pillow\n"
+        "Debian/Ubuntu: sudo apt install python3-pillow\n"
+        "Arch: sudo pacman -S python-pillow\n"
+        "Void: sudo xbps-install python3-pillow\n\n"
+        "After installing, restart the application."
+    )
+    print(instructions)
+
 def generate_wifi_qrcode(ssid: str, password: str, security: str, logging:Logger) -> str:
     """Generate qr_code for the wifi
 
     Returns:
-        str: path to generated qr code image
+        str: path to generated qr code image or installation instructions
     """
+    # First check if Pillow is available
+    try:
+        import qrcode
+    except ImportError:
+        get_pillow_install_instructions()
+
     # Define temp_dir at the beginning to avoid 'possibly unbound' error
     temp_dir = Path("/tmp/better-control")
 

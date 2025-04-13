@@ -3,24 +3,49 @@
 import subprocess
 import gi  # type: ignore
 from utils.logger import LogLevel, Logger
+from pathlib import Path
+from tools.wifi import generate_wifi_qrcode, get_connection_info
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # type: ignore
 
 
+class QRCodeDialog(Gtk.Dialog):
+    def __init__(self, parent, qr_code_path):
+        super().__init__(title="WiFi QR Code", transient_for=parent, flags=0)
+        self.add_buttons(Gtk.STOCK_OK, Gtk.ResponseType.OK)
+
+        box = self.get_content_area()
+        box.set_spacing(10)
+        
+        if Path(qr_code_path).name == "error.png":
+            error_label = Gtk.Label(label="Failed to generate QR code")
+            box.add(error_label)
+        else:
+            image = Gtk.Image.new_from_file(qr_code_path)
+            box.add(image)
+        
+        self.show_all()
+
+
 class WiFiNetworkRow(Gtk.ListBoxRow):
-    def __init__(self, network_info, logging: Logger):
+    def __init__(self, network_info, logging: Logger, parent_window=None):
         super().__init__()
         self.set_margin_top(5)
         self.set_margin_bottom(5)
         self.set_margin_start(10)
         self.set_margin_end(10)
+        self.parent_window = parent_window
+        self.logging = logging
 
         parts = network_info.split()
         self.is_connected = "*" in parts[0]
 
         self.ssid = self._extract_ssid(parts, logging)
         self.security = self._extract_security(network_info)
+        self.qr_button = Gtk.Button.new_from_icon_name("insert-image-symbolic", Gtk.IconSize.BUTTON)
+        self.qr_button.connect("clicked", self._on_qr_button_clicked)
+        self.qr_button.set_tooltip_text("Generate QR Code")
         signal_value = self._extract_signal(parts, logging)
         self.signal_strength = f"{signal_value}%" if signal_value > 0 else "0%"
 
@@ -71,9 +96,23 @@ class WiFiNetworkRow(Gtk.ListBoxRow):
         signal_label = Gtk.Label(label=self.signal_strength)
         signal_box.pack_start(signal_label, False, False, 0)
 
+        if self.is_connected:
+            container.pack_end(self.qr_button, False, False, 0)
         container.pack_end(signal_box, False, False, 0)
 
         self.original_network_info = network_info
+
+    def _on_qr_button_clicked(self, button):
+        """Handle QR code button click"""
+        if not self.is_connected:
+            return
+
+        conn_info = get_connection_info(self.ssid, self.logging)
+        password = conn_info.get("password", "")
+        security = conn_info.get("802-11-wireless-security.key-mgmt", "none").upper()
+
+        qr_path = generate_wifi_qrcode(self.ssid, password, security, self.logging)
+        QRCodeDialog(self.parent_window, qr_path)
 
     def _extract_ssid(self, parts, logging):
         if len(parts) <= 1:
