@@ -159,7 +159,7 @@ class ArgParse:
 
         # Usage
         self.arg_print(f"{BOLD}USAGE:{RESET}")
-        self.arg_print(f"  {WHITE}better-control {GRAY}[options]{RESET} \n   {WHITE}control {GRAY}[options]\n")
+        self.arg_print(f"  {WHITE}better-control {GRAY}[options]{RESET} \n  {WHITE}control {GRAY}[options]\n")
 
         # Options header
         self.arg_print(f"{BOLD}OPTIONS:{RESET}")
