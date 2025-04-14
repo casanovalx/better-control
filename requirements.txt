@@ -1,8 +1,0 @@
-pygobject
-pygobject-stubs
-dbus-python
-psutil
-setproctitle
-setuptools
-wheel
-qrcode
