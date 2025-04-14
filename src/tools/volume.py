@@ -264,31 +264,100 @@ def move_application_to_sink(app_id: str, sink_name: str, logging: Logger) -> No
         logging.log(LogLevel.Error, f"Failed moving application to sink: {e}")
 
 
-def set_default_sink(sink_name: str, logging: Logger) -> None:
+def set_default_sink(sink_name: str, logging: Logger) -> bool:
     try:
-        subprocess.run(["pactl", "set-default-sink", sink_name], check=True)
+        # First verify the sink exists and is available
+        sinks = get_sinks(logging)
+        target_sink = next((s for s in sinks if s.get("name") == sink_name), None)
+        if not target_sink:
+            logging.log(LogLevel.Error, f"Sink {sink_name} not found")
+            return False
+            
+        # Special handling for Bluetooth devices
+        is_bluetooth = "bluez" in sink_name.lower()
+        if is_bluetooth:
+            # Verify Bluetooth connection
+            bt_status = subprocess.getoutput("bluetoothctl info")
+            if "Connected: yes" not in bt_status:
+                logging.log(LogLevel.Error, f"Bluetooth device not connected: {sink_name}")
+                return False
+                
+            # Set appropriate profile if needed
+            profile = "a2dp_sink" if "a2dp" not in sink_name.lower() else None
+            if profile:
+                subprocess.run(["pactl", "set-card-profile", sink_name.split(".")[0], profile],
+                             check=False)
+
+        # Set the default sink with retry logic
+        max_retries = 3
+        for attempt in range(max_retries):
+            result = subprocess.run(
+                ["pactl", "set-default-sink", sink_name],
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE
+            )
+            if result.returncode == 0:
+                break
+            logging.log(LogLevel.Warning, 
+                       f"Attempt {attempt + 1} failed: {result.stderr.decode().strip()}")
+            time.sleep(0.5)
+        if result.returncode != 0:
+            logging.log(LogLevel.Error,
+                      f"Failed to set default sink: {result.stderr.decode().strip()}")
+            return False
+
+        # Verify the change took effect with timeout
+        timeout = 5  # seconds
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            new_sink = subprocess.getoutput("pactl get-default-sink").strip()
+            if new_sink == sink_name:
+                break
+            time.sleep(0.2)
+        else:
+            logging.log(LogLevel.Error,
+                      f"Device switch verification timed out (expected: {sink_name}, got: {new_sink})")
+            if is_bluetooth:
+                # Try to recover Bluetooth connection
+                subprocess.run(["bluetoothctl", "disconnect"], check=False)
+                time.sleep(1)
+                subprocess.run(["bluetoothctl", "connect", sink_name.split(".")[0]], check=False)
+            return False
 
         # Move all running apps to the new sink
+        success = True
         output = subprocess.getoutput("pactl list short sink-inputs")
         for line in output.split("\n"):
             if line.strip():
                 app_id = line.split()[0]
-                subprocess.run(
-                    ["pactl", "move-sink-input", app_id, sink_name], check=True
+                move_result = subprocess.run(
+                    ["pactl", "move-sink-input", app_id, sink_name],
+                    stderr=subprocess.PIPE,
+                    stdout=subprocess.PIPE
                 )
+                if move_result.returncode != 0:
+                    logging.log(LogLevel.Warning,
+                              f"Failed to move app {app_id}: {move_result.stderr.decode().strip()}")
+                    success = False
 
         # Notify Bluetooth manager of audio routing change
-        from tools.bluetooth import get_bluetooth_manager
-        manager = get_bluetooth_manager(logging)
-        manager.current_audio_sink = sink_name
-        for callback in manager.audio_routing_callbacks:
-            try:
-                callback(sink_name)
-            except Exception as e:
-                logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
+        try:
+            from tools.bluetooth import get_bluetooth_manager
+            manager = get_bluetooth_manager(logging)
+            manager.current_audio_sink = sink_name
+            for callback in manager.audio_routing_callbacks:
+                try:
+                    callback(sink_name)
+                except Exception as e:
+                    logging.log(LogLevel.Error, f"Error in audio routing callback: {e}")
+        except Exception as e:
+            logging.log(LogLevel.Error, f"Error notifying bluetooth manager: {e}")
 
-    except subprocess.CalledProcessError as e:
-        logging.log(LogLevel.Error, f"Failed setting default sink: {e}")
+        return success
+
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Error setting default sink: {e}")
+        return False
 
 
 def get_sinks(logging: Logger) -> List[Dict[str, str]]:

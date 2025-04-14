@@ -996,8 +996,48 @@ class VolumeTab(Gtk.Box):
     def on_output_changed(self, combo):
         """Handle output device selection changes"""
         device_id = combo.get_active_id()
-        if device_id:
-            set_default_sink(device_id, self.logging)
+        if not device_id:
+            return
+
+        # Store current active index in case we need to revert
+        current_index = combo.get_active()
+        
+        try:
+            # Attempt to change the default sink
+            success = set_default_sink(device_id, self.logging)
+            
+            if not success:
+                self.logging.log(LogLevel.Error, 
+                    f"Failed to switch to device {device_id}")
+                # Revert UI to previous selection
+                GLib.idle_add(combo.set_active, current_index)
+                return
+
+            # Verify the change actually took effect
+            new_sink = subprocess.getoutput("pactl get-default-sink").strip()
+            if new_sink != device_id:
+                self.logging.log(LogLevel.Error,
+                    f"Device switch verification failed (expected: {device_id}, got: {new_sink})")
+                GLib.idle_add(combo.set_active, current_index)
+                return
+
+            # For HDMI devices, add additional checks
+            if "hdmi" in device_id.lower():
+                # Check for HDMI-specific issues
+                hdmi_status = subprocess.getoutput("pactl list sinks | grep -A 10 " + device_id)
+                if "available: no" in hdmi_status.lower():
+                    self.logging.log(LogLevel.Error,
+                        f"HDMI device {device_id} not available")
+                    GLib.idle_add(combo.set_active, current_index)
+                    return
+
+            # Force refresh of application outputs
+            GLib.idle_add(self.update_application_list)
+
+        except Exception as e:
+            self.logging.log(LogLevel.Error,
+                f"Error changing audio device: {e}")
+            GLib.idle_add(combo.set_active, current_index)
 
     def on_input_changed(self, combo):
         """Handle input device selection changes"""
