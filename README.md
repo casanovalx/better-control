@@ -59,48 +59,19 @@ Before installing, ensure you have `git` and `base-devel` installed.
 
 <br><br>
 
-# 💾 Installation
+# 💾 Installation & Uninstallation
 
-> This script will work on arch based , debian based , fedora based , void , alpine and dependencies will be automatically installed
-#### ➡️ To install run this in your terminal
-
+#### ➡️ To install or uninstall run this in your terminal, its very simple and straightforward.
+<br>
 
 ```
 bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/install.sh)
 ```
-
+<br><br>
 
 If you want to check the contents of the file before running , we have nothing to hide go ahead by clicking this link >> https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/install.sh
 
-<br><br>
-
-# 🗑️ Uninstallation
-
-<details>
-<summary><b>🏗️ Arch-based Distributions</b></summary>
-
-  <br>
-  
-```bash
-sudo pacman -R better-control-git
-```
-> The above lines will not remove the dependencies , but if you want to remove dependencies use the lines below:
-```
-sudo pacman -Rns better-control-git
-```
-</details>
-
-<details>
-<summary><b>📦 Other Distributions</b></summary>
-
-<br>
-
-```bash
-git clone https://github.com/quantumvoid0/better-control
-cd better-control
-sudo make uninstall
-```
-</details>
+> This script will work on arch based , debian based , fedora based , void , alpine and dependencies will be automatically installed during installation.
 
 <br><br>
 
