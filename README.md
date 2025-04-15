@@ -59,7 +59,7 @@ Before installing, ensure you have `git` and `base-devel` installed.
 </details>
 
 # > 💾 Installation
-> This script will work on arch based , debian based , fedora based , void , alpine
+> This script will work on arch based , debian based , fedora based , void , alpine and dependencies will be automatically installed
 #### To install run this in your terminal
 
 ```
