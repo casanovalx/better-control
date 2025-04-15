@@ -66,7 +66,7 @@ Before installing, ensure you have `git` and `base-devel` installed.
 ```
 bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/install.sh)
 ```
-<br><br>
+<br>
 
 If you want to check the contents of the file before running , we have nothing to hide go ahead by clicking this link >> https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/install.sh
 
