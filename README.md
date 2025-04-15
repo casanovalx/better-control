@@ -59,8 +59,8 @@ Before installing, ensure you have `git` and `base-devel` installed.
 </details>
 
 # > 💾 Installation
-### This script will work on arch based , debian based , fedora based , void , alpine
-To install run this in your terminal
+> This script will work on arch based , debian based , fedora based , void , alpine
+#### To install run this in your terminal
 
 ```
 bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/install.sh)
