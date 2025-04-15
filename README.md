@@ -81,7 +81,9 @@ If you want to check the contents of the file before running , we have nothing t
 
 # 🫴 Usage
 
-`control` or `better-control` command will run the gui application. use `control --help` or `better-control --help` to see more specific launch commands you can use with stuff like waybar
+`control` or `better-control` command will run the gui application. use `control --help` or `better-control --help` to see more specific launch commands you can use with stuff like waybar.
+
+You can use `betterctl` to update or uninstall the application.
 
 ### Keybindings
 
