@@ -58,17 +58,21 @@ Before installing, ensure you have `git` and `base-devel` installed.
 
 </details>
 
-# > 💾 Installation
+# 💾 Installation
+
 > This script will work on arch based , debian based , fedora based , void , alpine and dependencies will be automatically installed
 #### To install run this in your terminal
+
 
 ```
 bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/install.sh)
 ```
 
+
 If you want to check the contents of the file before running , we have nothing to hide go ahead by clicking this link >> https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/install.sh
 
-# > 🗑️ Uninstallation
+
+# 🗑️ Uninstallation
 
 <details>
 <summary><b>🏗️ Arch-based Distributions</b></summary>
@@ -92,7 +96,7 @@ sudo make uninstall
 ```
 </details>
 
-# > Usage
+# Usage
 
 `control` or `better-control` command will run the gui application. use `control --help` or `better-control --help` to see more specific launch commands
 
@@ -112,7 +116,7 @@ Feel free to propose PR and suggest new features, improvements. If you wish to c
 This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) for more details.
 
 
-# > 🧪 Compatibility Matrix
+# 🧪 Compatibility Matrix
 
 Better Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasma. It should work on most Linux distributions with minor adjustments.
 
