@@ -1,6 +1,4 @@
-<div align="center">
-
-# ⚙️ Better Control ⚙️
+# ⚙️ Better Control 
 
 <img src="https://github.com/user-attachments/assets/21a9f732-28a0-4da4-b0ff-9f9093cb2b3b" width="650">
 
@@ -11,7 +9,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/quantumvoid0/better-control?style=flat-square&color=429768&logo=polestar&labelColor=444)](https://github.com/quantumvoid0/better-control/stargazers)
 [![Latest Release](https://img.shields.io/github/v/release/quantumvoid0/better-control.svg?style=flat-square&color=429768&logo=speedtest&label=latest-release&labelColor=444)](https://github.com/quantumvoid0/better-control/releases/latest)
 
-</div>
+
 <br>
 
 > [!IMPORTANT]
@@ -19,15 +17,14 @@
 
 <br>
 
-## ✨ Features
+### ✨ Features
 
 - 🔄 Seamless integration with your desktop environment
 - 📱 Modern, clean interface for system controls
-- 🎚️ Quick access to common system settings
+- 🎚️ Quick access to common system settings and ton of features
 - 🌙 Respects your system's light/dark theme settings
-- 🧩 Modular design - use only what you need (see dependencies for more info)
+- 🧩 Modular design - use only what you need and remove the ones you dont use (see dependencies for more info)
 
-## Dependencies
 <details>
 <summary><b>Dependencies</b></summary>
   
@@ -58,10 +55,11 @@ Before installing, ensure you have `git` and `base-devel` installed.
 
 </details>
 
+
 # 💾 Installation
 
 > This script will work on arch based , debian based , fedora based , void , alpine and dependencies will be automatically installed
-#### To install run this in your terminal
+#### ➡️ To install run this in your terminal
 
 
 ```
@@ -96,18 +94,18 @@ sudo make uninstall
 ```
 </details>
 
-# Usage
+# 🫴 Usage
 
-`control` or `better-control` command will run the gui application. use `control --help` or `better-control --help` to see more specific launch commands
+`control` or `better-control` command will run the gui application. use `control --help` or `better-control --help` to see more specific launch commands you can use with stuff like waybar
 
-## Keybindings
+### Keybindings
 
 | Keybinding | Action |
 |------------|--------|
 | `Shift + S` | Open Settings Dialog |
 | `Q` or `Ctrl + Q` | Quit Application |
 
-# > 📚 Contribution
+# 📚 Contribution
 Feel free to propose PR and suggest new features, improvements. If you wish to contribute with translation for the app into your language, please see the `utils/translations.py` file.
 
 
