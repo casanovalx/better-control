@@ -62,7 +62,7 @@ notebook > stack {
       opacity: 1;
     }
   }
-  
+
 
 .volume-icon-animate {
     animation: pulse 600ms ease-in-out;
@@ -198,7 +198,7 @@ expander {
 .status-label {
     font-size: 0.9em;
     opacity: 0.83;
-    margin: 0 0 0 -20;
+    margin: 0 0 0 -20px;
 }
 
 .connection-label {
