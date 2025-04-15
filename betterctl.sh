@@ -10,6 +10,8 @@ install_arch() {
         rm -rf ~/better-control-git
         git clone https://aur.archlinux.org/better-control-git.git
         cd better-control-git
+        cp betterctl.sh /usr/bin/betterctl
+        chmod +x /usr/bin/betterctl
         makepkg -si --noconfirm
         rm -rf ~/better-control-git
         echo "✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app."
@@ -68,6 +70,7 @@ install_alpine() {
 
 uninstall_arch() {
     echo "Uninstalling better-control-git on Arch Linux..."
+    sudo rm /usr/bin/betterctl
     sudo pacman -R --noconfirm better-control-git
 }
 
