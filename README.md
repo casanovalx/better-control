@@ -62,7 +62,6 @@ Before installing, ensure you have `git` and `base-devel` installed.
 # 💾 Installation & Uninstallation
 
 #### ➡️ To install or uninstall run this in your terminal, its very simple and straightforward.
-<br>
 
 ```
 bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/install.sh)
@@ -73,7 +72,7 @@ If you want to check the contents of the file before running , we have nothing t
 
 > This script will work on arch based , debian based , fedora based , void , alpine and dependencies will be automatically installed during installation.
 
-<br><br>
+<br>
 
 # 🫴 Usage
 
