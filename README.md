@@ -27,6 +27,8 @@
 
 <details>
 <summary><b>Dependencies</b></summary>
+
+<br><br>
   
 Before installing, ensure you have `git` and `base-devel` installed.
 
@@ -55,6 +57,7 @@ Before installing, ensure you have `git` and `base-devel` installed.
 
 </details>
 
+<br><br>
 
 # 💾 Installation
 
@@ -69,6 +72,7 @@ bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/ref
 
 If you want to check the contents of the file before running , we have nothing to hide go ahead by clicking this link >> https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/install.sh
 
+<br><br>
 
 # 🗑️ Uninstallation
 
@@ -94,6 +98,8 @@ sudo make uninstall
 ```
 </details>
 
+<br><br>
+
 # 🫴 Usage
 
 `control` or `better-control` command will run the gui application. use `control --help` or `better-control --help` to see more specific launch commands you can use with stuff like waybar
@@ -105,6 +111,8 @@ sudo make uninstall
 | `Shift + S` | Open Settings Dialog |
 | `Q` or `Ctrl + Q` | Quit Application |
 
+<br><br>
+
 # 📚 Contribution
 Feel free to propose PR and suggest new features, improvements. If you wish to contribute with translation for the app into your language, please see the `utils/translations.py` file.
 
@@ -113,6 +121,7 @@ Feel free to propose PR and suggest new features, improvements. If you wish to c
 
 This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) for more details.
 
+<br><br>
 
 # 🧪 Compatibility Matrix
 
@@ -148,14 +157,10 @@ Better Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasm
 > [!NOTE]
 > If you test Better Control on a different setup, please share your experience in the discussions or issues section.
 
-<br>
-
-<div align="center">
+<br><br>
 
 ### Made with ❤️ for the Linux community
 
 [Report Bug](https://github.com/quantumvoid0/better-control/issues) • 
 [Request Feature](https://github.com/quantumvoid0/better-control/discussions) • 
 [Contribute](https://github.com/quantumvoid0/better-control/tree/main?tab=readme-ov-file#--contribution)
-
-</div>
