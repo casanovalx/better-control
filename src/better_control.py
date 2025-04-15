@@ -95,10 +95,13 @@ def main():
 
     lang, txt = load_language_and_translations(arg_parser, logger)
 
-    load_animations_css()
-    logger.log(LogLevel.Info, "Loaded animations CSS")
+    # Deferred loading of animations CSS until after main window is shown
+    # load_animations_css()
+    # logger.log(LogLevel.Info, "Loaded animations CSS")
 
     # Start dependency check asynchronously to avoid blocking startup
+    import threading
+
     def check_dependencies_async():
         try:
             if (
@@ -202,38 +205,51 @@ def launch_application(arg_parser, logger, txt):
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
 
-    xdg = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
-    sway_sock = os.environ.get("SWAYSOCK", "").lower()
+    import threading
 
-    # Make the window float on hyprland
-    if "hyprland" in xdg:
+    def set_window_floating_rules():
+        xdg = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
+        sway_sock = os.environ.get("SWAYSOCK", "").lower()
+
+        if "hyprland" in xdg:
+            try:
+                subprocess.run(
+                    [
+                        "hyprctl",
+                        "keyword",
+                        "windowrule",
+                        "float,class:^(better_control.py)$",
+                    ],
+                    check=False,
+                )
+            except Exception as e:
+                logger.log(LogLevel.Warn, f"Failed to set hyprland window rule: {e}")
+        elif "sway" in sway_sock:
+            try:
+                subprocess.run(
+                    [
+                        "swaymsg",
+                        "for_window",
+                        '[app_id="^better_control.py$"]',
+                        "floating",
+                        "enable",
+                    ],
+                    check=False,
+                )
+            except Exception as e:
+                logger.log(LogLevel.Warn, f"Failed to set sway window rule: {e}")
+
+    threading.Thread(target=set_window_floating_rules, daemon=True).start()
+
+    # Load animations CSS asynchronously after window is shown
+    def load_animations_async():
         try:
-            subprocess.run(
-                [
-                    "hyprctl",
-                    "keyword",
-                    "windowrule",
-                    "float,class:^(better_control.py)$",
-                ],
-                check=False,
-            )
+            load_animations_css()
+            logger.log(LogLevel.Info, "Loaded animations CSS asynchronously")
         except Exception as e:
-            logger.log(LogLevel.Warn, f"Failed to set hyprland window rule: {e}")
-    # Make the window float on sway
-    elif "sway" in sway_sock:
-        try:
-            subprocess.run(
-                [
-                    "swaymsg",
-                    "for_window",
-                    '[app_id="^better_control.py$"]',
-                    "floating",
-                    "enable",
-                ],
-                check=False,
-            )
-        except Exception as e:
-            logger.log(LogLevel.Warn, f"Failed to set sway window rule: {e}")
+            logger.log(LogLevel.Warn, f"Failed to load animations CSS asynchronously: {e}")
+
+    threading.Thread(target=load_animations_async, daemon=True).start()
 
     try:
         Gtk.main()
@@ -319,8 +335,6 @@ def apply_environment_variables():
 
 def launch_main_window(arg_parser, logger, txt):
     import time
-
-    time.sleep(0.1)
 
     logger.log(LogLevel.Info, "Creating main window")
     win = BetterControl(txt, arg_parser, logger)
@@ -410,18 +424,24 @@ def initialize_and_start():
 
     txt = process_language(arg_parser, logger)
 
-    load_animations_css()
-    logger.log(LogLevel.Info, "Loaded animations CSS")
+    # Asynchronous dependency check to avoid blocking startup
+    import threading
 
-    if (
-        not arg_parser.find_arg(("-f", "--force"))
-        and not check_all_dependencies(logger)
-    ):
-        logger.log(
-            LogLevel.Error,
-            "Missing required dependencies. Please install them and try again or use -f to force start.",
-        )
-        sys.exit(1)
+    def check_dependencies_async():
+        try:
+            if (
+                not arg_parser.find_arg(("-f", "--force"))
+                and not check_all_dependencies(logger)
+            ):
+                logger.log(
+                    LogLevel.Error,
+                    "Missing required dependencies. Please install them and try again or use -f to force start.",
+                )
+                # Optionally, show a GTK dialog warning here
+        except Exception as e:
+            logger.log(LogLevel.Error, f"Dependency check error: {e}")
+
+    threading.Thread(target=check_dependencies_async, daemon=True).start()
 
     try:
         launch_main_window(arg_parser, logger, txt)
