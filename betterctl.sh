@@ -77,7 +77,7 @@ uninstall_others() {
     cd better-control
     sudo make uninstall
     rm -rf ~/better-control
-    echo "✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app."
+    echo "✅ Uninstallation complete."
 }
 
 detect_os() {
@@ -101,7 +101,8 @@ confirm() {
     done
 }
 
-echo "Do you want to (i)nstall or (u)ninstall Better Control? (type 'i' for install and 'u' for uninstall)"
+echo "Do you want to install or uninstall or update Better Control?"
+echo "type 'i' for install and 'u' for uninstall and 'update' for update"
 read -r choice
 
 case "$choice" in
@@ -151,6 +152,55 @@ case "$choice" in
             echo "❌ Uninstallation cancelled."
         fi
         ;;
+
+    update|Update)
+        echo "Starting update (uninstall and reinstall)..."
+        detect_os_id=$(detect_os)
+        case "$detect_os_id" in
+            arch|endeavouros|manjaro)
+                echo "Uninstalling on Arch-based distro..."
+                uninstall_arch
+                echo "Installing on Arch-based distro..."
+                install_arch
+                ;;
+            debian|ubuntu|linuxmint|pop)
+                echo "Uninstalling on Debian-based distro..."
+                uninstall_others
+                echo "Installing on Debian-based distro..."
+                install_debian
+                ;;
+            fedora|rhel)
+                echo "Uninstalling on Fedora-based distro..."
+                uninstall_others
+                echo "Installing on Fedora-based distro..."
+                install_fedora
+                ;;
+            void)
+                echo "Uninstalling on Void Linux..."
+                uninstall_others
+                echo "Installing on Void Linux..."
+                install_void
+                ;;
+            alpine)
+                echo "Uninstalling on Alpine Linux..."
+                uninstall_others
+                echo "Installing on Alpine Linux..."
+                install_alpine
+                ;;
+            nixos)
+                echo "❄️ Detected NixOS. This package has an unofficial flake here:"
+                echo "https://github.com/Rishabh5321/better-control-flake"
+                ;;
+            *)
+                echo "❌ Unsupported distro: $detect_os_id please open an issue on the GitHub repository on this and well add your distro."
+                exit 1
+                ;;
+        esac
+        echo "✅ Update complete."
+        ;;
+
+        
+
     *)
         echo "Invalid choice. Please run the script again and choose 'install' or 'uninstall'."
         exit 1
