@@ -79,6 +79,8 @@ If you want to check the contents of the file before running , we have nothing t
 <details>
 <summary><b>🏗️ Arch-based Distributions</b></summary>
 
+  <br>
+  
 ```bash
 sudo pacman -R better-control-git
 ```
@@ -90,7 +92,9 @@ sudo pacman -Rns better-control-git
 
 <details>
 <summary><b>📦 Other Distributions</b></summary>
-  
+
+<br>
+
 ```bash
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
@@ -157,7 +161,7 @@ Better Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasm
 > [!NOTE]
 > If you test Better Control on a different setup, please share your experience in the discussions or issues section.
 
-<br><br>
+<br>
 
 ### Made with ❤️ for the Linux community
 
