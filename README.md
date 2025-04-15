@@ -64,11 +64,11 @@ Before installing, ensure you have `git` and `base-devel` installed.
 #### ➡️ To install or uninstall run this in your terminal, its very simple and straightforward.
 
 ```
-bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/betterctl.sh)
+bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/betterctl.sh) 
 ```
 <br>
 
-If you want to check the contents of the file before running , we have nothing to hide go ahead by clicking this link >> https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/install.sh
+If you want to check the contents of the file before running , we have nothing to hide go ahead by clicking this link >> https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/betterctl.sh
 
 > This script will work on arch based , debian based , fedora based , void , alpine and dependencies will be automatically installed during installation.
 
