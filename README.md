@@ -59,92 +59,14 @@ Before installing, ensure you have `git` and `base-devel` installed.
 </details>
 
 # > 💾 Installation
-
-<details>
-<summary><b>🏗️ Arch-based Distributions</b></summary>
-
-```bash
-yay -S better-control-git
-```
-If you dont have an AUR helper like yay above , follow the steps below
-```
-git clone https://aur.archlinux.org/better-control-git.git
-cd better-control-git
-makepkg -si
-```
-
-</details>
-
-<details>
-<summary><b>❄️ Nix (Unofficial)</b></summary>
-
-> This is an unofficial Nix flake maintained by the community. All issues related to it should be directed to their repository:
-> 
-> https://github.com/Rishabh5321/better-control-flake
-</details>
-
-<details>
-<summary><b>🐧 Debian-based Distributions</b></summary>
-
-```bash
-sudo apt update && sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle python3-pil usbguard
-```
-```bash
-git clone https://github.com/quantumvoid0/better-control.git
-cd better-control
-make
-sudo make install
-```
-</details>
-
-<details>
-<summary><b>🎩 Fedora-based Distributions</b></summary>
-
-```bash
-sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle python3-pillow usbguard
+### This script will work on arch based , debian based , fedora based , void , alpine
+To install run this in your terminal
 
 ```
-```bash
-git clone https://github.com/quantumvoid0/better-control.git
-cd better-control
-make
-sudo make install
-```
-</details>
-
-<details>
-<summary><b>🌀 Void Linux</b></summary>
-
-```bash
-sudo xbps-install -S NetworkManager pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode gtk+3 bluez python3-Pillow usbguard
-sudo xbps-install -S python3-pip
-pip install setproctitle
-
-```
-```bash
-git clone https://github.com/quantumvoid0/better-control.git
-cd better-control
-make
-sudo make install
-```
-</details>
-
-<details>
-<summary><b>🏔️ Alpine Linux</b></summary>
-
-```bash
-sudo apk add gtk3 networkmanager bluez bluez-utils pulseaudio brightnessctl py3-gobject py3-dbus python3 power-profiles-daemon gammastep py3-requests py3-qrcode py3-pip py3-setuptools gcc musl-dev python3-dev py3-pillow
-pip install setproctitle
-
-```
-```bash
-git clone https://github.com/quantumvoid0/better-control.git
-cd better-control
-make
-sudo make install
+bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/install.sh)
 ```
 
-</details>
+If you want to check the contents of the file before running , we have nothing to hide go ahead by clicking this link >> https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/install.sh
 
 # > 🗑️ Uninstallation
 
