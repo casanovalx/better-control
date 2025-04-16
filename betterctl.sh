@@ -1,5 +1,6 @@
 #!/bin/bash
 # A simple script to install or uninstall Better Control on your OS
+echo "your version : 6.10.2"
 echo " "
 echo "This script is still under development to improve it if you find any errors head over to 'https://github.com/quantumvoid0/better-control/issues' and open an issue on it"
 echo " "
