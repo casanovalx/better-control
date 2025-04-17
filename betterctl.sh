@@ -1,8 +1,10 @@
 #!/bin/bash
 # A simple script to install or uninstall Better Control on your OS
-echo "your version : 6.10.2"
+clear
+echo -e "\e[32mBetter Control Manager\e[0m"
+echo -e "your version : \e[34m6.10.3\e[0m"
 echo " "
-echo "This script is still under development to improve it if you find any errors head over to 'https://github.com/quantumvoid0/better-control/issues' and open an issue on it"
+echo -e "This script is still under development to improve it if you find any errors head over to \e[31m\e[1mhttps://github.com/quantumvoid0/better-control/issues\e[0m and open an issue on it"
 echo " "
 
 set -e
@@ -10,10 +12,12 @@ set -e
 install_arch() {
         rm -rf ~/better-control-git
         git clone https://aur.archlinux.org/better-control-git.git
+        clear
         cd better-control-git
         makepkg -si --noconfirm
         rm -rf ~/better-control-git
-        echo "✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app."
+        clear
+        echo -e "\e[1m\e[4m✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app.\e[0m"
 }
 
 install_debian() {
@@ -21,56 +25,60 @@ install_debian() {
     sudo apt update
     sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle python3-pil usbguard
 
+    clear
     git clone https://github.com/quantumvoid0/better-control.git
     cd better-control
-    make
     sudo make install
     rm -rf ~/better-control
-    echo "✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app."
+    clear
+    echo -e "\e[1m4m✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app.\e[0m"
 }
 
 install_fedora() {
     echo "⬇️Installing dependencies for Fedora-based systems..."
     sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle python3-pillow usbguard
+    clear
 
     git clone https://github.com/quantumvoid0/better-control.git
     cd better-control
-    make
     sudo make install
     rm -rf ~/better-control
-    echo "✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app."
+    clear
+    echo -e "\e[1m4m✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app.\e[0m"
 }
 
 install_void() {
     echo "⬇️Installing dependencies for Void Linux..."
     sudo xbps-install -Sy NetworkManager pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode gtk+3 bluez python3-Pillow usbguard python3-pip
     pip install setproctitle
+    clear
 
     git clone https://github.com/quantumvoid0/better-control.git
     cd better-control
-    make
     sudo make install
     rm -rf ~/better-control
-    echo "✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app."
+    clear
+    echo -e "\e[1m4m✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app.\e[0m"
 }
 
 install_alpine() {
     echo "⬇️Installing dependencies for Alpine Linux..."
     sudo apk add gtk3 networkmanager bluez bluez-utils pulseaudio brightnessctl py3-gobject py3-dbus python3 power-profiles-daemon gammastep py3-requests py3-qrcode py3-pip py3-setuptools gcc musl-dev python3-dev py3-pillow
     pip install setproctitle
+    clear
 
     git clone https://github.com/quantumvoid0/better-control.git
     cd better-control
-    make
     sudo make install
     rm -rf ~/better-control
-    echo "✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app."
+    clear
+    echo -e "\e[1m4m✅ Installation complete. You can run Better Control using the command 'control' or open the better-control app.\e[0m"
 }
 
 uninstall_arch() {
     echo "Uninstalling better-control-git on Arch Linux..."
-    sudo rm /usr/bin/betterctl
     sudo pacman -R --noconfirm better-control-git
+    clear
 }
 
 uninstall_others() {
@@ -79,7 +87,8 @@ uninstall_others() {
     cd better-control
     sudo make uninstall
     rm -rf ~/better-control
-    echo "✅ Uninstallation complete."
+    clear
+    echo "\e[1m4m✅ Uninstallation complete.\e[0m]"
 }
 
 detect_os() {
@@ -103,12 +112,15 @@ confirm() {
     done
 }
 
-echo "Do you want to install or uninstall or update Better Control?"
-echo "type 'i' for install and 'u' for uninstall and 'update' for update"
+echo -e "\e[1mDo you want to install or uninstall or update Better Control?\e0"
+echo -e "\e[32m 0) Install\e[0m"
+echo -e "\e[32m 1) Uninstall\e[0m"
+echo -e "\e[32m 2) Update\e[0m"
+echo -e "\e[3myour answer:\e0"
 read -r choice
 
 case "$choice" in
-    i|I|install)
+    0|i|I|install)
         echo "Starting installation..."
         detect_os_id=$(detect_os)
         case "$detect_os_id" in
@@ -137,7 +149,7 @@ case "$choice" in
                 ;;
         esac
         ;;
-    u|U|uninstall)
+    1|u|U|uninstall)
         echo "You chose to uninstall Better Control."
         if confirm "Are you sure you want to uninstall? Y for yes , N for no"; then
             detect_os_id=$(detect_os)
@@ -155,7 +167,7 @@ case "$choice" in
         fi
         ;;
 
-    update|Update)
+    2|update|Update)
         echo "Starting update (uninstall and reinstall)..."
         detect_os_id=$(detect_os)
         case "$detect_os_id" in
