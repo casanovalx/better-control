@@ -61,14 +61,11 @@ Before installing, ensure you have `git` and `base-devel` installed.
 
 # 💾 Installation & Uninstallation
 
-#### ➡️ To install or uninstall run this in your terminal, its very simple and straightforward.
+#### ➡️ Method 1 : To install or uninstall run this in your terminal, its very simple and straightforward. 
 
 ```
 bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/betterctl.sh) 
 ```
-<br>
-
-#### ➡️ To Update the app just run `betterctl` and follow instructions
 
 <br>
 
@@ -76,6 +73,19 @@ This script basically uses [AUR](https://aur.archlinux.org/packages/better-contr
 If you want to check the contents of the file before running , we have nothing to hide go ahead by clicking this link >> https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/betterctl.sh
 
 > This script will work on arch based , debian based , fedora based , void , alpine and dependencies will be automatically installed during installation. Better Control is also available on the AUR.
+
+#### ➡️ Method 2 : Manual Build
+
+```bash
+git clone https://github.com/quantumvoid0/better-control
+cd better-control
+sudo make install
+```
+
+or you can get from AUR for arch devices `yay -S better-control-git`
+
+> [!NOTE]
+> you can update or uninstall the app by running `betterctl` on your terminal
 
 <br>
 
