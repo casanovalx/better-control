@@ -76,6 +76,8 @@ If you want to check the contents of the file before running , we have nothing t
 
 #### ➡️ Method 2 : Manual Build
 
+> when you do maunal build make sure to get all dependencies by yourself
+
 ```bash
 git clone https://github.com/quantumvoid0/better-control
 cd better-control
