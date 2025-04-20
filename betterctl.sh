@@ -23,7 +23,7 @@ install_arch() {
 install_debian() {
     echo "⬇️Installing dependencies for Debian-based systems..."
     sudo apt update
-    sudo apt install -y libgtk-3-dev network-manager bluez bluez-utils pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle python3-pil usbguard
+    sudo apt install -y libgtk-3-dev network-manager bluez bluez-tools pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle python3-pil usbguard
 
     clear
     git clone https://github.com/quantumvoid0/better-control.git
