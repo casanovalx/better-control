@@ -6,7 +6,7 @@
 
 [![AUR Package](https://img.shields.io/badge/AUR-better--control--git-429768?style=flat-square&logo=archlinux&logoColor=white&labelColor=444)](https://aur.archlinux.org/packages/better-control-git)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-429768.svg?style=flat-square&logo=github&labelColor=444)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/quantumvoid0/better-control?style=flat-square&color=429768&logo=polestar&labelColor=444)](https://github.com/quantumvoid0/better-control/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/quantumvoid0/better-control?style=flat-square&color=429768&logo=starship&labelColor=444)](https://github.com/quantumvoid0/better-control/stargazers)
 [![Latest Release](https://img.shields.io/github/v/release/quantumvoid0/better-control.svg?style=flat-square&color=429768&logo=speedtest&label=latest-release&labelColor=444)](https://github.com/quantumvoid0/better-control/releases/latest)
 
 
