@@ -28,6 +28,7 @@ from tools.volume import (
     get_mic_mute_state,
     toggle_mic_mute,
     get_sink_name_by_id,
+    get_sink_identifier_by_id,
     get_application_mute_state,
     toggle_application_mute,
     get_source_outputs,
@@ -140,6 +141,8 @@ class VolumeTab(Gtk.Box):
         # Register for audio device change notifications
         from tools.bluetooth import add_audio_routing_callback
         self._audio_device_changed_cb = self._on_audio_device_changed
+        self.last_bluetooth_device_update_time = 0
+        self.update_interval_bluetooth = 1
         add_audio_routing_callback(self._audio_device_changed_cb, logging)
 
         # Connect destroy signal for proper cleanup
@@ -655,10 +658,10 @@ class VolumeTab(Gtk.Box):
                 for i, sink in enumerate(sinks):
                     self.logging.log(
                         LogLevel.Info,
-                        f"Adding output sink: {sink['name']} ({sink['description']})",
+                        f"Adding output sink: {sink['identifier']} ({sink['description']})",
                     )
-                    self.output_combo.append(sink["name"], sink["description"])
-                    if sink["name"] == current_sink:
+                    self.output_combo.append(sink["identifier"], sink["description"])
+                    if sink["active"]:
                         active_index = i
 
                 if active_index != -1:
@@ -754,7 +757,7 @@ class VolumeTab(Gtk.Box):
 
         # Get sinks once and prepare sink options
         sinks = get_sinks(self.logging)
-        sink_options = [(s["name"], s["description"]) for s in sinks] if sinks else []
+        sink_options = [(s["identifier"], s["description"]) for s in sinks] if sinks else []
 
         for app in apps:
             card = self._create_app_output_card(app, sink_options)
@@ -818,19 +821,20 @@ class VolumeTab(Gtk.Box):
         output_combo = Gtk.ComboBoxText()
         output_combo.set_tooltip_text(self.txt.volume_output_combo_tooltip)
         output_combo.set_hexpand(True)
-        for sink_name, sink_desc in sink_options:
-            output_combo.append(sink_name, sink_desc)
+        for sink_identifier, sink_desc in sink_options:
+            output_combo.append(sink_identifier, sink_desc)
 
-        current_sink_name = ""
+        current_sink_identifier = ""
         if "sink" in app:
-            current_sink_name = get_sink_name_by_id(app["sink"], self.logging)
+            current_sink_identifier = get_sink_identifier_by_id(app["sink"], self.logging)
 
         # Set active sink
         active_found = False
-        for idx, (sink_name, _) in enumerate(sink_options):
-            if sink_name == current_sink_name:
+        for idx, (sink_identifier, sink_desc) in enumerate(sink_options):
+            if sink_identifier == current_sink_identifier:
                 output_combo.set_active(idx)
                 active_found = True
+                self.logging.log(LogLevel.Debug, f"Active sink is {sink_identifier}")
                 break
         if not active_found and sink_options:
             output_combo.set_active(0)
@@ -995,7 +999,12 @@ class VolumeTab(Gtk.Box):
 
     def on_output_changed(self, combo):
         """Handle output device selection changes"""
-        device_id = combo.get_active_id()
+        
+        self.logging.log(LogLevel.Info, f"Output device audio changed")
+        if combo.get_active_id() is None or combo.get_active_id() == "no-sink":
+            return
+        
+        device_id, port_name = combo.get_active_id().split("####")
         if not device_id:
             return
 
@@ -1004,7 +1013,7 @@ class VolumeTab(Gtk.Box):
         
         try:
             # Attempt to change the default sink
-            success = set_default_sink(device_id, self.logging)
+            success = set_default_sink(device_id, port_name, self.logging)
             
             if not success:
                 self.logging.log(LogLevel.Error, 
@@ -1081,7 +1090,12 @@ class VolumeTab(Gtk.Box):
 
     def on_app_output_changed(self, combo, app_id):
         """Handle application output device changes"""
-        device_id = combo.get_active_id()
+        
+        if combo.get_active_id() is None or combo.get_active_id() == "no-sink":
+            return
+        
+        device_id, port_name = combo.get_active_id().split("####")
+        
         if device_id:
             try:
                 # First check if the application still exists
@@ -1093,7 +1107,7 @@ class VolumeTab(Gtk.Box):
                         break
 
                 if app_exists:
-                    move_application_to_sink(app_id, device_id, self.logging)
+                    move_application_to_sink(app_id, device_id, port_name, self.logging)
                     self.logging.log(
                         LogLevel.Info,
                         f"Moving application {app_id} to sink {device_id}",
@@ -1284,6 +1298,11 @@ class VolumeTab(Gtk.Box):
 
     def _on_audio_device_changed(self, sink_name):
         """Callback when audio routing changes"""
+        current_time = time.time()
+        if current_time > self.last_bluetooth_device_update_time + self.update_interval_bluetooth:
+            return
+        
+        self.last_bluetooth_device_update_time = current_time
         GLib.idle_add(self.update_device_lists)
         if sink_name:
             self.logging.log(LogLevel.Info, 

@@ -3,6 +3,7 @@
 import subprocess
 from typing import List, Dict, Optional
 import re
+import time
 
 from utils.logger import LogLevel, Logger
 
@@ -234,6 +235,25 @@ def get_sink_name_by_id(sink_id: str, logging: Logger) -> str:
     except Exception as e:
         logging.log(LogLevel.Error, f"Failed getting sink name: {e}")
         return ""
+    
+    
+def get_sink_identifier_by_id(sink_id: str, logging: Logger) -> str:
+    """Get the name of a sink by its ID number
+
+    Args:
+        sink_id (str): The sink ID (number)
+
+    Returns:
+        str: The sink name
+    """
+    try:
+        sinks = get_sinks(logging)
+        for sink in sinks:
+            if sink["id"] == sink_id and sink["active_port"]:
+                return sink["identifier"]
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Failed getting sink name: {e}")
+        return ""
 
 
 def set_application_volume(app_id: str, value: int, logging: Logger) -> None:
@@ -251,7 +271,7 @@ def set_application_volume(app_id: str, value: int, logging: Logger) -> None:
         logging.log(LogLevel.Error, f"Failed setting application volume: {e}")
 
 
-def move_application_to_sink(app_id: str, sink_name: str, logging: Logger) -> None:
+def move_application_to_sink(app_id: str, sink_name: str, port_name: str, logging: Logger) -> None:
     """Move an application to a different audio output device
 
     Args:
@@ -260,19 +280,29 @@ def move_application_to_sink(app_id: str, sink_name: str, logging: Logger) -> No
     """
     try:
         subprocess.run(["pactl", "move-sink-input", app_id, sink_name], check=True)
+        subprocess.run(["pactl", "set-sink-port", sink_name, port_name], check=True)                          
     except subprocess.CalledProcessError as e:
         logging.log(LogLevel.Error, f"Failed moving application to sink: {e}")
 
 
-def set_default_sink(sink_name: str, logging: Logger) -> bool:
+def set_default_sink(sink_name: str, port_name: str, logging: Logger) -> bool:
+    
     try:
         # First verify the sink exists and is available
         sinks = get_sinks(logging)
-        target_sink = next((s for s in sinks if s.get("name") == sink_name), None)
+        target_sink = None
+        for sink in sinks:
+            if sink["name"] == sink_name and sink["port"] == port_name:
+                target_sink = sink
+        
         if not target_sink:
             logging.log(LogLevel.Error, f"Sink {sink_name} not found")
             return False
-            
+        
+        if target_sink["active"]:
+            logging.log(LogLevel.Info, f"Sink {target_sink['identifier']} is already selected, no need to set it again.")
+            return True
+        
         # Special handling for Bluetooth devices
         is_bluetooth = "bluez" in sink_name.lower()
         if is_bluetooth:
@@ -296,12 +326,21 @@ def set_default_sink(sink_name: str, logging: Logger) -> bool:
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE
             )
-            if result.returncode == 0:
+            if result.returncode != 0:
+                logging.log(LogLevel.Warn, 
+                           f"Attempt {attempt + 1} failed at device sink: {result.stderr.decode().strip()}")
+                continue
+            result_port = subprocess.run(
+                ["pactl", "set-sink-port", sink_name, port_name],
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE
+            )
+            if result_port.returncode == 0:
                 break
-            logging.log(LogLevel.Warning, 
-                       f"Attempt {attempt + 1} failed: {result.stderr.decode().strip()}")
+            logging.log(LogLevel.Warn, 
+                       f"Attempt {attempt + 1} failed at port setup: {result_port.stderr.decode().strip()}")
             time.sleep(0.5)
-        if result.returncode != 0:
+        if result_port.returncode != 0:
             logging.log(LogLevel.Error,
                       f"Failed to set default sink: {result.stderr.decode().strip()}")
             return False
@@ -336,7 +375,7 @@ def set_default_sink(sink_name: str, logging: Logger) -> bool:
                     stdout=subprocess.PIPE
                 )
                 if move_result.returncode != 0:
-                    logging.log(LogLevel.Warning,
+                    logging.log(LogLevel.Warn,
                               f"Failed to move app {app_id}: {move_result.stderr.decode().strip()}")
                     success = False
 
@@ -360,33 +399,61 @@ def set_default_sink(sink_name: str, logging: Logger) -> bool:
         return False
 
 
-def get_sinks(logging: Logger) -> List[Dict[str, str]]:
+def get_sinks(logging: Logger) -> List[Dict[str, str | bool]]:
     """Get list of audio sinks (output devices).
     
     Returns:
-        List[Dict[str, str]]: List of sinks with keys: id, name, description
+        List[Dict[str, str]]: List of sinks with keys: id, name, description, port, identifier active, active_port
+        
+        - active and active_port are the only boolean 
+        - identifier is a concatenation of name and port
+        - active is True if the sink and its associated is the current default for every app
+        - active_port is True if this port of a device is the default when the device is connected 
     """
     try:
         output = subprocess.getoutput("pactl list sinks")
+        active_sink = subprocess.getoutput("pactl get-default-sink").strip()
+        
         sinks = []
         current_sink = {}
+        currently_in_ports = False
+        
+        active_ports = []
 
         for line in output.split("\n"):
             if line.startswith("Sink #"):
-                if current_sink:
-                    sinks.append(current_sink)
-                current_sink = {"id": line.split("#")[1].strip()}
+                current_sink = {"id": line.split("#")[1].strip(), "active": False, "active_port": False}
             elif ":" in line and current_sink:
                 key, value = line.split(":", 1)
                 key = key.strip()
                 value = value.strip()
-                if key == "Name":
+                if key == "Active Port":
+                    currently_in_ports = False
+                    active_ports.append(value)
+                    if current_sink["name"] == active_sink:
+                        active_port = value
+                        current_sink["active_port"] = True
+                elif currently_in_ports:
+                    sink_copy = {
+                        key: current_sink[key]
+                        for key in ["id", "name", "description", "active", "active_port"]
+                    }
+                    sink_copy["port"] = key
+                    sink_copy["description"] = sink_copy["port"] + " - " + sink_copy["description"]
+                    sinks.append(sink_copy)
+                elif key == "Name":
                     current_sink["name"] = value
                 elif key == "Description":
                     current_sink["description"] = value
+                elif key == "Ports":
+                    currently_in_ports = True
 
-        if current_sink:
-            sinks.append(current_sink)
+        for sink in sinks:
+            sink["identifier"] = sink["name"] + "####" + sink["port"]
+            if sink["name"] == active_sink and sink["port"] == active_port:
+                sink["active"] = True
+            if sink["port"] in active_ports:
+                sink["active_port"] = True
 
         return sinks
     except Exception as e:
