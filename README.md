@@ -1,6 +1,6 @@
 # ⚙️ Better Control 
 
-<img src="https://github.com/user-attachments/assets/21a9f732-28a0-4da4-b0ff-9f9093cb2b3b" width="650">
+<img src="https://github.com/user-attachments/assets/3ae2383d-971b-4280-bd64-6c6c18dd05de" width="650">
 
 ### *A sleek GTK-themed control panel for Linux* 🐧
 
@@ -88,6 +88,11 @@ or you can get from AUR for arch devices `yay -S better-control-git`
 
 > [!NOTE]
 > you can update or uninstall the app by running `betterctl` on your terminal
+
+### ➡️ NixOS
+
+Better Control has an unofficial flake here : https://github.com/Rishabh5321/better-control-flake
+
 
 <br>
 
