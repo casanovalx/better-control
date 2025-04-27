@@ -252,6 +252,210 @@ class English:
         self.settings_language_changed_restart = "Please restart the application for the language change to take effect."
         self.settings_language_changed = "Language changed"
 
+class Italian:
+    """Italian language translation for the application"""
+    def __init__(self):
+        # app description
+        self.msg_desc = "Un pannello di controllo elegante e basato su GTK per Linux."
+
+        # USB notifications
+        self.usb_connected = "{device} connesso."
+        self.usb_disconnected = "{device} disconnesso."
+        self.permission_allowed = "Permessi USB concessi"
+        self.permission_blocked = "Permessi USB bloccati"
+        self.msg_app_url = "https://github.com/quantumvoid0/better-control"
+        self.msg_usage = "Utilizzo"
+
+        # for args
+        self.msg_args_help = "Mostra questo messaggio"
+        self.msg_args_autostart = "Avvia con la scheda dell'avvio automatico aperta"
+        self.msg_args_battery = "Avvia con la scheda della batteria aperta"
+        self.msg_args_bluetooth = "Avvia con la scheda del bluetooth aperta"
+        self.msg_args_display = "Avvia con la scheda dello schermo aperta"
+        self.msg_args_force = "Fà si che l'applicazione richieda forzatamente tutte le dipendenze installate"
+        self.msg_args_power = "Avvia con la scheda dell'alimentazione aperta"
+        self.msg_args_volume = "Avvia con la scheda del volume aperta"
+        self.msg_args_volume_v = "Avvia con anche la scheda del volume aperta"
+        self.msg_args_wifi = "Avvia con la scheda del wifi aperta"
+
+        self.msg_args_log = "Il programma creerà un log se gli viene fornito un percorso,\n altrimenti invierà l'output su stdout in base al livello di log, con un valore compreso tra 0 e 3."
+        self.msg_args_redact = "Elimina le informazioni sensibili dai registri (reti, ID dei device, etc.)"
+        self.msg_args_size = "Imposta una dimensione personalizzata della finestra"
+
+        # commonly used
+        self.connect = "Connetti"
+        self.connected = "Connesso"
+        self.connecting = "Connessione..."
+        self.disconnect = "Disconnetti"
+        self.disconnected = "Disconnesso"
+        self.disconnecting = "Disconnessione..."
+        self.enable = "Attiva"
+        self.disable = "Disattiva"
+        self.close = "Chiudi"
+        self.show = "Mostra"
+        self.loading = "Caricamento..."
+        self.loading_tabs = "Caricamento schede..."
+
+        # for tabs
+        self.msg_tab_autostart = "Avvio automatico"
+        self.msg_tab_usbguard = "USBGuard"
+        self.usbguard_title = "Controllo dei dispositivi USB"
+        self.refresh = "Ricarica"
+        self.allow = "Permetti"
+        self.block = "Blocca"
+        self.allowed = "Permesso"
+        self.blocked = "Bloccato"
+        self.rejected = "Respinto"
+        self.policy = "Vedi la Policy"
+        self.usbguard_error = "Errore durante l'accesso a USBGuard"
+        self.usbguard_not_installed = "USBGuard non installato"
+        self.usbguard_not_running = "Il servizio di USBGuard non è in esecuzione"
+        self.no_devices = "Nessun dispositivo USB collegato"
+        self.operation_failed = "Operazione fallita"
+        self.policy_error = "Errore nel caricamento della policy"
+        self.permanent_allow = "Permesso permanentemente"
+        self.permanent_allow_tooltip = "Consenti permanentemente questo dispositivo (lo aggiunge alla policy)"
+        self.msg_tab_battery = "Batteria"
+        self.msg_tab_bluetooth = "Bluetooth"
+        self.msg_tab_display = "Schermo"
+        self.msg_tab_power = "Alimentazione"
+        self.msg_tab_volume = "Volume"
+        self.msg_tab_wifi = "Wi-Fi"
+
+        # Autostart tab translations
+        self.autostart_title = "Applicazioni lanciate all'avvio"
+        self.autostart_session = "Sessione"
+        self.autostart_show_system_apps = "Mostra le applicazioni di sistema lanciate all'avvio"
+        self.autostart_configured_applications = "Applicazioni configurate"
+        self.autostart_tooltip_rescan = "Scansiona nuovamente le applicazioni lanciate all'avvio"
+
+        # Battery tab translations
+        self.battery_title = "Pannello di controllo della batteria"
+        self.battery_power_saving = "Risparmio energetico"
+        self.battery_balanced = "Bilanciato"
+        self.battery_performance = "Massime prestazioni"
+        self.battery_batteries = "Batterie"
+        self.battery_overview = "Panoramica"
+        self.battery_details = "Dettagli"
+        self.battery_tooltip_refresh = "Ricarica le informazioni della batteria"
+        self.battery_no_batteries = "Nessuna batteria rilevata"
+
+        # Bluetooth tab translations
+        self.bluetooth_title = "Dispositivi bluetooth"
+        self.bluetooth_scan_devices = "Scansiona per trovare dispositivi"
+        self.bluetooth_scanning = "Scansiono..."
+        self.bluetooth_power = "Bluetooth"
+        self.bluetooth_available_devices = "Dispositivi disponibili"
+        self.bluetooth_tooltip_refresh = "Scansiona per trovare dispositivi"
+        self.bluetooth_connect_failed = "Errore durante la connessione al dispositivo"
+        self.bluetooth_disconnect_failed = "Errore durante la disconnessione dal dispositivo"
+        self.bluetooth_try_again = "Perfavore riprova."
+
+        # Display tab translations
+        self.display_title = "Impostazioni schermo"
+        self.display_brightness = "Luminosità"
+        self.display_blue_light = "Luce blu"
+        self.display_orientation = "Orientamento"
+        self.display_default = "Predefinito"
+        self.display_left = "Sinistra"
+        self.display_right = "Destra"
+        self.display_inverted = "Invertito"
+        
+        self.display_rotation = "Opzioni della rotazione"
+        self.display_simple_rotation = "Rotazione veloce"
+        self.display_specific_orientation = "Orientamento spefico"
+        self.display_flip_controls = "Capovolgimento dello schermo"
+        self.display_rotate_cw = "Ruota in senso orario"
+        self.display_rotate_ccw = "Ruota in senso antiorario"
+        self.display_rotation_help = "La rotazione verrà applicata subito. In caso di mancata conferma entro 10 secondi verrà ripristinata."
+
+        # Power tab translations
+        self.power_title = "Gestione dell'alimentazione"
+        self.power_tooltip_menu = "Configura il menu di alimentazione"
+        self.power_menu_buttons = "Pulsanti"
+        self.power_menu_commands = "Comandi"
+        self.power_menu_colors = "Colori"
+        self.power_menu_show_hide_buttons = "Mostra/nascondi pulsanti"
+        self.power_menu_shortcuts_tab_label = "Scorciatoie"
+        self.power_menu_visibility = "Pulsanti"
+        self.power_menu_keyboard_shortcut = "Scorciatoie da tastiera"
+        self.power_menu_show_keyboard_shortcut = "Mostra le scorciatoie da tastiera"
+        self.power_menu_lock = "Blocca"
+        self.power_menu_logout = "Disconnetti"
+        self.power_menu_suspend = "Sospendi"
+        self.power_menu_hibernate = "Iberna"
+        self.power_menu_reboot = "Riavvia"
+        self.power_menu_shutdown = "Spegni"
+        self.power_menu_apply = "Applica"
+        self.power_menu_tooltip_lock = "Blocca lo schermo"
+        self.power_menu_tooltip_logout = "Chiudi la sessione corrente"
+        self.power_menu_tooltip_suspend = "Sospendi il sistema"
+        self.power_menu_tooltip_hibernate = "Iberna il sistema"
+        self.power_menu_tooltip_reboot = "Riavvia lo schermo"
+        self.power_menu_tooltip_shutdown = "Spegni lo schermo"
+
+
+        # Volume tab translations
+        self.volume_title = "Impostazione volume"
+        self.volume_speakers = "Altoparlanti"
+        self.volume_tab_tooltip = "Impostazioni altoparlanti"
+        self.volume_output_device = "Dispostivo d'uscita"
+        self.volume_device = "Dispositivo"
+        self.volume_output = "Uscita"
+        self.volume_speaker_volume = "Volume altoparlanti"
+        self.volume_mute_speaker = "Muta altoparlanti"
+        self.volume_unmute_speaker = "Smuta altoparlanti"
+        self.volume_quick_presets = "Impostazioni rapide"
+        self.volume_output_combo_tooltip = "Seleziona il dispositivo d'uscita per questa applicazione"
+
+        # Volume tab microphone translations
+        self.microphone_tab_microphone = "Microfono"
+        self.microphone_tab_input_device = "Dispositivo di input"
+        self.microphone_tab_volume = "Volume del microfono"
+        self.microphone_tab_mute_microphone = "Muta microfono"
+        self.microphone_tab_unmute_microphone = "Smuta microfono"
+        self.microphone_tab_tooltip = "Impostazioni microfono"
+
+        # Volume tab App output translations
+        self.app_output_title = "Output dell'app"
+        self.app_output_volume = "Volume output dell'app"
+        self.app_output_mute = "Muta"
+        self.app_output_unmute = "Smuta"
+        self.app_output_tab_tooltip = "Impostazioni dell'output dell'app"
+        self.app_output_no_apps = "Nessuna applicazione sta riproducendo audio"
+        self.app_output_dropdown_tooltip = "Seleziona il dispositivo d'uscita di questa applicazione"
+
+        # Volume tab App input translations
+        self.app_input_title = "Ingresso app"
+        self.app_input_volume = "Volume d'ingresso dell'app"
+        self.app_input_mute = "Muta il microfono per questa applicazione"
+        self.app_input_unmute = "Smuta il microfono per questa applicazione"
+        self.app_input_tab_tooltip = "Impostazioni del microfono dell'app"
+        self.app_input_no_apps = "Nessun applicazione sta usando il microfono"
+
+        # WiFi tab translations
+        self.wifi_title = "Reti Wi-Fi"
+        self.wifi_refresh_tooltip = "Ricarica reti"
+        self.wifi_power = "Wi-Fi"
+        self.wifi_speed = "Velocità di connessione"
+        self.wifi_download = "Download"
+        self.wifi_upload = "Upload"
+        self.wifi_available = "Reti disponibili"
+        self.wifi_forget = "Dimentica"
+        self.wifi_share_title = "Condividi rete"
+        self.wifi_share_scan = "Scansiona per connetterti"
+        self.wifi_network_name = "Nome della rete"
+        self.wifi_password = "Password"
+        self.wifi_loading_networks = "Carico le reti..."
+
+        # Settings tab translations
+        self.settings_title = "Impostazioni"
+        self.settings_tab_settings = "Impostazioni delle schede"
+        self.settings_language = "Lingua"
+        self.settings_language_changed_restart = "Perfavore riavvia l'applicazione affinchè venga ricaricata la lingua."
+        self.settings_language_changed = "Lingua cambiata"
+
+        
 class Spanish:
     """Spanish language translation for the application"""
     def __init__(self):
@@ -995,6 +1199,10 @@ def _map_system_lang_to_code(system_lang: str, logger: Optional[Logger] = None) 
         if logger:
             logger.log(LogLevel.Info, f"System language '{system_lang}' mapped to Spanish (es)")
         return "es"
+    if system_lang.startswith("it"):
+        if logger:
+            logger.log(LogLevel.Info, f"System language '{system_lang}' mapped to Italian (it)")
+        return "it"
     elif system_lang.startswith("pt"):
         if logger:
             logger.log(LogLevel.Info, f"System language '{system_lang}' mapped to Portuguese (pt)")
@@ -1016,7 +1224,7 @@ def get_translations(logging: Optional[Logger] = None, lang: str = "en") -> Tran
     """Load the language according to the selected language
 
     Args:
-        lang (str): Language code ('en', 'es', 'pt', 'fr', 'id', 'default')
+        lang (str): Language code ('en', 'es', 'it', 'pt', 'fr', 'id', 'default')
                    'default' will use the system's $LANG environment variable
 
     Returns:
@@ -1044,6 +1252,8 @@ def get_translations(logging: Optional[Logger] = None, lang: str = "en") -> Tran
     match lang:
         case "es":
             return Spanish()
+        case "it":
+            return Italian()
         case "pt":
             return Portuguese()
         case "fr":
