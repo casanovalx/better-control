@@ -49,8 +49,7 @@ install_fedora() {
 
 install_void() {
     echo "⬇️Installing dependencies for Void Linux..."
-    sudo xbps-install -Sy NetworkManager pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode gtk+3 bluez python3-Pillow usbguard python3-pip
-    pip install setproctitle
+    sudo xbps-install -Sy NetworkManager pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode gtk+3 bluez python3-Pillow usbguard python3-pip python3-setproctitle
     clear
 
     git clone https://github.com/quantumvoid0/better-control.git
