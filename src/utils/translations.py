@@ -51,6 +51,7 @@ class Translation(Protocol):
 
 class English:
     """English language translation for the application"""
+
     def __init__(self):
         # app description
         self.msg_desc = "A sleek GTK-themed control panel for Linux."
@@ -157,7 +158,7 @@ class English:
         self.display_left = "Left"
         self.display_right = "Right"
         self.display_inverted = "Inverted"
-        
+
         self.display_rotation = "Rotation Options"
         self.display_simple_rotation = "Quick Rotation"
         self.display_specific_orientation = "Specific Orientation"
@@ -190,7 +191,6 @@ class English:
         self.power_menu_tooltip_hibernate = "Hibernate the system"
         self.power_menu_tooltip_reboot = "Restart the screen"
         self.power_menu_tooltip_shutdown = "Power off the screen"
-
 
         # Volume tab translations
         self.volume_title = "Volume Settings"
@@ -252,8 +252,10 @@ class English:
         self.settings_language_changed_restart = "Please restart the application for the language change to take effect."
         self.settings_language_changed = "Language changed"
 
+
 class Italian:
     """Italian language translation for the application"""
+
     def __init__(self):
         # app description
         self.msg_desc = "Un pannello di controllo elegante e basato su GTK per Linux."
@@ -360,7 +362,7 @@ class Italian:
         self.display_left = "Sinistra"
         self.display_right = "Destra"
         self.display_inverted = "Invertito"
-        
+
         self.display_rotation = "Opzioni della rotazione"
         self.display_simple_rotation = "Rotazione veloce"
         self.display_specific_orientation = "Orientamento spefico"
@@ -393,7 +395,6 @@ class Italian:
         self.power_menu_tooltip_hibernate = "Iberna il sistema"
         self.power_menu_tooltip_reboot = "Riavvia lo schermo"
         self.power_menu_tooltip_shutdown = "Spegni lo schermo"
-
 
         # Volume tab translations
         self.volume_title = "Impostazione volume"
@@ -455,9 +456,10 @@ class Italian:
         self.settings_language_changed_restart = "Perfavore riavvia l'applicazione affinchè venga ricaricata la lingua."
         self.settings_language_changed = "Lingua cambiata"
 
-        
+
 class Spanish:
     """Spanish language translation for the application"""
+
     def __init__(self):
         # app description
         self.msg_desc = "Un elegante panel de control con tema GTK para Linux."
@@ -494,7 +496,7 @@ class Spanish:
         self.loading = "Cargando..."
         self.loading_tabs = "Cargando pestañas..."
 
-        #for tabs
+        # for tabs
         self.msg_tab_autostart = "Inicio Automático"
         self.msg_tab_usbguard = "USBGuard"
         self.usbguard_title = "Control de Dispositivos USB"
@@ -553,7 +555,6 @@ class Spanish:
         self.display_left = "Izquierda"
         self.display_right = "Derecha"
         self.display_inverted = "Invertido"
-
 
         # Power tab translations
         self.power_title = "Gestión de Energía"
@@ -640,8 +641,10 @@ class Spanish:
         self.settings_language_changed_restart = "Por favor reinicie la aplicación para que el cambio de idioma tenga efecto."
         self.settings_language_changed = "Idioma cambiado"
 
+
 class Portuguese:
     """Portuguese language translation for the application"""
+
     def __init__(self):
         # app description
         self.msg_desc = "Um elegante painel de controle com tema GTK para Linux."
@@ -738,7 +741,6 @@ class Portuguese:
         self.display_right = "Direita"
         self.display_inverted = "Invertido"
 
-
         # Power tab translations
         self.power_title = "Gerenciamento de Energia"
         self.power_tooltip_menu = "Configurar Menu de Energia"
@@ -824,8 +826,10 @@ class Portuguese:
         self.settings_language_changed_restart = "Por favor reinicie o aplicativo para que a mudança de idioma tenha efeito."
         self.settings_language_changed = "Idioma alterado"
 
+
 class French:
     """French language translation for the application"""
+
     def __init__(self):
         # app description
         self.msg_desc = "Un panneau de contrôle élégant avec thème GTK pour Linux."
@@ -922,7 +926,6 @@ class French:
         self.display_right = "Droite"
         self.display_inverted = "Inversé"
 
-
         # Power tab translations
         self.power_title = "Gestion de l'Alimentation"
         self.power_tooltip_menu = "Configurer le Menu d'Alimentation"
@@ -1008,8 +1011,10 @@ class French:
         self.settings_language_changed_restart = "Veuillez redémarrer l'application pour que le changement de langue prenne effet."
         self.settings_language_changed = "Langue modifiée"
 
+
 class Indonesian:
     """Indonesian language translation for the application"""
+
     def __init__(self):
         # app description
         self.msg_desc = "Panel kontrol GTK yang unik untuk Linux"
@@ -1106,7 +1111,6 @@ class Indonesian:
         self.display_right = "Kanan"
         self.display_inverted = "Terbalik"
 
-
         # Power tab translations
         self.power_title = "Pengelolaan Daya"
         self.power_tooltip_menu = "Konfigurasi Menu Daya"
@@ -1131,7 +1135,6 @@ class Indonesian:
         self.power_menu_tooltip_hibernate = "Menghibernasikan sistem"
         self.power_menu_tooltip_reboot = "Merestart sistem"
         self.power_menu_tooltip_shutdown = "Mematikan perangkat"
-
 
         # Volume tab translations
         self.volume_title = "Pengaturan Volume"
@@ -1193,38 +1196,253 @@ class Indonesian:
         self.settings_language_changed_restart = "Mulai ulang aplikasi agar perubahan bahasa diterapkan."
         self.settings_language_changed = "Bahasa telah diubah"
 
+
+class Turkish:
+    """Uygulama için Türkçe dil çevirisi"""
+
+    def __init__(self):
+        # app description
+        self.msg_desc = "Linux için şık bir GTK temalı kontrol paneli."
+        self.msg_app_url = "https://github.com/quantumvoid0/better-control"
+        self.msg_usage = "Kullanım"
+
+        # USB notifications
+        self.usb_connected = "{device} bağlandı."
+        self.usb_disconnected = "{device} bağlantısı kesildi."
+        self.permission_allowed = "USB izni verildi"
+        self.permission_blocked = "USB izni engellendi"
+
+        # for args
+        self.msg_args_help = "Bu mesajı yazdırır"
+        self.msg_args_autostart = "Otomatik başlatma sekmesi açık olarak başlar"
+        self.msg_args_battery = "Pil sekmesi açık olarak başlar"
+        self.msg_args_bluetooth = "Bluetooth sekmesi açık olarak başlar"
+        self.msg_args_display = "Ekran sekmesi açık olarak başlar"
+        self.msg_args_force = "Tüm bağımlılıkların yüklü olmasını zorunlu kılar"
+        self.msg_args_power = "Güç sekmesi açık olarak başlar"
+        self.msg_args_volume = "Ses sekmesi açık olarak başlar"
+        self.msg_args_volume_v = "Ayrıca ses sekmesi açık olarak başlar"
+        self.msg_args_wifi = "Wi-Fi sekmesi açık olarak başlar"
+        self.msg_args_log = "Program bir dosya yolu verilirse log dosyasına yazar,\n veya 0 ile 3 arasında bir değer verilirse stdout'a yazar."
+        self.msg_args_redact = "Loglardan hassas bilgileri gizle (ağ adları, cihaz kimlikleri, vb.)"
+        self.msg_args_size = "Özel bir pencere boyutu ayarlar"
+
+        # commonly used
+        self.connect = "Bağlan"
+        self.connected = "Bağlı"
+        self.connecting = "Bağlanıyor..."
+        self.disconnect = "Bağlantıyı Kes"
+        self.disconnected = "Bağlantı Kesildi"
+        self.disconnecting = "Bağlantı Kesiliyor..."
+        self.enable = "Etkinleştir"
+        self.disable = "Devre Dışı Bırak"
+        self.close = "Kapat"
+        self.show = "Göster"
+        self.loading = "Yükleniyor..."
+        self.loading_tabs = "Sekmeler yükleniyor..."
+
+        # for tabs
+        self.msg_tab_autostart = "Otomatik Başlatma"
+        self.msg_tab_usbguard = "USBGuard"
+        self.usbguard_title = "USB Cihaz Kontrolü"
+        self.refresh = "Yenile"
+        self.allow = "İzin Ver"
+        self.block = "Engelle"
+        self.allowed = "İzin Verildi"
+        self.blocked = "Engellendi"
+        self.rejected = "Reddedildi"
+        self.policy = "Politikayı Görüntüle"
+        self.usbguard_error = "USBGuard'a erişim hatası"
+        self.usbguard_not_installed = "USBGuard yüklü değil"
+        self.usbguard_not_running = "USBGuard servisi çalışmıyor"
+        self.no_devices = "Bağlı USB cihazı yok"
+        self.operation_failed = "İşlem başarısız oldu"
+        self.policy_error = "Politika yüklenemedi"
+        self.permanent_allow = "Kalıcı İzin Ver"
+        self.permanent_allow_tooltip = "Bu cihaza kalıcı olarak izin ver (politikaya eklenir)"
+        self.msg_tab_battery = "Pil"
+        self.msg_tab_bluetooth = "Bluetooth"
+        self.msg_tab_display = "Ekran"
+        self.msg_tab_power = "Güç"
+        self.msg_tab_volume = "Ses"
+        self.msg_tab_wifi = "Wi-Fi"
+
+        # Autostart tab translations
+        self.autostart_title = "Otomatik Başlatma Uygulamaları"
+        self.autostart_session = "Oturum"
+        self.autostart_show_system_apps = "Sistem otomatik başlatma uygulamalarını göster"
+        self.autostart_configured_applications = "Yapılandırılmış Uygulamalar"
+        self.autostart_tooltip_rescan = "Otomatik başlatma uygulamalarını yeniden tara"
+
+        # Battery tab translations
+        self.battery_title = "Pil Kontrol Paneli"
+        self.battery_power_saving = "Güç Tasarrufu"
+        self.battery_balanced = "Dengeli"
+        self.battery_performance = "Performans"
+        self.battery_batteries = "Piller"
+        self.battery_overview = "Genel Bakış"
+        self.battery_details = "Ayrıntılar"
+        self.battery_tooltip_refresh = "Pil bilgilerini yenile"
+        self.battery_no_batteries = "Pil algılanmadı"
+
+        # Bluetooth tab translations
+        self.bluetooth_title = "Bluetooth Cihazları"
+        self.bluetooth_scan_devices = "Cihazları Tara"
+        self.bluetooth_scanning = "Taranıyor..."
+        self.bluetooth_power = "Bluetooth"
+        self.bluetooth_available_devices = "Mevcut Cihazlar"
+        self.bluetooth_tooltip_refresh = "Cihazları Tara"
+        self.bluetooth_connect_failed = "Cihaza bağlanılamadı"
+        self.bluetooth_disconnect_failed = "Cihaz bağlantısı kesilemedi"
+        self.bluetooth_try_again = "Lütfen daha sonra tekrar deneyin."
+
+        # Display tab translations
+        self.display_title = "Ekran Ayarları"
+        self.display_brightness = "Ekran Parlaklığı"
+        self.display_blue_light = "Mavi Işık"
+        self.display_orientation = "Yönlendirme"
+        self.display_default = "Varsayılan"
+        self.display_left = "Sol"
+        self.display_right = "Sağ"
+        self.display_inverted = "Ters"
+        self.display_rotation = "Döndürme Seçenekleri"
+        self.display_simple_rotation = "Hızlı Döndürme"
+        self.display_specific_orientation = "Belirli Yön"
+        self.display_flip_controls = "Ekran Çevirme"
+        self.display_rotate_cw = "Saat yönünde döndür"
+        self.display_rotate_ccw = "Saat yönünün tersine döndür"
+        self.display_rotation_help = "Döndürme işlemi hemen uygulanır. Onaylamazsanız 10 saniye içinde eski haline döner."
+
+        # Power tab translations
+        self.power_title = "Güç Yönetimi"
+        self.power_tooltip_menu = "Güç menüsünü yapılandır"
+        self.power_menu_buttons = "Düğmeler"
+        self.power_menu_commands = "Komutlar"
+        self.power_menu_colors = "Renkler"
+        self.power_menu_show_hide_buttons = "Düğmeleri Göster/Gizle"
+        self.power_menu_shortcuts_tab_label = "Kısayollar"
+        self.power_menu_visibility = "Düğmeler"
+        self.power_menu_keyboard_shortcut = "Klavye Kısayolları"
+        self.power_menu_show_keyboard_shortcut = "Klavye Kısayollarını Göster"
+        self.power_menu_lock = "Kilitle"
+        self.power_menu_logout = "Oturumu Kapat"
+        self.power_menu_suspend = "Beklet"
+        self.power_menu_hibernate = "Hazırda Beklet"
+        self.power_menu_reboot = "Yeniden Başlat"
+        self.power_menu_shutdown = "Kapat"
+        self.power_menu_apply = "Uygula"
+        self.power_menu_tooltip_lock = "Ekranı kilitle"
+        self.power_menu_tooltip_logout = "Oturumu kapat"
+        self.power_menu_tooltip_suspend = "Sistemi beklet"
+        self.power_menu_tooltip_hibernate = "Sistemi hazırda beklet"
+        self.power_menu_tooltip_reboot = "Sistemi yeniden başlat"
+        self.power_menu_tooltip_shutdown = "Sistemi kapat"
+
+        # Volume tab translations
+        self.volume_title = "Ses Ayarları"
+        self.volume_speakers = "Hoparlörler"
+        self.volume_tab_tooltip = "Hoparlör Ayarları"
+        self.volume_output_device = "Çıkış Aygıtı"
+        self.volume_device = "Aygıt"
+        self.volume_output = "Çıkış"
+        self.volume_speaker_volume = "Hoparlör Sesi"
+        self.volume_mute_speaker = "Hoparlörü Sessize Al"
+        self.volume_unmute_speaker = "Hoparlörü Sesli Yap"
+        self.volume_quick_presets = "Hızlı Ön Ayarlar"
+        self.volume_output_combo_tooltip = "Bu uygulama için çıkış cihazını seçin"
+
+        # Volume tab microphone translations
+        self.microphone_tab_microphone = "Mikrofon"
+        self.microphone_tab_input_device = "Giriş Aygıtı"
+        self.microphone_tab_volume = "Mikrofon Sesi"
+        self.microphone_tab_mute_microphone = "Mikrofonu Sessize Al"
+        self.microphone_tab_unmute_microphone = "Mikrofonu Sesli Yap"
+        self.microphone_tab_tooltip = "Mikrofon Ayarları"
+
+        # Volume tab App output translations
+        self.app_output_title = "Uygulama Çıkışı"
+        self.app_output_volume = "Uygulama Ses Çıkış Seviyesi"
+        self.app_output_mute = "Sessize Al"
+        self.app_output_unmute = "Sesi Aç"
+        self.app_output_tab_tooltip = "Uygulama Çıkış Ayarları"
+        self.app_output_no_apps = "Ses çalan uygulama yok"
+        self.app_output_dropdown_tooltip = "Bu uygulama için çıkış cihazını seçin"
+
+        # Volume tab App input translations
+        self.app_input_title = "Uygulama Girişi"
+        self.app_input_volume = "Uygulama Mikrofon Giriş Seviyesi"
+        self.app_input_mute = "Bu uygulama için mikrofonu sessize al"
+        self.app_input_unmute = "Bu uygulama için mikrofonu aç"
+        self.app_input_tab_tooltip = "Uygulama Mikrofon Ayarları"
+        self.app_input_no_apps = "Mikrofon kullanan uygulama yok"
+
+        # WiFi tab translations
+        self.wifi_title = "Wi-Fi Ağları"
+        self.wifi_refresh_tooltip = "Ağları Yenile"
+        self.wifi_power = "Wi-Fi"
+        self.wifi_speed = "Bağlantı Hızı"
+        self.wifi_download = "İndirme"
+        self.wifi_upload = "Yükleme"
+        self.wifi_available = "Mevcut Ağlar"
+        self.wifi_forget = "Unut"
+        self.wifi_share_title = "Ağı Paylaş"
+        self.wifi_share_scan = "Bağlanmak için tarayın"
+        self.wifi_network_name = "Ağ Adı"
+        self.wifi_password = "Parola"
+        self.wifi_loading_networks = "Ağlar Yükleniyor..."
+
+        # Settings tab translations
+        self.settings_title = "Ayarlar"
+        self.settings_tab_settings = "Sekme Ayarları"
+        self.settings_language = "Dil"
+        self.settings_language_changed_restart = "Dil değişikliği için lütfen uygulamayı yeniden başlatın."
+        self.settings_language_changed = "Dil değiştirildi"
+
+
 def _map_system_lang_to_code(system_lang: str, logger: Optional[Logger] = None) -> str:
     """Helper function to map system language to supported code and optionally log mapping"""
     if system_lang.startswith("es"):
         if logger:
-            logger.log(LogLevel.Info, f"System language '{system_lang}' mapped to Spanish (es)")
+            logger.log(
+                LogLevel.Info, f"System language '{system_lang}' mapped to Spanish (es)")
         return "es"
     if system_lang.startswith("it"):
         if logger:
-            logger.log(LogLevel.Info, f"System language '{system_lang}' mapped to Italian (it)")
+            logger.log(
+                LogLevel.Info, f"System language '{system_lang}' mapped to Italian (it)")
         return "it"
     elif system_lang.startswith("pt"):
         if logger:
-            logger.log(LogLevel.Info, f"System language '{system_lang}' mapped to Portuguese (pt)")
+            logger.log(
+                LogLevel.Info, f"System language '{system_lang}' mapped to Portuguese (pt)")
         return "pt"
     elif system_lang.startswith("fr"):
         if logger:
-            logger.log(LogLevel.Info, f"System language '{system_lang}' mapped to French (fr)")
+            logger.log(
+                LogLevel.Info, f"System language '{system_lang}' mapped to French (fr)")
         return "fr"
     elif system_lang.startswith("id"):
         if logger:
-            logger.log(LogLevel.Info, f"System language '{system_lang}' mapped to Indonesian (id)")
+            logger.log(
+                LogLevel.Info, f"System language '{system_lang}' mapped to Indonesian (id)")
         return "id"
+    elif system_lang.startswith("tr"):
+        if logger:
+            logger.log(
+                LogLevel.Info, f"System language '{system_lang}' mapped to Turkish (tr)")
+        return "tr"
     else:
         if logger:
-            logger.log(LogLevel.Info, f"System language '{system_lang}' not supported, falling back to English (en)")
+            logger.log(
+                LogLevel.Info, f"System language '{system_lang}' not supported, falling back to English (en)")
         return "en"
+
 
 def get_translations(logging: Optional[Logger] = None, lang: str = "en") -> Translation:
     """Load the language according to the selected language
 
     Args:
-        lang (str): Language code ('en', 'es', 'it', 'pt', 'fr', 'id', 'default')
+        lang (str): Language code ('en', 'es', 'it', 'pt', 'fr', 'id', 'tr', 'default')
                    'default' will use the system's $LANG environment variable
 
     Returns:
@@ -1237,13 +1455,15 @@ def get_translations(logging: Optional[Logger] = None, lang: str = "en") -> Tran
             # No LANG env var set, fall back to English immediately
             system_lang_code = "en"
             if logging:
-                logging.log(LogLevel.Info, "Environment variable LANG not set, falling back to English")
+                logging.log(
+                    LogLevel.Info, "Environment variable LANG not set, falling back to English")
         else:
             # LANG env var exists
             parts = env_lang.split("_")
             system_lang_code = parts[0].lower()
             if logging:
-                logging.log(LogLevel.Info, f"Using system language: {system_lang_code} from $LANG={env_lang}")
+                logging.log(
+                    LogLevel.Info, f"Using system language: {system_lang_code} from $LANG={env_lang}")
         lang = _map_system_lang_to_code(system_lang_code, logging)
 
     if logging:
@@ -1260,5 +1480,7 @@ def get_translations(logging: Optional[Logger] = None, lang: str = "en") -> Tran
             return French()
         case "id":
             return Indonesian()
+        case "tr":
+            return Turkish()
         case _:
             return English()
