@@ -112,8 +112,7 @@ You can use `betterctl` to update or uninstall the application.
 <br><br>
 
 # 📚 Contribution
-Feel free to propose PR and suggest new features, improvements. If you wish to contribute with translation for the app into your language, please see the `utils/translations.py` file.
-
+If you wanna contribute , see [contribution](https://github.com/quantumvoid0/better-control/blob/main/CONTRIBUTING.md)
 
 ## 📄 License
 
