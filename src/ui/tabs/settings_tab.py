@@ -119,7 +119,7 @@ class SettingsTab(Gtk.Box):
         section_label.set_halign(Gtk.Align.START)
         self.tab_section.pack_start(section_label, False, False, 0)
 
-        tabs = ["Volume", "Wi-Fi", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"]
+        tabs = ["Wi-Fi", "Volume", "Bluetooth", "Battery", "Display", "Power", "Autostart", "USBGuard"]
         self.tab_switches = {}
         self.tab_rows = {}
 
@@ -255,6 +255,8 @@ class SettingsTab(Gtk.Box):
         lang_combo.append("pt", "Português")
         lang_combo.append("fr", "Français")
         lang_combo.append("id", "Bahasa Indonesia")
+        lang_combo.append("it", "Italian")
+        lang_combo.append("tr", "Turkish")
         lang_combo.set_active_id(self.settings.get("language"))
         lang_combo.connect("changed", self.on_language_changed)
 
