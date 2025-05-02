@@ -226,10 +226,9 @@ class USBGuardTab(Gtk.Box):
                 error_display = (
                     "<b>USBGuard Permission Required</b>\n\n"
                     "- USBGuard requires your user to have access to it to avoid running Better Control with sudo.\n\n"
-                    '- To grant permission, please check this script:\n'
-                    '   <a href="https://github.com/quantumvoid0/better-control/blob/main/src/utils/usbguard_permissions.sh">'
-                    'https://github.com/qunatumvoid0/better-control/blob/main/src/utils/usbguard_permissions.sh</a>\n\n'
-                    "- You can run the script or manually apply the commands. Check the source if you're skeptical - we got nothing to hide."
+                    "- You can give permission easily by clicking the button below or manually apply the commands from the link below\n\n."
+                    "<a href='https://github.com/quantumvoid0/better-control/blob/main/src/utils/usbguard_permissions.sh'>https://github.com/qunatumvoid0/better-control/blob/main/src/utils/usbguard_permissions.sh</a>\n\n"
+                    " Check the source if you're skeptical - we got nothing to hide."
                 )
 
             else:
@@ -239,7 +238,7 @@ class USBGuardTab(Gtk.Box):
                 self.logging.log_error(f"USBGuard error: {error_msg}")
             else:
                 print(f"USBGuard error: {error_msg}")
-            self.show_error(error_display)
+            self.show_error_with_perm_button(error_display)
         except FileNotFoundError:
             if hasattr(self.logging, 'log_error'):
                 self.logging.log_error("USBGuard not installed")
@@ -821,7 +820,49 @@ Status: {status_text}
         self.device_list.add(label)
         self.device_list.show_all()
 
-        
+    def show_error_with_perm_button(self, message):
+        for child in self.device_list.get_children():
+            self.device_list.remove(child)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        vbox.set_margin_top(10)
+        vbox.set_margin_bottom(10)
+        vbox.set_margin_start(10)
+        vbox.set_margin_end(10)
+
+        label = Gtk.Label()
+        label.set_markup(message)
+        label.set_line_wrap(True)
+        label.set_selectable(True)
+        label.set_use_markup(True)
+        label.set_halign(Gtk.Align.START)
+        label.set_valign(Gtk.Align.START)
+        label.set_xalign(0)
+        label.set_yalign(0)
+        label.set_max_width_chars(80)
+        label.set_track_visited_links(True)
+
+        vbox.pack_start(label, False, False, 0)
+
+        perm_button = Gtk.Button(label="Click here to give permission")
+        perm_button.connect("clicked", self.automate)
+        vbox.pack_start(perm_button, False, False, 0)
+
+        self.device_list.add(vbox)
+        self.device_list.show_all()
+
+    def automate(self, widget):
+        try:
+            subprocess.run([
+                "pkexec", "bash", "-c",
+                "curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/src/utils/usbguard_permissions.sh | bash"
+            ], check=True)
+        except subprocess.CalledProcessError as e:
+            if hasattr(self.logging, 'log_error'):
+                self.logging.log_error(f"Failed to give permissions: {e}")
+            else:
+                print(f"Failed to give permissions: {e}")
+
     def get_device_name(self, device_info):
         """Helper method to extract device name from info string"""
         if not device_info:

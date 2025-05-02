@@ -1,8 +1,6 @@
 #!/bin/bash
 ############################# 
-# download this script
-# chmod +x /path/to/usbguard_permissions.sh
-# run this script with sudo
+# This script is run when user presses "give permission" button on usbguard tab
 #############################
 
 
@@ -51,7 +49,7 @@ echo "Done"
 
 echo ""
 echo "Setup complete! Please:"
-echo "1. Log out and back in for changes to take effect"
+echo "1. You may need to log out and back in for changes to take effect"
 echo "2. Run: control"
 echo ""
 echo "Note: You may need to reconnect USB devices after this setup"
