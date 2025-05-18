@@ -36,7 +36,10 @@ install_debian() {
 
 install_fedora() {
     echo "⬇️Installing dependencies for Fedora-based systems..."
-    sudo dnf install -y gtk3 NetworkManager bluez bluez-utils pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle python3-pillow usbguard
+    sudo dnf install -y gtk3 NetworkManager bluez \
+        python3-gobject python3-dbus python3 power-profiles-daemon \
+        gammastep python3-requests python3-qrcode python3-setproctitle \
+        python3-pillow usbguard brightnessctl make --allowerasing
     clear
 
     git clone https://github.com/quantumvoid0/better-control.git
