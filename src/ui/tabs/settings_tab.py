@@ -257,6 +257,7 @@ class SettingsTab(Gtk.Box):
         lang_combo.append("id", "Bahasa Indonesia")
         lang_combo.append("it", "Italian")
         lang_combo.append("tr", "Turkish")
+        lang_combo.append("de", "German")
         lang_combo.set_active_id(self.settings.get("language"))
         lang_combo.connect("changed", self.on_language_changed)
 
