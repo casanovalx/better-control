@@ -126,7 +126,7 @@ case "$choice" in
         echo "Starting installation..."
         detect_os_id=$(detect_os)
         case "$detect_os_id" in
-            arch|endeavouros|manjaro)
+            arch|endeavouros|manjaro|garuda)
                 install_arch
                 ;;
             debian|ubuntu|linuxmint|pop)
@@ -156,7 +156,7 @@ case "$choice" in
         if confirm "Are you sure you want to uninstall? Y for yes , N for no"; then
             detect_os_id=$(detect_os)
             case "$detect_os_id" in
-                arch|endeavouros|manjaro)
+                arch|endeavouros|manjaro|garuda)
                     uninstall_arch
                     ;;
                 *)
