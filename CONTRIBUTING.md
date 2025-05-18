@@ -40,3 +40,12 @@ step 3 : then in `src/ui/tabs/settings.py` edit this part
         lang_combo.append("add your new language here")
 
 ```
+
+step 4 : change to new version
+
+goto `betterctl.sh` and `src/ui/main_window.py` and change the old version to new 
+ eg: `6.11.6` --> `6.11.7`
+
+> If you cant find the line with the version just search for the last version and you can find it
+
+
