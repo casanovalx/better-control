@@ -94,7 +94,7 @@ class BluetoothManager:
 
     def _switch_to_bluetooth_audio(self, device_path):
         """Switch both input and output audio to Bluetooth device with retries"""
-        max_attempts = 5
+        max_attempts = 2
         base_delay = 0.5  # seconds
         
         for attempt in range(max_attempts):
