@@ -173,7 +173,7 @@ case "$choice" in
         echo "Starting update (uninstall and reinstall)..."
         detect_os_id=$(detect_os)
         case "$detect_os_id" in
-            arch|endeavouros|manjaro)
+            arch|endeavouros|manjaro|garuda)
                 echo "Uninstalling on Arch-based distro..."
                 uninstall_arch
                 echo "Installing on Arch-based distro..."
