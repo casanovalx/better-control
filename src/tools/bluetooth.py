@@ -88,7 +88,7 @@ class BluetoothManager:
             # Check if this is a connection state change
             if "Connected" in changed_properties and changed_properties["Connected"]:
                 # Device connected - switch audio
-                self._switch_to_bluetooth_audio(path)
+                threading.Thread(target=self._switch_to_bluetooth_audio, args=(path,), daemon=True).start()
         except Exception as e:
             self.logging.log(LogLevel.Error, f"Error handling device property change: {e}")
 
