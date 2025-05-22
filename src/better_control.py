@@ -28,7 +28,7 @@ def signal_handler(sig, frame):
     import traceback
     from utils.logger import emergency_log
     
-    emergency_log(f"Signal {sig} received", traceback.format_stack())
+    emergency_log(f"Signal {sig} received", "".join(traceback.format_stack()))
     
     # Clean up GTK objects in stages
     try:
