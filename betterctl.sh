@@ -23,7 +23,7 @@ install_arch() {
 install_debian() {
     echo "⬇️Installing dependencies for Debian-based systems..."
     sudo apt update
-    sudo apt install -y libgtk-3-dev network-manager bluez bluez-tools pulseaudio brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle python3-pil usbguard
+    sudo apt install -y libgtk-3-dev network-manager bluez bluez-tools pulseaudio-utils brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle python3-pil usbguard
 
     clear
     git clone https://github.com/quantumvoid0/better-control.git
@@ -36,7 +36,7 @@ install_debian() {
 
 install_fedora() {
     echo "⬇️Installing dependencies for Fedora-based systems..."
-    sudo dnf install -y gtk3 NetworkManager bluez \
+    sudo dnf install -y gtk3 NetworkManager bluez pulseaudio-utils \
         python3-gobject python3-dbus python3 power-profiles-daemon \
         gammastep python3-requests python3-qrcode python3-setproctitle \
         python3-pillow usbguard brightnessctl make --allowerasing
@@ -52,7 +52,7 @@ install_fedora() {
 
 install_void() {
     echo "⬇️Installing dependencies for Void Linux..."
-    sudo xbps-install -Sy NetworkManager pulseaudio brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode gtk+3 bluez python3-Pillow usbguard python3-pip python3-setproctitle
+    sudo xbps-install -Sy NetworkManager pulseaudio-utils brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode gtk+3 bluez python3-Pillow usbguard python3-pip python3-setproctitle
     clear
 
     git clone https://github.com/quantumvoid0/better-control.git
@@ -65,7 +65,7 @@ install_void() {
 
 install_alpine() {
     echo "⬇️Installing dependencies for Alpine Linux..."
-    sudo apk add gtk3 networkmanager bluez bluez-utils pulseaudio brightnessctl py3-gobject py3-dbus python3 power-profiles-daemon gammastep py3-requests py3-qrcode py3-pip py3-setuptools gcc musl-dev python3-dev py3-pillow
+    sudo apk add gtk3 networkmanager bluez bluez-utils pulseaudio-utils brightnessctl py3-gobject py3-dbus python3 power-profiles-daemon gammastep py3-requests py3-qrcode py3-pip py3-setuptools gcc musl-dev python3-dev py3-pillow
     pip install setproctitle
     clear
 
