@@ -89,10 +89,33 @@ or you can get from AUR for arch devices `yay -S better-control-git`
 > [!NOTE]
 > you can update or uninstall the app by running `betterctl` on your terminal
 
-### ➡️ NixOS
+<details>
+<summary><b>➡️ Nix/NixOS (Distro Independent) (Unofficial)</b></summary>
 
-Better Control has an unofficial flake here : https://github.com/Rishabh5321/better-control-flake
+<br>
 
+Better Control is available in `nixpkgs` repository.
+
+On NixOS:
+
+```bash
+nix-env -iA nixos.better-control
+```
+
+On Non NixOS:
+
+```bash
+# without flakes:
+nix-env -iA nixpkgs.better-control
+# with flakes:
+nix profile install nixpkgs#better-control
+```
+
+<br>
+
+⚠️ Bleeding edge (Unstable):-  This flake will update to latest commit automatically :- [Better Control Flake](https://github.com/Rishabh5321/better-control-flake)
+
+</details>
 
 <br>
 
