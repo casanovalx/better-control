@@ -61,22 +61,32 @@ Before installing, ensure you have `git` and `base-devel` installed.
 
 # 💾 Installation & Uninstallation
 
-#### ➡️ Method 1 : To install or uninstall run this in your terminal, its very simple and straightforward. 
+### 🚀 Quick Install (Recommended)
 
+The easiest way to install Better Control is using our automated installer script:
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/betterctl.sh)
 ```
-bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/betterctl.sh) 
-```
 
-<br>
+**What this script does:**
+- Uses [AUR](https://aur.archlinux.org/packages/better-control-git) for Arch-based distributions
+- Uses [Makefile](https://github.com/quantumvoid0/better-control/blob/main/Makefile) for other distributions
+- Automatically installs all required dependencies
 
-This script basically uses [AUR](https://aur.archlinux.org/packages/better-control-git) for arch and [Makefile](https://github.com/quantumvoid0/better-control/blob/main/Makefile) for other distros. 
-If you want to check the contents of the file before running , we have nothing to hide go ahead by clicking this link >> https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/betterctl.sh
+> [!TIP]
+> **Security conscious?** You can review the installer script [here](https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/betterctl.sh) before running it.
 
-> This script will work on arch based , debian based , fedora based , void , alpine and dependencies will be automatically installed during installation. Better Control is also available on the AUR.
+**Supported Distributions:**
+- 🔵 Arch-based (Arch, Manjaro, EndeavourOS, etc.)
+- 🟠 Debian-based (Ubuntu, Linux Mint, Pop!_OS, etc.)
+- 🔴 Fedora-based (Fedora, openSUSE, etc.)
+- 🟢 Void Linux
+- 🏔️ Alpine Linux
 
-#### ➡️ Method 2 : Manual Build
+### 🔧 Manual Installation
 
-> when you do maunal build make sure to get all dependencies by yourself
+For users who prefer manual installation or need more control over the process:
 
 ```bash
 git clone https://github.com/quantumvoid0/better-control
@@ -84,10 +94,14 @@ cd better-control
 sudo make install
 ```
 
-or you can get from AUR for arch devices `yay -S better-control-git`
+**For Arch Linux users**, Better Control is also available on the AUR:
 
-> [!NOTE]
-> you can update or uninstall the app by running `betterctl` on your terminal
+```bash
+yay -S better-control-git
+```
+
+> [!IMPORTANT]
+> When building manually, ensure you have all [dependencies](#dependencies) installed beforehand.
 
 <details>
 <summary><b>➡️ Nix/NixOS (Distro Independent) (Unofficial)</b></summary>
@@ -116,6 +130,14 @@ nix profile install nixpkgs#better-control
 ⚠️ Bleeding edge (Unstable):-  This flake will update to latest commit automatically :- [Better Control Flake](https://github.com/Rishabh5321/better-control-flake)
 
 </details>
+
+### 🔄 Updates & Uninstallation
+
+After installation, you can manage Better Control using the `betterctl` command:
+
+```bash
+betterctl  # Interactive menu for update/uninstall options
+```
 
 <br>
 
