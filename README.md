@@ -1,6 +1,8 @@
-# ⚙️ Better Control 
+<div align="center">
 
-<img src="https://github.com/user-attachments/assets/3ae2383d-971b-4280-bd64-6c6c18dd05de" width="650">
+# ⚙️ Better Control
+
+<img src="https://github.com/user-attachments/assets/3ae2383d-971b-4280-bd64-6c6c18dd05de" width="900">
 
 ### *A sleek GTK-themed control panel for Linux* 🐧
 
@@ -9,27 +11,26 @@
 [![GitHub stars](https://img.shields.io/github/stars/quantumvoid0/better-control?style=flat-square&color=429768&logo=starship&labelColor=444)](https://github.com/quantumvoid0/better-control/stargazers)
 [![Latest Release](https://img.shields.io/github/v/release/quantumvoid0/better-control.svg?style=flat-square&color=429768&logo=speedtest&label=latest-release&labelColor=444)](https://github.com/quantumvoid0/better-control/releases/latest)
 
+</div>
 
-<br>
+---
 
 > [!IMPORTANT]
 > 🚧 This project is under active development. Contributions, feature requests, ideas, and testers are welcome!
 
-<br>
+---
 
-### ✨ Features
+## ✨ Features
 
 - 🔄 Seamless integration with your desktop environment
 - 📱 Modern, clean interface for system controls
-- 🎚️ Quick access to common system settings and ton of features
+- 🎚️ Quick access to common system settings and tons of features
 - 🌙 Respects your system's light/dark theme settings
-- 🧩 Modular design - use only what you need and remove the ones you dont use (see dependencies for more info)
+- 🧩 Modular design - use only what you need and remove the ones you don't use (see dependencies for more info)
 
 <details>
 <summary><b>Dependencies</b></summary>
 
-<br><br>
-  
 Before installing, ensure you have `git` and `base-devel` installed.
 
 ### Core Dependencies
@@ -50,16 +51,16 @@ Before installing, ensure you have `git` and `base-devel` installed.
 | **Power Management** | power-profiles-daemon, upower |
 | **Blue Light Filter** | gammastep |
 | **USBGuard** | USBGuard |
-| **pillow** | For QR Code on wifi |
+| **Pillow** | For QR Code on Wi-Fi |
 
-> [TIP]
+> [!TIP]
 > If you don't need a specific feature, you can safely omit its corresponding dependency and hide its tab in the settings.
 
 </details>
 
-<br><br>
+---
 
-# 💾 Installation & Uninstallation
+## 💾 Installation & Uninstallation
 
 ### 🚀 Quick Install (Recommended)
 
@@ -106,17 +107,15 @@ yay -S better-control-git
 <details>
 <summary><b>➡️ Nix/NixOS (Distro Independent) (Unofficial)</b></summary>
 
-<br>
+Better Control is available in the `nixpkgs` repository.
 
-Better Control is available in `nixpkgs` repository.
-
-On NixOS:
+**On NixOS:**
 
 ```bash
 nix-env -iA nixos.better-control
 ```
 
-On Non NixOS:
+**On Non-NixOS:**
 
 ```bash
 # without flakes:
@@ -125,9 +124,7 @@ nix-env -iA nixpkgs.better-control
 nix profile install nixpkgs#better-control
 ```
 
-<br>
-
-⚠️ Bleeding edge (Unstable):-  This flake will update to latest commit automatically :- [Better Control Flake](https://github.com/Rishabh5321/better-control-flake)
+⚠️ **Bleeding edge (Unstable):** This flake will update to the latest commit automatically: [Better Control Flake](https://github.com/Rishabh5321/better-control-flake)
 
 </details>
 
@@ -139,11 +136,11 @@ After installation, you can manage Better Control using the `betterctl` command:
 betterctl  # Interactive menu for update/uninstall options
 ```
 
-<br>
+---
 
-# 🫴 Usage
+## 🫴 Usage
 
-`control` or `better-control` command will run the gui application. use `control --help` or `better-control --help` to see more specific launch commands you can use with stuff like waybar.
+Use the `control` or `better-control` command to run the GUI application. Use `control --help` or `better-control --help` to see more specific launch commands you can use with tools like waybar.
 
 You can use `betterctl` to update or uninstall the application.
 
@@ -154,18 +151,19 @@ You can use `betterctl` to update or uninstall the application.
 | `Shift + S` | Open Settings Dialog |
 | `Q` or `Ctrl + Q` | Quit Application |
 
-<br><br>
+---
 
-# 📚 Contribution
-If you wanna contribute , see [contribution](https://github.com/quantumvoid0/better-control/blob/main/CONTRIBUTING.md)
+## 📚 Contribution
+
+If you want to contribute, see [CONTRIBUTING.md](https://github.com/quantumvoid0/better-control/blob/main/CONTRIBUTING.md)
 
 ## 📄 License
 
 This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) for more details.
 
-<br><br>
+---
 
-# 🧪 Compatibility Matrix
+## 🧪 Compatibility Matrix
 
 Better Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasma. It should work on most Linux distributions with minor adjustments.
 
@@ -199,10 +197,10 @@ Better Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasm
 > [!NOTE]
 > If you test Better Control on a different setup, please share your experience in the discussions or issues section.
 
-<br>
+---
 
 ### Made with ❤️ for the Linux community
 
-[Report Bug](https://github.com/quantumvoid0/better-control/issues) • 
-[Request Feature](https://github.com/quantumvoid0/better-control/discussions) • 
+[Report Bug](https://github.com/quantumvoid0/better-control/issues) •
+[Request Feature](https://github.com/quantumvoid0/better-control/discussions) •
 [Contribute](https://github.com/quantumvoid0/better-control/tree/main?tab=readme-ov-file#--contribution)
