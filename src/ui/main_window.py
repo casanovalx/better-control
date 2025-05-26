@@ -1039,16 +1039,13 @@ class BetterControl(Gtk.Window):
         )
 
     def on_settings_button_pressed(self, widget, event):
-        """Handle settings button press to detect Ctrl+Click"""
-        # Check if left mouse button (1) and Ctrl key pressed
         if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 1:
             state = event.state
             ctrl_mask = Gdk.ModifierType.CONTROL_MASK
             if state & ctrl_mask:
                 self.show_app_info_dialog()
-                return True  # Stop further handling
+                return True  
 
-            # Otherwise, normal click opens settings panel
             self.toggle_settings_panel(widget)
             return True
 
@@ -1075,7 +1072,7 @@ class BetterControl(Gtk.Window):
         app_name_label.set_justify(Gtk.Justification.CENTER)
         box.pack_start(app_name_label, False, False, 0)
 
-        version_label = Gtk.Label(label="Version: v6.11.7")
+        version_label = Gtk.Label(label="Version: v6.11.8")
         version_label.set_justify(Gtk.Justification.CENTER)
         box.pack_start(version_label, False, False, 0)
 

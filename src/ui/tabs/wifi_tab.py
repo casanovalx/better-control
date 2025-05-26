@@ -3,7 +3,7 @@
 import traceback
 import gi # type: ignore
 import threading
-
+import requests
 from utils.logger import LogLevel, Logger
 import subprocess
 
@@ -23,7 +23,8 @@ from tools.wifi import (
     get_network_speed,
     get_connection_info,
     generate_wifi_qrcode,
-    wifi_supported
+    wifi_supported,
+    get_network_details
 )
 
 class WiFiTab(Gtk.Box):
@@ -150,6 +151,32 @@ class WiFiTab(Gtk.Box):
         power_box.pack_end(self.power_switch, False, True, 0)
         content_box.pack_start(power_box, False, True, 0)
 
+        network_info_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
+        network_info_box.set_halign(Gtk.Align.START)
+
+        self.ip_label = Gtk.Label(label="IP Address: N/A")
+        self.ip_label.set_halign(Gtk.Align.START)
+
+        self.dns_label = Gtk.Label(label="DNS: N/A")
+        self.dns_label.set_halign(Gtk.Align.START)
+
+        self.gateway_label = Gtk.Label(label="Gateway: N/A")
+        self.gateway_label.set_halign(Gtk.Align.START)
+
+        network_info_box.pack_start(self.ip_label, False, True, 0)
+        network_info_box.pack_start(self.dns_label, False, True, 0)
+        network_info_box.pack_start(self.gateway_label, False, True, 0)
+
+        self.public_ip_label = Gtk.Label(label="Public IP: N/A")
+        self.public_ip_label.set_halign(Gtk.Align.START)
+        network_info_box.pack_start(self.public_ip_label, False, True, 0)
+
+        public_ip = self.get_public_ip()
+        self.public_ip_label.set_text(f"•     Public IP: {public_ip}")
+
+        content_box.pack_start(network_info_box, False, True, 0)
+
+
         # Network speed
         speed_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         speed_box.set_margin_top(10)
@@ -170,6 +197,15 @@ class WiFiTab(Gtk.Box):
         speed_values_box.pack_start(self.download_label, False, True, 0)
         speed_values_box.pack_start(self.upload_label, False, True, 0)
         content_box.pack_start(speed_values_box, False, True, 0)
+
+
+
+        network_details = get_network_details(logging)
+
+        self.ip_label.set_text(f"IP Address: {network_details['ip_address']}")
+        self.dns_label.set_text(f"DNS: {network_details['dns']}")
+        self.gateway_label.set_text(f"Gateway: {network_details['gateway']}")
+        
 
         # Network list section
         networks_label = Gtk.Label()
@@ -227,6 +263,24 @@ class WiFiTab(Gtk.Box):
         # Connect signals for tab visibility tracking
         self.connect("map", self.on_tab_shown)
         self.connect("unmap", self.on_tab_hidden)
+
+    def update_network_details(self):
+        details = get_network_details(self.logging)
+
+        self.ip_label.set_text(f"IP Address: {details['ip_address']}")
+        self.dns_label.set_text(f"•     DNS: {details['dns']}")
+        self.gateway_label.set_text(f"•     Gateway: {details['gateway']}")
+
+    def get_public_ip(self):
+        try:
+            response = requests.get("https://ifconfig.me/ip", timeout=3)
+            if response.status_code == 200:
+                return response.text.strip()
+        except:
+            pass
+        return "N/A"
+
+
         
      # keybinds for wifi tab
     def on_key_press(self, widget, event):
@@ -267,6 +321,9 @@ class WiFiTab(Gtk.Box):
         # Start network speed updates when tab becomes visible
         if self.network_speed_timer_id is None:
             self.network_speed_timer_id = GLib.timeout_add_seconds(1, self.update_network_speed)
+
+        # Update network details (IP, DNS, Gateway)
+        self.update_network_details()
 
         return False
 
