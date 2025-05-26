@@ -1,0 +1,23 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+    build:
+        name: "Build Better Control"
+        runs-on: ubuntu-latest
+        container:
+            image: archlinux
+        steps:
+            - uses: actions/checkout@v4
+            - name: Install dependencies
+              shell: bash
+              run: |
+                sed -i 's/SigLevel    = Required DatabaseOptional/SigLevel    = Optional TrustAll/' /etc/pacman.conf
+                pacman -Syyu --noconfirm --noprogressbar --needed base-devel git
+                python -m venv .venv
+
+            - name: Compile
+              run: |
+                source .venv/bin/activate
+                python -m py_compile src/better_control.py
