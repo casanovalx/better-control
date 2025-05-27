@@ -167,12 +167,27 @@ class WiFiTab(Gtk.Box):
         network_info_box.pack_start(self.dns_label, False, True, 0)
         network_info_box.pack_start(self.gateway_label, False, True, 0)
 
-        self.public_ip_label = Gtk.Label(label="Public IP: N/A")
+        # Public IP with visibility toggle
+        self.public_ip_visible = False
+        self.public_ip_value = "N/A"
+        
+        public_ip_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        self.public_ip_label = Gtk.Label(label="•     Public IP: Hidden")
         self.public_ip_label.set_halign(Gtk.Align.START)
-        network_info_box.pack_start(self.public_ip_label, False, True, 0)
+        
+        self.public_ip_eye_button = Gtk.Button()
+        self.public_ip_eye_button.set_relief(Gtk.ReliefStyle.NONE)
+        eye_icon = Gtk.Image.new_from_icon_name("view-conceal-symbolic", Gtk.IconSize.MENU)
+        self.public_ip_eye_button.add(eye_icon)
+        self.public_ip_eye_button.set_tooltip_text("Show/Hide Public IP")
+        self.public_ip_eye_button.connect("clicked", self.on_public_ip_toggle)
+        
+        public_ip_box.pack_start(self.public_ip_label, False, True, 0)
+        public_ip_box.pack_start(self.public_ip_eye_button, False, True, 0)
+        network_info_box.pack_start(public_ip_box, False, True, 0)
 
         public_ip = self.get_public_ip()
-        self.public_ip_label.set_text(f"•     Public IP: {public_ip}")
+        self.public_ip_value = public_ip
 
         content_box.pack_start(network_info_box, False, True, 0)
 
@@ -270,6 +285,11 @@ class WiFiTab(Gtk.Box):
         self.ip_label.set_text(f"IP Address: {details['ip_address']}")
         self.dns_label.set_text(f"•     DNS: {details['dns']}")
         self.gateway_label.set_text(f"•     Gateway: {details['gateway']}")
+        
+        # Update public IP value but respect visibility setting
+        self.public_ip_value = self.get_public_ip()
+        if self.public_ip_visible:
+            self.public_ip_label.set_text(f"•     Public IP: {self.public_ip_value}")
 
     def get_public_ip(self):
         try:
@@ -280,8 +300,20 @@ class WiFiTab(Gtk.Box):
             pass
         return "N/A"
 
-
+    def on_public_ip_toggle(self, button):
+        """Toggle public IP visibility"""
+        self.public_ip_visible = not self.public_ip_visible
         
+        eye_icon = button.get_child()
+        if self.public_ip_visible:
+            self.public_ip_label.set_text(f"•     Public IP: {self.public_ip_value}")
+            eye_icon.set_from_icon_name("view-reveal-symbolic", Gtk.IconSize.MENU)
+            button.set_tooltip_text("Hide Public IP")
+        else:
+            self.public_ip_label.set_text("•     Public IP: Hidden")
+            eye_icon.set_from_icon_name("view-conceal-symbolic", Gtk.IconSize.MENU)
+            button.set_tooltip_text("Show Public IP")
+
      # keybinds for wifi tab
     def on_key_press(self, widget, event):
         keyval = event.keyval
