@@ -24,41 +24,10 @@ from ui.css.animations import load_animations_css
 
 
 def signal_handler(sig, frame):
-    """Handle signals with comprehensive cleanup"""
-    import traceback
-    from utils.logger import emergency_log
+    """Immediately kill the process on signal"""
+    import os
 
-    emergency_log(f"Signal {sig} received", "".join(traceback.format_stack()))
-
-    # Clean up GTK objects in stages
-    try:
-        if Gtk.main_level() > 0:
-            Gtk.main_quit()
-
-        # Explicitly destroy any remaining GTK objects
-        for window in Gtk.Window.list_toplevels():
-            try:
-                window.destroy()
-            except:
-                pass
-
-        # Clean up GLib main loops
-        while GLib.MainContext.default().iteration(False):
-            pass
-
-    except Exception as e:
-        emergency_log(f"Error during cleanup: {e}", "")
-
-    # Force garbage collection
-    import gc
-    gc.collect()
-
-    # Additional system-level cleanup
-    if sig in (signal.SIGSEGV, signal.SIGABRT):
-        emergency_log("Critical error occurred - generating core dump", "")
-        sys.exit(1)
-    else:
-        sys.exit(0)
+    os._exit(0)
 
 
 def main():
