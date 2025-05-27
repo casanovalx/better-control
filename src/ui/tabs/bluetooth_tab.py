@@ -298,19 +298,19 @@ class BluetoothTab(Gtk.Box):
         # Update UI based on Bluetooth state
         if is_enabled:
             # Bluetooth enabled - show scan button
-            self.scan_button.set_visible(True)
+            self.refresh_button.set_visible(True)
             # Update device list
             self.update_device_list()
         else:
             # Bluetooth disabled - hide scan button
-            self.scan_button.set_visible(False)
+            self.refresh_button.set_visible(False)
             # Clear all devices from the list
             for child in self.devices_box.get_children():
                 self.devices_box.remove(child)
             self.devices_box.show_all()
             # If we're discovering, stop it
             if self.is_discovering:
-                self.stop_scan(self.scan_button)
+                self.stop_scan(self.refresh_button)
 
     def on_scan_clicked(self, button):
         """Handle scan button clicks
