@@ -1067,7 +1067,7 @@ class WiFiTab(Gtk.Box):
                     scan_label.get_style_context().add_class("scan_label")
                     top_box.pack_start(scan_label, False, False, 0)
 
-                    if qr_path:
+                    if qr_path and not qr_path.endswith("error.png"):
                         qr_image = Gtk.Image()
                         qr_image.set_size_request(120, 120)
                         qr_image.set_margin_top(8)
@@ -1075,7 +1075,9 @@ class WiFiTab(Gtk.Box):
                         qr_image.set_from_file(qr_path)
                         qr_button.add(qr_image)
                     else:
-                        error_label = Gtk.Label(label="Failed to generate QR code")
+                        error_label = Gtk.Label(label="You need to install python-qrencode for this feature to work.")
+                        error_label.set_line_wrap(True)
+                        error_label.set_max_width_chars(30)
                         qr_button.add(error_label)
 
                     content_area.pack_start(top_box, False, True, 0)
