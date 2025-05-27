@@ -5,7 +5,6 @@ import qrcode
 import subprocess
 from typing import List, Dict
 
-import qrcode.constants
 from utils.logger import LogLevel, Logger
 import time
 import threading
@@ -488,13 +487,13 @@ def generate_wifi_qrcode(ssid: str, password: str, security: str, logging:Logger
         wifi_string = f"WIFI:T:{security_type};S:{ssid};P:{password};;"
 
         # generate the qr code
+        # generate the qr code
         qr_code = qrcode.QRCode(
             version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            error_correction=qrcode.ERROR_CORRECT_L,
             box_size=6,
             border=2,
         )
-        qr_code.add_data(wifi_string)
         qr_code.make(fit=True)
 
         # create qr code image
