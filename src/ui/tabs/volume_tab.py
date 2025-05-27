@@ -27,7 +27,6 @@ from tools.volume import (
     set_mic_volume,
     get_mic_mute_state,
     toggle_mic_mute,
-    get_sink_name_by_id,
     get_sink_identifier_by_id,
     get_application_mute_state,
     toggle_application_mute,
@@ -999,24 +998,24 @@ class VolumeTab(Gtk.Box):
 
     def on_output_changed(self, combo):
         """Handle output device selection changes"""
-        
-        self.logging.log(LogLevel.Info, f"Output device audio changed")
+
+        self.logging.log(LogLevel.Info, "Output device audio changed")
         if combo.get_active_id() is None or combo.get_active_id() == "no-sink":
             return
-        
+
         device_id, port_name = combo.get_active_id().split("####")
         if not device_id:
             return
 
         # Store current active index in case we need to revert
         current_index = combo.get_active()
-        
+
         try:
             # Attempt to change the default sink
             success = set_default_sink(device_id, port_name, self.logging)
-            
+
             if not success:
-                self.logging.log(LogLevel.Error, 
+                self.logging.log(LogLevel.Error,
                     f"Failed to switch to device {device_id}")
                 # Revert UI to previous selection
                 GLib.idle_add(combo.set_active, current_index)
@@ -1090,12 +1089,12 @@ class VolumeTab(Gtk.Box):
 
     def on_app_output_changed(self, combo, app_id):
         """Handle application output device changes"""
-        
+
         if combo.get_active_id() is None or combo.get_active_id() == "no-sink":
             return
-        
+
         device_id, port_name = combo.get_active_id().split("####")
-        
+
         if device_id:
             try:
                 # First check if the application still exists
@@ -1301,11 +1300,11 @@ class VolumeTab(Gtk.Box):
         current_time = time.time()
         if current_time > self.last_bluetooth_device_update_time + self.update_interval_bluetooth:
             return
-        
+
         self.last_bluetooth_device_update_time = current_time
         GLib.idle_add(self.update_device_lists)
         if sink_name:
-            self.logging.log(LogLevel.Info, 
+            self.logging.log(LogLevel.Info,
                 f"Audio device changed to: {sink_name}")
 
     def __del__(self):
@@ -1317,7 +1316,7 @@ class VolumeTab(Gtk.Box):
     def on_destroy(self, widget):
         """Clean up resources when tab is destroyed"""
         self.stop_pulse_monitoring()
-        
+
         # Remove audio device change callback
         if hasattr(self, '_audio_device_changed_cb'):
             from tools.bluetooth import remove_audio_routing_callback
