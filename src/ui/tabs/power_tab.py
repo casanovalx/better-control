@@ -88,6 +88,7 @@ class PowerTab(Gtk.Box):
 
             # Create settings button
             settings_button = Gtk.Button()
+            settings_button.set_valign(Gtk.Align.CENTER)
             settings_button.set_tooltip_text(getattr(self.txt, 'power_tooltip_menu', 'Power Options'))
             self.settings_icon = Gtk.Image.new_from_icon_name(
                 "emblem-system-symbolic", Gtk.IconSize.MENU
