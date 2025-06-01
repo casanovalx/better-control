@@ -92,10 +92,12 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
 
         self.connect_button = Gtk.Button(label=self.txt.connect)
+        self.connect_button.set_valign(Gtk.Align.CENTER)
         self.connect_button.set_sensitive(not self.is_connected)
         button_box.pack_end(self.connect_button, False, False, 0)
 
         self.disconnect_button = Gtk.Button(label=self.txt.disconnect)
+        self.disconnect_button.set_valign(Gtk.Align.CENTER)
         self.disconnect_button.set_sensitive(self.is_connected)
         button_box.pack_end(self.disconnect_button, False, False, 0)
 
