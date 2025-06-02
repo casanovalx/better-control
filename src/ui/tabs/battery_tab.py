@@ -615,6 +615,7 @@ class BatteryTab(Gtk.Box):
 
         # Add combined refresh/scan button with expandable animation
         self.refresh_button = Gtk.Button()
+        self.refresh_button.set_valign(Gtk.Align.CENTER)
         self.refresh_btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.refresh_icon = Gtk.Image.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
         self.refresh_label = Gtk.Label(label="Refresh")
