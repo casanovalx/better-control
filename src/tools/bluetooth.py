@@ -695,3 +695,40 @@ def connect_device_async(device_path: str, callback: Callable[[bool], None], log
 
 def disconnect_device_async(device_path: str, callback: Callable[[bool], None], logging: Logger) -> None:
     get_bluetooth_manager(logging).disconnect_device_async(device_path, callback)
+
+def forget_device(device_path: str, logging: Logger) -> bool:
+    """Forget/unpair a Bluetooth device by removing it from the adapter"""
+    manager = get_bluetooth_manager(logging)
+    try:
+        if manager.bus is None:
+            logging.log(LogLevel.Error, "D-Bus connection not initialized")
+            return False
+
+        device = dbus.Interface(
+            manager.bus.get_object(BLUEZ_SERVICE_NAME, device_path),
+            BLUEZ_DEVICE_INTERFACE,
+        )
+        adapter = dbus.Interface(
+            manager.bus.get_object(BLUEZ_SERVICE_NAME, manager.adapter_path),
+            BLUEZ_ADAPTER_INTERFACE,
+        )
+        adapter.RemoveDevice(device_path)
+        logging.log(LogLevel.Info, f"Device {device_path} forgotten successfully")
+        return True
+    except Exception as e:
+        logging.log(LogLevel.Error, f"Failed to forget device {device_path}: {e}")
+        return False
+
+def forget_device_async(device_path: str, callback: Callable[[bool], None], logging: Logger) -> None:
+    """Forget/unpair a Bluetooth device asynchronously
+
+    Args:
+        device_path: DBus path of the device
+        callback: Function to call when forget attempt completes with a boolean success parameter
+    """
+    def run_forget():
+        success = forget_device(device_path, logging)
+        GLib.idle_add(lambda: callback(success))
+
+    thread = threading.Thread(target=run_forget, daemon=True)
+    thread.start()

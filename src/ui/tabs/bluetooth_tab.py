@@ -229,6 +229,9 @@ class BluetoothTab(Gtk.Box):
                     device_row.disconnect_button.connect(
                         "clicked", self.on_disconnect_clicked, device["path"]
                     )
+                    device_row.forget_button.connect(
+                        "clicked", self.on_forget_clicked, device["path"]
+                    )
                     self.devices_box.pack_start(device_row, False, True, 0)
             except Exception as e:
                 self.logging.log(LogLevel.Error, f"Error populating device list: {e}")
@@ -498,8 +501,8 @@ class BluetoothTab(Gtk.Box):
         spinner.start()
         button.set_image(spinner)
 
-        # Disconnect asynchronously
-        def on_disconnect_complete(success):
+        # Forget asynchronously
+        def on_forget_complete(success):
             # Use GLib.idle_add to ensure we're on the main thread
             def update_ui():
                 # Check if the button still exists and is valid
@@ -532,14 +535,71 @@ class BluetoothTab(Gtk.Box):
                         modal=True,
                         message_type=Gtk.MessageType.ERROR,
                         buttons=Gtk.ButtonsType.OK,
-                        text=self.txt.bluetooth_disconnect_failed
+                        text=self.txt.bluetooth_disconnect_failed if hasattr(self.txt, 'bluetooth_disconnect_failed') else "Failed to disconnect device"
                     )
-                    dialog.format_secondary_text(self.txt.bluetooth_try_again)
+                    dialog.format_secondary_text(self.txt.bluetooth_try_again if hasattr(self.txt, 'bluetooth_try_again') else "Please try again")
                     dialog.run()
                     dialog.destroy()
                 return False
 
             GLib.idle_add(update_ui)
 
-        # Start the async disconnection
-        disconnect_device_async(device_path, on_disconnect_complete, self.logging)
+        from tools.bluetooth import disconnect_device_async
+        disconnect_device_async(device_path, on_forget_complete, self.logging)
+
+    def on_forget_clicked(self, button, device_path):
+        """Handle device forget button clicks
+
+        Args:
+            button (Gtk.Button): The forget button widget
+            device_path (str): DBus path of the device
+        """
+        if not hasattr(self, '_processing_buttons'):
+            self._processing_buttons = {}
+        self._processing_buttons[device_path] = button
+
+        # Disable the button and show a spin] to indicate forget in progress
+        button.set_sensitive(False)
+        button.set_label(self.txt.forget_in_progress if hasattr(self.txt, 'forget_in_progress') else "Forgetting...")
+
+        # Create a spinner and add it to the button to show the thing above 
+        spinner = Gtk.Spinner()
+        spinner.start()
+        button.set_image(spinner)
+
+        def on_forget_complete(success):
+            def update_ui():
+                if device_path not in self._processing_buttons:
+                    return False
+
+                stored_button = self._processing_buttons[device_path]
+                if not isinstance(stored_button, Gtk.Button) or not stored_button.get_parent():
+                    del self._processing_buttons[device_path]
+                    self.update_device_list()
+                    return False
+
+                stored_button.set_label(self.txt.forget if hasattr(self.txt, 'forget') else "Forget")
+                stored_button.set_image(None)
+                stored_button.set_sensitive(True)
+
+                del self._processing_buttons[device_path]
+
+                if success:
+                    self.update_device_list()
+                else:
+                    dialog = Gtk.MessageDialog(
+                        transient_for=self.get_toplevel(),
+                        modal=True,
+                        message_type=Gtk.MessageType.ERROR,
+                        buttons=Gtk.ButtonsType.OK,
+                        text=self.txt.bluetooth_forget_failed if hasattr(self.txt, 'bluetooth_forget_failed') else "Failed to forget device"
+                    )
+                    dialog.format_secondary_text(self.txt.bluetooth_try_again if hasattr(self.txt, 'bluetooth_try_again') else "Please try again")
+                    dialog.run()
+                    dialog.destroy()
+                return False
+
+            GLib.idle_add(update_ui)
+
+        from tools.bluetooth import forget_device_async
+        forget_device_async(device_path, on_forget_complete, self.logging)

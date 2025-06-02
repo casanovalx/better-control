@@ -101,6 +101,12 @@ class BluetoothDeviceRow(Gtk.ListBoxRow):
         self.disconnect_button.set_sensitive(self.is_connected)
         button_box.pack_end(self.disconnect_button, False, False, 0)
 
+        # Adde forget button
+        self.forget_button = Gtk.Button(label=self.txt.forget)
+        self.forget_button.set_valign(Gtk.Align.CENTER)
+        self.forget_button.set_sensitive(True)
+        button_box.pack_end(self.forget_button, False, False, 0)
+
         container.pack_end(button_box, False, False, 0)
 
     def get_icon_name_for_device(self):

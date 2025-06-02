@@ -149,6 +149,11 @@ class English:
         self.bluetooth_disconnect_failed = "Failed to disconnect from device"
         self.bluetooth_try_again = "Please try again later."
 
+        # Bluetooth forget button translations
+        self.bluetooth_forget_failed = "Failed to forget device"
+        self.forget = "Forget"
+        self.forget_in_progress = "Forgetting..."
+
         # Display tab translations
         self.display_title = "Display Settings"
         self.display_brightness = "Screen Brightness"
