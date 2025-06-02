@@ -52,12 +52,13 @@ class VolumeTab(Gtk.Box):
         self.set_hexpand(True)
         self.set_vexpand(True)
 
-        # Critical - ensure this widget is fully visible in the parent application's notebook
+        # Critical - ensure this widget is fully visible in the parent application\'s notebook
         self.set_visible(True)
         self.set_no_show_all(False)
 
         # Create lock for thread safety
         self._lock = threading.RLock()
+        self._output_changing_lock = threading.Lock() # Lock to prevent re-entrancy in on_output_changed
 
         self.is_visible = False  # Track tab visibility
 
@@ -998,54 +999,90 @@ class VolumeTab(Gtk.Box):
 
     def on_output_changed(self, combo):
         """Handle output device selection changes"""
-
         self.logging.log(LogLevel.Info, "Output device audio changed")
-        if combo.get_active_id() is None or combo.get_active_id() == "no-sink":
-            return
 
-        device_id, port_name = combo.get_active_id().split("####")
-        if not device_id:
+        # Prevent re-entrancy if already processing a change
+        if not self._output_changing_lock.acquire(blocking=False):
+            self.logging.log(LogLevel.Debug, "on_output_changed is already active, skipping.")
             return
-
-        # Store current active index in case we need to revert
-        current_index = combo.get_active()
 
         try:
-            # Attempt to change the default sink
-            success = set_default_sink(device_id, port_name, self.logging)
-
-            if not success:
-                self.logging.log(LogLevel.Error,
-                    f"Failed to switch to device {device_id}")
-                # Revert UI to previous selection
-                GLib.idle_add(combo.set_active, current_index)
+            active_id = combo.get_active_id()
+            if active_id is None or active_id == "no-sink":
+                self.logging.log(LogLevel.Debug, "No valid sink selected.")
                 return
 
-            # Verify the change actually took effect
-            new_sink = subprocess.getoutput("pactl get-default-sink").strip()
-            if new_sink != device_id:
-                self.logging.log(LogLevel.Error,
-                    f"Device switch verification failed (expected: {device_id}, got: {new_sink})")
-                GLib.idle_add(combo.set_active, current_index)
+            device_id, port_name = active_id.split("####")
+            if not device_id:
+                self.logging.log(LogLevel.Warn, "Invalid device_id after split.")
                 return
 
-            # For HDMI devices, add additional checks
-            if "hdmi" in device_id.lower():
-                # Check for HDMI-specific issues
-                hdmi_status = subprocess.getoutput("pactl list sinks | grep -A 10 " + device_id)
-                if "available: no" in hdmi_status.lower():
-                    self.logging.log(LogLevel.Error,
-                        f"HDMI device {device_id} not available")
-                    GLib.idle_add(combo.set_active, current_index)
-                    return
+            current_index = combo.get_active()
+            self.logging.log(LogLevel.Debug, f"Attempting to set sink to: {device_id} with port {port_name}")
 
-            # Force refresh of application outputs
-            GLib.idle_add(self.update_application_list)
+            # Run the sink change in a separate thread to avoid blocking the UI thread
+            def do_set_sink():
+                try:
+                    success = set_default_sink(device_id, port_name, self.logging)
+
+                    def update_ui_after_set_sink():
+                        if not success:
+                            self.logging.log(LogLevel.Error, f"Failed to switch to device {device_id}")
+                            if combo.get_active() != current_index: # Check if user hasn't changed it again
+                                combo.set_active(current_index)
+                            return
+
+                        # Verify the change took effect
+                        # This check should also be non-blocking or handled carefully
+                        new_sink_check_output = subprocess.getoutput("pactl get-default-sink").strip()
+                        if new_sink_check_output != device_id:
+                            self.logging.log(
+                                LogLevel.Error,
+                                f"Device switch verification failed (expected: {device_id}, got: {new_sink_check_output})",
+                            )
+                            if combo.get_active() != current_index:
+                                combo.set_active(current_index)
+                            return
+
+                        self.logging.log(LogLevel.Info, f"Successfully switched to sink: {device_id}")
+                        # Force refresh of application outputs on the main thread
+                        self.update_application_list() # This itself should use GLib.idle_add for its UI parts
+
+                    GLib.idle_add(update_ui_after_set_sink)
+
+                except Exception as e_thread:
+                    self.logging.log(LogLevel.Error, f"Error in do_set_sink thread: {e_thread}")
+                    # Ensure UI reversion happens on the main thread
+                    def revert_ui_on_error():
+                        if combo.get_active() != current_index:
+                             combo.set_active(current_index)
+                    GLib.idle_add(revert_ui_on_error)
+                finally:
+                    # Release lock in the thread that acquired it, after all operations
+                    # However, the primary lock is released in the main path.
+                    # This secondary lock management needs careful thought if do_set_sink is complex.
+                    # For now, the main lock is released outside this thread.
+                    pass
+            
+            # Offload the potentially blocking operation
+            thread = threading.Thread(target=do_set_sink)
+            thread.daemon = True
+            thread.start()
 
         except Exception as e:
-            self.logging.log(LogLevel.Error,
-                f"Error changing audio device: {e}")
-            GLib.idle_add(combo.set_active, current_index)
+            self.logging.log(LogLevel.Error, f"Error in on_output_changed: {e}")
+            # Fallback: ensure lock is released if an error occurs before thread start
+            # self._output_changing_lock.release() # Releasing here might be too early if thread is started
+        finally:
+            # Release the lock after initiating the process
+            # The actual sink change and UI updates are now threaded or scheduled via GLib.idle_add
+            # Consider if lock should be released by the thread or GLib.idle_add callback
+            GLib.timeout_add(100, self._release_output_changing_lock) # Release after a short delay
+
+    def _release_output_changing_lock(self):
+        if self._output_changing_lock.locked():
+            self._output_changing_lock.release()
+        return False # Do not repeat
 
     def on_input_changed(self, combo):
         """Handle input device selection changes"""

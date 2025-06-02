@@ -237,23 +237,28 @@ def get_sink_name_by_id(sink_id: str, logging: Logger) -> str:
         return ""
     
     
-def get_sink_identifier_by_id(sink_id: str, logging: Logger) -> str:
-    """Get the name of a sink by its ID number
+def get_sink_identifier_by_id(sink_id: str, logging: Logger) -> Optional[str]:
+    """Get the identifier of a sink by its ID number
 
     Args:
         sink_id (str): The sink ID (number)
 
     Returns:
-        str: The sink name
+        Optional[str]: The sink identifier (name####port) or None if not found
     """
     try:
         sinks = get_sinks(logging)
         for sink in sinks:
-            if sink["id"] == sink_id and sink["active_port"]:
-                return sink["identifier"]
+            if sink.get("id") == sink_id:
+                # According to get_sinks, 'identifier' is str, 'active_port' is bool.
+                # The sink dict is Dict[str, str | bool], so type checker is cautious.
+                identifier = sink.get("identifier")
+                if isinstance(identifier, str) and sink.get("active_port"):
+                    return identifier
+        return None  # Explicitly return None if not found
     except Exception as e:
-        logging.log(LogLevel.Error, f"Failed getting sink name: {e}")
-        return ""
+        logging.log(LogLevel.Error, f"Failed getting sink identifier for ID {sink_id}: {e}")
+        return None
 
 
 def set_application_volume(app_id: str, value: int, logging: Logger) -> None:
@@ -809,11 +814,11 @@ def set_application_mic_volume(app_id: str, value: int, logging: Logger) -> None
     except subprocess.CalledProcessError as e:
         logging.log(LogLevel.Error, f"Failed setting application mic volume: {e}")
 
-def get_active_sink(logging: Logger) -> Optional[Dict[str, str]]:
+def get_active_sink(logging: Logger) -> Optional[Dict[str, str | bool]]:
     """Get the currently active audio sink
     
     Returns:
-        Optional[Dict[str, str]]: Active sink info or None if not available
+        Optional[Dict[str, str | bool]]: Active sink info or None if not available
     """
     try:
         sink_name = subprocess.getoutput("pactl get-default-sink").strip()
