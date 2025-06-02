@@ -4,7 +4,7 @@ clear
 echo -e "\e[32mBetter Control Manager\e[0m"
 echo -e "your version : \e[34m6.12.0\e[0m"
 echo " "
-echo -e "This script is still under development to improve it if you find any errors head over to \e[31m\e[1mhttps://github.com/quantumvoid0/better-control/issues\e[0m and open an issue on it"
+echo -e "This script is still under development to improve it if you find any errors head over to \e[31m\e[1mhttps://github.com/better-ecosystem/better-control/issues\e[0m and open an issue on it"
 echo " "
 
 set -e
@@ -26,7 +26,7 @@ install_debian() {
     sudo apt install -y libgtk-3-dev network-manager bluez bluez-tools pulseaudio-utils brightnessctl python3-gi python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode python3-setproctitle python3-pil usbguard
 
     clear
-    git clone https://github.com/quantumvoid0/better-control.git
+    git clone https://github.com/better-ecosystem/better-control.git
     cd better-control
     sudo make install
     rm -rf ~/better-control
@@ -42,7 +42,7 @@ install_fedora() {
         python3-pillow usbguard brightnessctl make --allowerasing
     clear
 
-    git clone https://github.com/quantumvoid0/better-control.git
+    git clone https://github.com/better-ecosystem/better-control.git
     cd better-control
     sudo make install
     rm -rf ~/better-control
@@ -55,7 +55,7 @@ install_void() {
     sudo xbps-install -Sy NetworkManager pulseaudio-utils brightnessctl python3-gobject python3-dbus python3 power-profiles-daemon gammastep python3-requests python3-qrcode gtk+3 bluez python3-Pillow usbguard python3-pip python3-setproctitle
     clear
 
-    git clone https://github.com/quantumvoid0/better-control.git
+    git clone https://github.com/better-ecosystem/better-control.git
     cd better-control
     sudo make install
     rm -rf ~/better-control
@@ -69,7 +69,7 @@ install_alpine() {
     pip install setproctitle
     clear
 
-    git clone https://github.com/quantumvoid0/better-control.git
+    git clone https://github.com/better-ecosystem/better-control.git
     cd better-control
     sudo make install
     rm -rf ~/better-control
@@ -85,7 +85,7 @@ uninstall_arch() {
 
 uninstall_others() {
     echo "Uninstalling better-control on other distros..."
-    git clone https://github.com/quantumvoid0/better-control
+    git clone https://github.com/better-ecosystem/better-control
     cd better-control
     sudo make uninstall
     rm -rf ~/better-control
