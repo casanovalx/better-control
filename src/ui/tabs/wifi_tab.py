@@ -155,13 +155,13 @@ class WiFiTab(Gtk.Box):
         network_info_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
         network_info_box.set_halign(Gtk.Align.START)
 
-        self.ip_label = Gtk.Label(label="IP Address: N/A")
+        self.ip_label = Gtk.Label(label="IP Address: Loading...")
         self.ip_label.set_halign(Gtk.Align.START)
 
-        self.dns_label = Gtk.Label(label="DNS: N/A")
+        self.dns_label = Gtk.Label(label="DNS: Loading...")
         self.dns_label.set_halign(Gtk.Align.START)
 
-        self.gateway_label = Gtk.Label(label="Gateway: N/A")
+        self.gateway_label = Gtk.Label(label="Gateway: Loading...")
         self.gateway_label.set_halign(Gtk.Align.START)
 
         network_info_box.pack_start(self.ip_label, False, True, 0)
@@ -170,10 +170,11 @@ class WiFiTab(Gtk.Box):
 
         # Public IP with visibility toggle
         self.public_ip_visible = False
-        self.public_ip_value = "N/A"
+        self.public_ip_value = "Loading..." # Initial state
         
         public_ip_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        self.public_ip_label = Gtk.Label(label="•     Public IP: Hidden")
+        # Initial label text reflects loading state, actual display depends on visibility
+        self.public_ip_label = Gtk.Label(label="•     Public IP: Loading...") 
         self.public_ip_label.set_halign(Gtk.Align.START)
         
         self.public_ip_eye_button = Gtk.Button()
@@ -187,8 +188,7 @@ class WiFiTab(Gtk.Box):
         public_ip_box.pack_start(self.public_ip_eye_button, False, True, 0)
         network_info_box.pack_start(public_ip_box, False, True, 0)
 
-        public_ip = self.get_public_ip()
-        self.public_ip_value = public_ip
+        # Removed direct call to self.get_public_ip() and self.public_ip_value assignment here
 
         content_box.pack_start(network_info_box, False, True, 0)
 
@@ -215,12 +215,7 @@ class WiFiTab(Gtk.Box):
         content_box.pack_start(speed_values_box, False, True, 0)
 
 
-
-        network_details = get_network_details(logging)
-
-        self.ip_label.set_text(f"IP Address: {network_details['ip_address']}")
-        self.dns_label.set_text(f"DNS: {network_details['dns']}")
-        self.gateway_label.set_text(f"Gateway: {network_details['gateway']}")
+        # Removed direct call to get_network_details(logging) and subsequent label updates here
         
 
         # Network list section
@@ -280,17 +275,66 @@ class WiFiTab(Gtk.Box):
         self.connect("map", self.on_tab_shown)
         self.connect("unmap", self.on_tab_hidden)
 
-    def update_network_details(self):
-        details = get_network_details(self.logging)
-
-        self.ip_label.set_text(f"IP Address: {details['ip_address']}")
-        self.dns_label.set_text(f"•     DNS: {details['dns']}")
-        self.gateway_label.set_text(f"•     Gateway: {details['gateway']}")
+    def load_network_details_async(self):
+        """Starts a background thread to fetch and update network details."""
+        self.logging.log(LogLevel.Info, "WiFi tab: Asynchronously loading network details.")
         
-        # Update public IP value but respect visibility setting
-        self.public_ip_value = self.get_public_ip()
+        # Set labels to "Loading..." to indicate activity if not already set
+        self.ip_label.set_text("IP Address: Loading...")
+        self.dns_label.set_text("DNS: Loading...")
+        self.gateway_label.set_text("Gateway: Loading...")
+        
+        # Public IP label depends on visibility, but value is loading
+        self.public_ip_value = "Loading..."
         if self.public_ip_visible:
             self.public_ip_label.set_text(f"•     Public IP: {self.public_ip_value}")
+        else:
+            self.public_ip_label.set_text("•     Public IP: Hidden")
+
+
+        thread = threading.Thread(target=self._fetch_network_details_thread)
+        thread.daemon = True
+        thread.start()
+
+    def _fetch_network_details_thread(self):
+        """Worker thread to fetch network details"""
+        self.logging.log(LogLevel.Debug, "WiFi tab: _fetch_network_details_thread started.")
+        try:
+            local_details = get_network_details(self.logging)
+            # self.get_public_ip() is already defined and fetches public IP
+            public_ip = self.get_public_ip() 
+            GLib.idle_add(self._update_ui_with_network_details, local_details, public_ip)
+        except Exception as e:
+            self.logging.log(LogLevel.Error, f"WiFi tab: Failed to fetch network details in background: {e}\\n{traceback.format_exc()}")
+            GLib.idle_add(self._update_ui_with_network_details_error, str(e))
+
+    def _update_ui_with_network_details(self, local_details, public_ip):
+        """Updates the UI labels with fetched network details. Runs in the main GTK thread."""
+        self.logging.log(LogLevel.Debug, "WiFi tab: Updating UI with fetched network details.")
+        self.ip_label.set_text(f"IP Address: {local_details.get('ip_address', 'N/A')}")
+        self.dns_label.set_text(f"•     DNS: {local_details.get('dns', 'N/A')}")
+        self.gateway_label.set_text(f"•     Gateway: {local_details.get('gateway', 'N/A')}")
+
+        self.public_ip_value = public_ip # Update the stored value
+        if self.public_ip_visible:
+            self.public_ip_label.set_text(f"•     Public IP: {self.public_ip_value}")
+        else:
+            self.public_ip_label.set_text("•     Public IP: Hidden")
+        return False # For GLib.idle_add
+
+    def _update_ui_with_network_details_error(self, error_message):
+        """Updates the UI to show an error state for network details. Runs in the main GTK thread."""
+        self.logging.log(LogLevel.Warn, f"WiFi tab: Displaying error for network details: {error_message}")
+        self.ip_label.set_text("IP Address: Error")
+        self.dns_label.set_text("DNS: Error")
+        self.gateway_label.set_text("Gateway: Error")
+        
+        self.public_ip_value = "Error" # Store error state
+        if self.public_ip_visible:
+            self.public_ip_label.set_text(f"•     Public IP: {self.public_ip_value}")
+        else:
+            self.public_ip_label.set_text("•     Public IP: Hidden (Error)")
+        return False # For GLib.idle_add
 
     def get_public_ip(self):
         try:
@@ -355,8 +399,8 @@ class WiFiTab(Gtk.Box):
         if self.network_speed_timer_id is None:
             self.network_speed_timer_id = GLib.timeout_add_seconds(1, self.update_network_speed)
 
-        # Update network details (IP, DNS, Gateway)
-        self.update_network_details()
+        # Asynchronously load and update network details (IP, DNS, Gateway, Public IP)
+        self.load_network_details_async()
 
         return False
 
