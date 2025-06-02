@@ -8,8 +8,8 @@
 
 [![AUR Package](https://img.shields.io/badge/AUR-better--control--git-429768?style=flat-square&logo=archlinux&logoColor=white&labelColor=444)](https://aur.archlinux.org/packages/better-control-git)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-429768.svg?style=flat-square&logo=github&labelColor=444)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/quantumvoid0/better-control?style=flat-square&color=429768&logo=starship&labelColor=444)](https://github.com/quantumvoid0/better-control/stargazers)
-[![Latest Release](https://img.shields.io/github/v/release/quantumvoid0/better-control.svg?style=flat-square&color=429768&logo=speedtest&label=latest-release&labelColor=444)](https://github.com/quantumvoid0/better-control/releases/latest)
+[![GitHub stars](https://img.shields.io/github/stars/better-ecosystem/better-control?style=flat-square&color=429768&logo=starship&labelColor=444)](https://github.com/better-ecosystem/better-control/stargazers)
+[![Latest Release](https://img.shields.io/github/v/release/better-ecosystem/better-control.svg?style=flat-square&color=429768&logo=speedtest&label=latest-release&labelColor=444)](https://github.com/better-ecosystem/better-control/releases/latest)
 
 </div>
 
@@ -67,16 +67,16 @@ Before installing, ensure you have `git` and `base-devel` installed.
 The easiest way to install Better Control is using our automated installer script:
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/betterctl.sh)
+bash <(curl -s https://raw.githubusercontent.com/better-ecosystem/better-control/refs/heads/main/betterctl.sh)
 ```
 
 **What this script does:**
 - Uses [AUR](https://aur.archlinux.org/packages/better-control-git) for Arch-based distributions
-- Uses [Makefile](https://github.com/quantumvoid0/better-control/blob/main/Makefile) for other distributions
+- Uses [Makefile](https://github.com/better-ecosystem/better-control/blob/main/Makefile) for other distributions
 - Automatically installs all required dependencies
 
 > [!TIP]
-> **Security conscious?** You can review the installer script [here](https://raw.githubusercontent.com/quantumvoid0/better-control/refs/heads/main/betterctl.sh) before running it.
+> **Security conscious?** You can review the installer script [here](https://raw.githubusercontent.com/better-ecosystem/better-control/refs/heads/main/betterctl.sh) before running it.
 
 **Supported Distributions:**
 - 🔵 Arch-based (Arch, Manjaro, EndeavourOS, etc.)
@@ -90,7 +90,7 @@ bash <(curl -s https://raw.githubusercontent.com/quantumvoid0/better-control/ref
 For users who prefer manual installation or need more control over the process:
 
 ```bash
-git clone https://github.com/quantumvoid0/better-control
+git clone https://github.com/better-ecosystem/better-control
 cd better-control
 sudo make install
 ```
@@ -155,7 +155,7 @@ You can use `betterctl` to update or uninstall the application.
 
 ## 📚 Contribution
 
-If you want to contribute, see [CONTRIBUTING.md](https://github.com/quantumvoid0/better-control/blob/main/CONTRIBUTING.md)
+If you want to contribute, see [CONTRIBUTING.md](https://github.com/better-ecosystem/better-control/blob/main/CONTRIBUTING.md)
 
 ## 📄 License
 
@@ -201,6 +201,6 @@ Better Control has been tested on Arch Linux with Hyprland, GNOME, and KDE Plasm
 
 ### Made with ❤️ for the Linux community
 
-[Report Bug](https://github.com/quantumvoid0/better-control/issues) •
-[Request Feature](https://github.com/quantumvoid0/better-control/discussions) •
-[Contribute](https://github.com/quantumvoid0/better-control/tree/main?tab=readme-ov-file#--contribution)
+[Report Bug](https://github.com/better-ecosystem/better-control/issues) •
+[Request Feature](https://github.com/better-ecosystem/better-control/discussions) •
+[Contribute](https://github.com/better-ecosystem/better-control/tree/main?tab=readme-ov-file#--contribution)
