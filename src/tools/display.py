@@ -64,7 +64,7 @@ def get_display_info(display: str, logging: Logger) -> Dict[str, str]:
     """
     try:
         session = get_current_session()
-        if "Hyprland" in session:
+        if session == "Hyprland":
             displays = get_hyprland_displays()
             transform_map = {
                 0: "normal",
@@ -85,22 +85,28 @@ def get_display_info(display: str, logging: Logger) -> Dict[str, str]:
                     if part.startswith("(") and part.endswith(")"):
                         orientation = parts[idx + 1]
                         return {"rotation": orientation}
+        
+        # Return default if no rotation information found
+        return {"rotation": "normal"}
     except Exception as e:
         logging.log(LogLevel.Error, f"Failed getting display info: {e}")
         return {"rotation": "normal"}
 
-def rotate_display(display: str, desktop_env: str, orientation: str, logging: Logger) -> None:
+def rotate_display(display: str, desktop_env: str, orientation: str, logging: Logger) -> bool:
     """Change the orientation of the display
     Args:
         display: Display name
         orientation: Orientation ('normal', 'left', 'right', 'inverted')
         desktop_env: Desktop environment ('hyprland', 'sway', 'gnome')
         logging: Logger
+    
+    Returns:
+        bool: True if successful, False otherwise
     """
     try:
         session = get_current_session()
         
-        if "Hyprland" in session:
+        if session == "Hyprland":
             return set_hyprland_transform(logging, display, orientation)
 
         elif desktop_env.lower() == "gnome":

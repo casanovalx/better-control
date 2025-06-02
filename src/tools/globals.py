@@ -65,6 +65,7 @@ def battery_supported() -> bool:
         )
         if result.returncode == 0 and "/battery_" in result.stdout:
             return True
+        return False
     except Exception:
         return False
     
