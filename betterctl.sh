@@ -126,7 +126,7 @@ case "$choice" in
         echo "Starting installation..."
         detect_os_id=$(detect_os)
         case "$detect_os_id" in
-            arch|endeavouros|manjaro|garuda)
+            arch|endeavouros|manjaro|garuda|cachyos)
                 install_arch
                 ;;
             debian|ubuntu|linuxmint|pop)
