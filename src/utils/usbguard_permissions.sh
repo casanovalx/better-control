@@ -3,53 +3,79 @@
 # This script is run when user presses "give permission" button on usbguard tab
 #############################
 
+# USBGuard Permission Setup Script (Improved)
+set -euo pipefail
 
-# USBGuard Permission Setup Script
 echo "=== USBGuard Permission Setup ==="
-echo "This will configure your system to allow USBGuard access"
+echo "This will configure your system to allow USBGuard access."
 
 # Verify root
-if [ "$(id -u)" -ne 0 ]; then
-    echo "Please run this script with sudo or as root"
+if [[ "$EUID" -ne 0 ]]; then
+    echo "Please run this script with sudo or as root."
     exit 1
 fi
 
-# Create usbguard group if needed
-echo -n "Creating usbguard group... "
-groupadd usbguard 2>/dev/null || true
-echo "Done"
+# Determine invoking user
+USER_NAME="${SUDO_USER:-$(logname)}"
+echo "Configuring USBGuard for user: $USER_NAME"
 
-# Add user to groups
-echo -n "Adding user to the usbguard group... "
-usermod -aG usbguard $(logname)
-echo "Done"
+# Create usbguard group if it doesn't exist
+if ! getent group usbguard >/dev/null; then
+    echo "Creating usbguard group..."
+    groupadd usbguard
+else
+    echo "usbguard group already exists."
+fi
 
-# Create udev rule
-# Read more: https://wiki.archlinux.org/title/Udev#Allowing_regular_users_to_use_devices
-echo -n "Creating udev rules... "
-echo 'SUBSYSTEM=="usb", MODE="0660", TAG+="uaccess"' > /etc/udev/rules.d/99-usbguard.rules
-echo "Done"
+# Add user to usbguard group
+echo "Adding $USER_NAME to usbguard group..."
+usermod -aG usbguard "$USER_NAME"
 
-# Configure IPC permissions
-# Read more: https://wiki.archlinux.org/title/USBGuard#Configuration
-echo -n "Updating USBGuard configuration... "
-sed -i '/^IPCAllowedUsers=/ s/$/ '$(logname)'/' /etc/usbguard/usbguard-daemon.conf
-sed -i '/^IPCAllowedGroups=/ s/$/ usbguard/' /etc/usbguard/usbguard-daemon.conf
-echo "Done"
+# Create or update udev rule
+UDEV_RULE_FILE="/etc/udev/rules.d/99-usbguard.rules"
+RULE='SUBSYSTEM=="usb", MODE="0660", TAG+="uaccess"'
 
-# Reload udev
-echo -n "Reloading udev rules... "
+if [[ -f "$UDEV_RULE_FILE" ]]; then
+    if grep -Fxq "$RULE" "$UDEV_RULE_FILE"; then
+        echo "udev rule already present."
+    else
+        echo "Appending udev rule to $UDEV_RULE_FILE..."
+        echo "$RULE" >> "$UDEV_RULE_FILE"
+    fi
+else
+    echo "Creating udev rule at $UDEV_RULE_FILE..."
+    echo "$RULE" > "$UDEV_RULE_FILE"
+fi
+
+# Modify usbguard-daemon.conf safely
+CONF_FILE="/etc/usbguard/usbguard-daemon.conf"
+
+modify_conf_entry() {
+    local key="$1"
+    local value="$2"
+    if grep -q "^$key=" "$CONF_FILE"; then
+        if grep -q "^$key=.*\b$value\b" "$CONF_FILE"; then
+            echo "$key already includes $value."
+        else
+            echo "Appending $value to $key..."
+            sed -i "s/^$key=/&$value /" "$CONF_FILE"
+        fi
+    else
+        echo "$key=$value" >> "$CONF_FILE"
+    fi
+}
+
+modify_conf_entry "IPCAllowedUsers" "$USER_NAME"
+modify_conf_entry "IPCAllowedGroups" "usbguard"
+
+# Reload udev and restart usbguard
+echo "Reloading udev rules..."
 udevadm control --reload-rules
-echo "Done"
 
-# Restart service
-echo -n "Restarting USBGuard... "
+echo "Restarting USBGuard service..."
 systemctl restart usbguard
-echo "Done"
 
-echo ""
-echo "Setup complete! Please:"
-echo "1. You may need to log out and back in for changes to take effect"
-echo "2. Run: control"
-echo ""
-echo "Note: You may need to reconnect USB devices after this setup"
+echo
+echo "USBGuard setup complete for user '$USER_NAME'."
+echo "Please log out and back in for group changes to take effect."
+echo "Note: You may need to reconnect USB devices after setup."
