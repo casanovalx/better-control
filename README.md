@@ -105,6 +105,16 @@ yay -S better-control-git
 > When building manually, ensure you have all [dependencies](#dependencies) installed beforehand.
 
 <details>
+<summary><b>➡️ Void Linux</b></summary>
+
+Better Control is available in the official Void Linux repository.
+
+```bash
+xbps-install -S better-control
+```
+</details>
+
+<details>
 <summary><b>➡️ Nix/NixOS (Distro Independent) (Unofficial)</b></summary>
 
 Better Control is available in the `nixpkgs` repository.
