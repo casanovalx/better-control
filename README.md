@@ -66,8 +66,8 @@ Before installing, ensure you have `git` and `base-devel` installed.
 
 The easiest way to install Better Control is using our automated installer script:
 
-```bash
-bash <(curl -s https://raw.githubusercontent.com/better-ecosystem/better-control/refs/heads/main/betterctl.sh)
+```
+curl -fsSL https://raw.githubusercontent.com/better-ecosystem/better-control/refs/heads/main/betterctl.sh -o /tmp/betterctl.sh && bash /tmp/betterctl.sh && rm /tmp/betterctl.sh
 ```
 
 **What this script does:**
