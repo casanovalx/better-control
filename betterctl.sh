@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # A simple script to install or uninstall Better Control on your OS
 clear
 echo -e "\e[32mBetter Control Manager\e[0m"
