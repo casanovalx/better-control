@@ -226,7 +226,7 @@ class USBGuardTab(Gtk.Box):
                     "<b>USBGuard Permission Required</b>\n\n"
                     "- USBGuard requires your user to have access to it to avoid running Better Control with sudo.\n\n"
                     "- You can give permission easily by clicking the button below or manually apply the commands from the link below\n\n."
-                    "<a href='https://github.com/quantumvoid0/better-control/blob/main/src/utils/usbguard_permissions.sh'>https://github.com/qunatumvoid0/better-control/blob/main/src/utils/usbguard_permissions.sh</a>\n\n"
+                    "<a href='https://github.com/better-ecosystem/better-control/blob/main/src/utils/usbguard_permissions.sh'>https://github.com/qunatumvoid0/better-control/blob/main/src/utils/usbguard_permissions.sh</a>\n\n"
                     " Check the source if you're skeptical - we got nothing to hide."
                 )
 
